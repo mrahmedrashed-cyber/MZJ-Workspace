@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة التحكم — MZJ Workspace</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal";line-height:1.75}
+    a{color:inherit;text-decoration:none}
+    .layout{min-height:100dvh;display:grid;grid-template-rows:auto 1fr}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--brown);color:#fff;box-shadow:0 4px 16px rgba(62,36,32,.18)}
+    .brand{display:flex;align-items:center;gap:10px;color:#fff}
+    .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
+    .nav{display:flex;gap:10px;flex-wrap:wrap}
+    .nav a{padding:8px 12px;border-radius:10px;color:#fff}
+    .nav a.active,.nav a:hover{background:rgba(255,255,255,.14)}
+    .page{padding:24px}
+    .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    @media(max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:640px){.cards{grid-template-columns:1fr}}
+    .card{background:#fff;border-radius:var(--radius);padding:18px;box-shadow:0 6px 22px rgba(62,36,32,.12)}
+    .card h3{margin:0 0 8px;color:var(--brown)}
+    .kpi{font-size:32px;font-weight:800}
+    .progress{height:12px;background:#f1f1f1;border-radius:999px;overflow:hidden}
+    .progress > span{display:block;height:100%;background:var(--beige);width:0%}
+    .section{margin-top:22px}
+    .section h2{margin:0 0 10px;color:var(--brown);font-size:20px}
+    .list{display:grid;gap:10px}
+    .list-item{background:#fff;border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border:1px solid #eee}
+    .badge{padding:6px 10px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown)}
+    .footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19)}
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <header class="topbar">
+      <a class="brand" href="dashboard.html"><span class="brand-badge"></span><strong>MZJ Workspace</strong></a>
+      <nav class="nav">
+        <a href="dashboard.html">لوحة التحكم</a>
+        <a href="projects.html">المشاريع</a>
+        <a href="members.html">الأعضاء</a>
+        <a href="admin.html">الإدارة</a>
+      </nav>
+    </header>
+
+    <main class="page">
+      <div class="cards">
+        <div class="card"><h3>مهام اليوم</h3><div class="kpi" id="kpi-today">0</div><div class="progress"><span id="prog-today"></span></div></div>
+        <div class="card"><h3>المهام المتأخرة</h3><div class="kpi" id="kpi-late">0</div><div class="progress"><span id="prog-late"></span></div></div>
+        <div class="card"><h3>مشاريع نشطة</h3><div class="kpi" id="kpi-projects">0</div><div class="progress"><span id="prog-projects"></span></div></div>
+        <div class="card"><h3>طلبات جديدة</h3><div class="kpi">18</div><div class="progress"><span style="width:40%"></span></div></div>
+      </div>
+
+      <section class="section">
+        <h2>روابط سريعة</h2>
+        <div class="list">
+          <a class="list-item" href="projects.html"><span>اذهب إلى المشاريع</span><span class="badge">Kanban</span></a>
+          <a class="list-item" href="members.html"><span>إدارة مهام الأعضاء</span><span class="badge">Team</span></a>
+          <a class="list-item" href="admin.html"><span>إعدادات وصلاحيات</span><span class="badge">Admin</span></a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer"><small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small></footer>
+  </div>
+
+  <script>
+    (function(){
+      var path = (location.pathname.split('/').pop() || 'dashboard.html').toLowerCase();
+      document.querySelectorAll('.nav a').forEach(function(a){
+        var href = (a.getAttribute('href')||'').toLowerCase();
+        a.classList.toggle('active', href === path);
+      });
+    })();
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+    const app = initializeApp({
+      apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
+      authDomain: "mzj-workspace.firebaseapp.com",
+      projectId: "mzj-workspace"
+    });
+    const db = getFirestore(app);
+
+    (async () => {
+      try {
+        const today = new Date().toISOString().slice(0,10);
+        const todayQ = query(collection(db, 'tasks'), where('due','==', today));
+        const lateQ  = query(collection(db, 'tasks'), where('status','==','late'));
+        const projQ  = collection(db, 'projects');
+        const [c1,c2,c3] = await Promise.all([
+          getCountFromServer(todayQ),
+          getCountFromServer(lateQ),
+          getCountFromServer(projQ)
+        ]);
+        const n1=c1.data().count, n2=c2.data().count, n3=c3.data().count;
+        document.getElementById('kpi-today').textContent=n1; document.getElementById('prog-today').style.width=Math.min(100,(n1*10))+'%';
+        document.getElementById('kpi-late').textContent=n2;  document.getElementById('prog-late').style.width=Math.min(100,(n2*10))+'%';
+        document.getElementById('kpi-projects').textContent=n3; document.getElementById('prog-projects').style.width=Math.min(100,(n3*10))+'%';
+      } catch (e) { console.error(e); }
+    })();
+  </script>
+</body>
+</html>

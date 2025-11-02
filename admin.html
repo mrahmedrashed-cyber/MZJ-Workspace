@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الإدارة — MZJ Workspace</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal";line-height:1.75}
+    a{color:inherit;text-decoration:none}
+    .layout{min-height:100dvh;display:grid;grid-template-rows:auto 1fr}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--brown);color:#fff;box-shadow:0 4px 16px rgba(62,36,32,.18)}
+    .brand{display:flex;align-items:center;gap:10px;color:#fff}
+    .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
+    .nav{display:flex;gap:10px;flex-wrap:wrap}
+    .nav a{padding:8px 12px;border-radius:10px;color:#fff}
+    .nav a.active,.nav a:hover{background:rgba(255,255,255,.14)}
+    .page{padding:20px;display:grid;gap:16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media(max-width:1000px){.grid{grid-template-columns:1fr}}
+    .card{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:0 6px 22px rgba(62,36,32,.10)}
+    .card h3{margin:0 0 10px;color:var(--brown)}
+    label{display:block;margin:10px 0 6px;font-weight:600;color:var(--brown)}
+    input,select{width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
+    input:focus,select:focus{outline:3px solid rgba(188,143,116,.25);border-color:var(--beige)}
+    .btn{padding:12px 14px;border-radius:12px;border:0;background:var(--brown);color:#fff;cursor:pointer;font-weight:700;margin-top:12px}
+    ul{margin:0;padding:0;list-style:none}
+    li{padding:8px 0;border-bottom:1px solid #f0f0f0}
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <header class="topbar">
+      <a class="brand" href="dashboard.html"><span class="brand-badge"></span><strong>MZJ Workspace</strong></a>
+      <nav class="nav">
+        <a href="dashboard.html">لوحة التحكم</a>
+        <a href="projects.html">المشاريع</a>
+        <a href="members.html">الأعضاء</a>
+        <a href="admin.html">الإدارة</a>
+      </nav>
+    </header>
+
+    <main class="page">
+      <div class="grid">
+        <section class="card">
+          <h3>إضافة مستخدم (واجهة فقط)</h3>
+          <label>الاسم</label>
+          <input type="text" placeholder="الاسم الكامل" />
+          <label>البريد الإلكتروني</label>
+          <input type="email" placeholder="name@example.com" />
+          <label>الصلاحية</label>
+          <select>
+            <option>عضو</option>
+            <option>مشرف</option>
+            <option>مدير</option>
+          </select>
+          <button class="btn" onclick="alert('حاليًا واجهة فقط — سيتم ربطها لاحقًا')">حفظ المستخدم</button>
+        </section>
+
+        <section class="card">
+          <h3>إنشاء مشروع (Firestore)</h3>
+          <label>اسم المشروع</label>
+          <input id="projName" type="text" placeholder="مثلًا: حملة أقساط نوفمبر" />
+          <label>القسم</label>
+          <select id="projDept">
+            <option>التسويق</option>
+            <option>المبيعات</option>
+            <option>الدعم</option>
+          </select>
+          <label>تاريخ البدء</label>
+          <input id="projStart" type="date" />
+          <button class="btn" id="btnCreateProject">إنشاء</button>
+        </section>
+      </div>
+
+      <section class="card">
+        <h3>المشاريع الحالية</h3>
+        <ul id="projList"></ul>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function(){
+      var path = (location.pathname.split('/').pop() || 'admin.html').toLowerCase();
+      document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',(a.getAttribute('href')||'').toLowerCase()===path));
+    })();
+  </script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+    const app = initializeApp({ apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw", authDomain: "mzj-workspace.firebaseapp.com", projectId: "mzj-workspace" });
+    const db = getFirestore(app);
+
+    async function refreshProjects(){
+      const ul = document.getElementById('projList'); ul.innerHTML='';
+      const snap = await getDocs(collection(db,'projects'));
+      snap.forEach(d=>{ const p=d.data(); const li=document.createElement('li'); li.textContent = `${p.name||'-'} — ${p.department||'-'}`; ul.appendChild(li); });
+    }
+
+    document.getElementById('btnCreateProject').addEventListener('click', async ()=>{
+      const name = document.getElementById('projName').value.trim();
+      const department = document.getElementById('projDept').value;
+      const start = document.getElementById('projStart').value || null;
+      if(!name) return alert('اكتب اسم المشروع');
+      await addDoc(collection(db,'projects'), { name, department, start, active:true, createdAt: serverTimestamp() });
+      document.getElementById('projName').value='';
+      refreshProjects();
+      alert('تم إنشاء المشروع');
+    });
+
+    refreshProjects();
+  </script>
+</body>
+</html>

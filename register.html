@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>إنشاء حساب — MZJ Workspace</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal";line-height:1.7}
+    a{color:inherit;text-decoration:none}
+    .container{min-height:100dvh;display:grid;place-items:center;padding:24px}
+    .card{width:100%;max-width:560px;background:#fff;border-radius:var(--radius);box-shadow:0 6px 24px rgba(62,36,32,.12);overflow:hidden}
+    .card-head{background:var(--brown);color:#fff;padding:22px 24px;display:flex;align-items:center;gap:12px}
+    .logo{inline-size:40px;block-size:40px;border-radius:10px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
+    .brand h1{font-size:20px;margin:0}
+    .brand small{opacity:.9}
+    .card-body{padding:28px}
+    label{display:block;margin:14px 0 6px;font-weight:600;color:var(--brown)}
+    input{width:100%;padding:14px 16px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
+    input:focus{outline:3px solid rgba(188,143,116,.25);border-color:var(--beige)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 16px;border-radius:12px;border:0;cursor:pointer;font-weight:700}
+    .btn-primary{background:var(--brown);color:#fff}
+    .btn-primary:hover{filter:brightness(1.08)}
+    .hint{color:var(--muted);font-size:14px;margin-top:12px}
+    .foot{padding:16px 24px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19)}
+    .foot small{opacity:.9}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-head">
+        <div class="logo" aria-hidden="true"></div>
+        <div class="brand">
+          <h1>MZJ Workspace</h1>
+          <small>إنشاء حساب جديد</small>
+        </div>
+      </div>
+      <form class="card-body" id="registerForm">
+        <label for="email">البريد الإلكتروني</label>
+        <input id="email" type="email" placeholder="name@example.com" required />
+        <label for="password">كلمة المرور</label>
+        <input id="password" type="password" placeholder="••••••••" required />
+        <label for="confirm">تأكيد كلمة المرور</label>
+        <input id="confirm" type="password" placeholder="••••••••" required />
+        <div style="margin-top:18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <button class="btn btn-primary" type="submit">إنشاء الحساب</button>
+          <a href="login.html" style="color:var(--beige)">لديك حساب؟ تسجيل الدخول</a>
+        </div>
+        <p class="hint">بعد التسجيل سيتم تحويلك مباشرة إلى لوحة التحكم.</p>
+      </form>
+      <div class="foot"><small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+
+    const firebaseConfig = {
+  apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
+  authDomain: "mzj-workspace.firebaseapp.com",
+  projectId: "mzj-workspace",
+  storageBucket: "mzj-workspace.firebasestorage.app",
+  messagingSenderId: "1043260904465",
+  appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0",
+  measurementId: "G-BK7YQVFPWH"
+};
+
+    const app = initializeApp(firebaseConfig);
+    getAnalytics(app);
+    const auth = getAuth(app);
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const confirm = document.getElementById('confirm').value;
+      if (password !== confirm) { alert('❌ كلمتا المرور غير متطابقتين'); return; }
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        window.location.href = 'dashboard.html';
+      } catch (error) {
+        alert('❌ خطأ أثناء إنشاء الحساب: ' + error.message);
+      }
+    });
+  </script>
+</body>
+</html>

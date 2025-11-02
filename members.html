@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الأعضاء — MZJ Workspace</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal";line-height:1.75}
+    a{color:inherit;text-decoration:none}
+    .layout{min-height:100dvh;display:grid;grid-template-rows:auto 1fr}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--brown);color:#fff;box-shadow:0 4px 16px rgba(62,36,32,.18)}
+    .brand{display:flex;align-items:center;gap:10px;color:#fff}
+    .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
+    .nav{display:flex;gap:10px;flex-wrap:wrap}
+    .nav a{padding:8px 12px;border-radius:10px;color:#fff}
+    .nav a.active,.nav a:hover{background:rgba(255,255,255,.14)}
+    .page{padding:20px}
+    .tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+    .btn{padding:10px 12px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
+    .btn-primary{background:var(--brown);border-color:var(--brown);color:#fff}
+    table{width:100%;border-collapse:separate;border-spacing:0 10px}
+    thead th{color:var(--brown);text-align:right}
+    tbody tr{background:#fff;box-shadow:0 4px 16px rgba(62,36,32,.08)}
+    td,th{padding:12px 14px}
+    .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown)}
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <header class="topbar">
+      <a class="brand" href="dashboard.html"><span class="brand-badge"></span><strong>MZJ Workspace</strong></a>
+      <nav class="nav">
+        <a href="dashboard.html">لوحة التحكم</a>
+        <a href="projects.html">المشاريع</a>
+        <a href="members.html">الأعضاء</a>
+        <a href="admin.html">الإدارة</a>
+      </nav>
+    </header>
+
+    <main class="page">
+      <div class="tools">
+        <input id="memberName" placeholder="اكتب اسم العضو..." style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#fff" />
+        <button class="btn btn-primary" id="btnFilter">عرض مهامه</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>المهمة</th>
+            <th>المشروع</th>
+            <th>تاريخ التسليم</th>
+            <th>الحالة</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </main>
+  </div>
+
+  <script>
+    (function(){
+      var path = (location.pathname.split('/').pop() || 'members.html').toLowerCase();
+      document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',(a.getAttribute('href')||'').toLowerCase()===path));
+    })();
+  </script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+    const app = initializeApp({ apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw", authDomain: "mzj-workspace.firebaseapp.com", projectId: "mzj-workspace" });
+    const db = getFirestore(app);
+
+    async function loadByMember(name){
+      const rows = document.getElementById('rows');
+      rows.innerHTML = '';
+      const q = name ? query(collection(db,'tasks'), where('member','==', name)) : collection(db,'tasks');
+      const snap = await getDocs(q);
+      snap.forEach(d=>{
+        const t = d.data();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${t.title||'-'}</td><td>${t.projectName||'-'}</td><td>${t.due||'-'}</td><td><span class="badge">${t.status||'-'}</span></td>`;
+        rows.appendChild(tr);
+      });
+    }
+
+    document.getElementById('btnFilter').addEventListener('click', ()=>{
+      const name = document.getElementById('memberName').value.trim();
+      loadByMember(name);
+    });
+
+    loadByMember('');
+  </script>
+</body>
+</html>

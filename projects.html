@@ -118,5 +118,22 @@
 
     loadKanban();
   </script>
+  <script type="module">
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+
+  const auth = getAuth();
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.href = "login.html"; // تحويل غير المسجلين إلى صفحة الدخول
+    }
+  });
+
+  window.mzjLogout = async () => {
+    await signOut(auth);
+    window.location.href = "login.html";
+  };
+</script>
+
 </body>
 </html>

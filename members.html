@@ -6,192 +6,79 @@
   <title>الأعضاء — MZJ Workspace</title>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
-    :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px }
-    *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal",system-ui,Arial;line-height:1.75}
+    :root{--brown:#3e2420;--beige:#bc8f74;--cream:#fff8ef;--text:#1f2937;--muted:#6b7280;--radius:14px}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal",system-ui,Arial}
     a{color:inherit;text-decoration:none}
-    .layout{min-height:100dvh;display:grid;grid-template-rows:auto 1fr auto}
-
-    /* Topbar */
-    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--brown);color:#fff;box-shadow:0 4px 16px rgba(62,36,32,.18)}
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--brown);color:#fff;position:sticky;top:0;z-index:10;box-shadow:0 6px 20px rgba(62,36,32,.2)}
     .brand{display:flex;align-items:center;gap:10px}
     .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
-    .nav{display:flex;gap:10px;flex-wrap:wrap}
+    .nav{display:flex;gap:10px;align-items:center}
     .nav a{padding:8px 12px;border-radius:10px;color:#fff}
     .nav a:hover{background:rgba(255,255,255,.14)}
-
-    .page{padding:20px;display:grid;gap:16px}
-
-    /* Stats cards */
-    .cards{display:grid;gap:14px;grid-template-columns:repeat(3,1fr)}
-    @media(max-width:900px){.cards{grid-template-columns:1fr}}
-    .card{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:0 10px 24px rgba(62,36,32,.12)}
-    .card h3{margin:0 0 6px;color:var(--brown);font-size:16px}
-    .kpi{font-size:32px;font-weight:800;margin:4px 0 8px}
-    .progress{height:10px;background:#f1f1f1;border-radius:999px;overflow:hidden}
-    .progress>span{display:block;height:100%;background:var(--beige);width:0%}
-
-    /* Tools */
-    .tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .input, .select{padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
-    .btn{padding:10px 12px;border-radius:12px;border:0;background:var(--brown);color:#fff;cursor:pointer;font-weight:800}
+    .page{padding:18px;display:grid;gap:16px}
+    .panel{background:#fff;border-radius:var(--radius);box-shadow:0 12px 30px rgba(62,36,32,.12);overflow:hidden}
+    .panel .head{padding:12px 14px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+    .panel .body{padding:12px 14px}
+    .btn{padding:8px 12px;border-radius:10px;border:0;background:var(--brown);color:#fff;font-weight:700;cursor:pointer}
     .btn.secondary{background:#fff;color:var(--brown);border:1px solid var(--brown)}
-
-    /* Grid/list */
-    .panel{background:#fff;border-radius:var(--radius);box-shadow:0 8px 26px rgba(62,36,32,.10)}
-    .panel .head{padding:14px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
-    .panel .body{padding:10px 12px}
-    .list{display:grid}
-    .row{display:grid;grid-template-columns:1.2fr .8fr .8fr .8fr .8fr;gap:10px;align-items:center;padding:10px 8px;border-bottom:1px solid #f5f5f5}
-    @media(max-width:1100px){.row{grid-template-columns:1.2fr .8fr .8fr 1fr}}
-    @media(max-width:700px){.row{grid-template-columns:1fr;gap:6px}}
-    .row.head{font-weight:800;color:var(--brown);background:#fff8ef;border-top-left-radius:14px;border-top-right-radius:14px}
+    .btn.small{font-size:13px;padding:6px 10px}
+    .input,.select{padding:10px;border-radius:10px;border:1px solid #ddd;font-family:inherit}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #f3e7e0;text-align:right}
+    th{background:#fff8ef;color:var(--brown);font-weight:800}
+    tr:hover td{background:#fffdf9}
+    .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown)}
     .muted{color:var(--muted)}
-    .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);justify-self:start}
-    .actions{display:flex;gap:8px;flex-wrap:wrap}
-    .mini{padding:8px 10px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
-    .mini.primary{background:var(--brown);border-color:var(--brown);color:#fff}
-    .uid{direction:ltr;font-family:monospace;font-size:12px;background:#f8fafc;border:1px dashed #e5e7eb;padding:2px 6px;border-radius:8px}
-
-    /* Admin form */
-    .grid2{display:grid;grid-template-columns:1fr .8fr;gap:14px}
-    @media(max-width:1100px){.grid2{grid-template-columns:1fr}}
-    label{display:block;margin:8px 0 6px;font-weight:700;color:var(--brown)}
-    input,select{width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
-    input:focus,select:focus{outline:3px solid rgba(188,143,116,.25);border-color:var(--beige)}
-    .footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19)}
+    footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);margin-top:8px}
   </style>
 </head>
 <body>
-  <div class="layout">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-badge"></span>
-        <strong>MZJ Workspace — الأعضاء</strong>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-badge"></span>
+      <strong>MZJ Workspace — الأعضاء</strong>
+    </div>
+    <nav class="nav">
+      <a href="dashboard.html">لوحة التحكم</a>
+      <a href="projects.html">المشاريع</a>
+      <a href="members.html">الأعضاء</a>
+      <a href="admin.html">الإدارة</a>
+      <a href="javascript:void(0)" id="logoutBtn">تسجيل الخروج</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="panel">
+      <div class="head">
+        <strong>إدارة الأعضاء</strong>
+        <button class="btn small" id="btnAddUser">➕ إضافة عضو جديد</button>
       </div>
-      <nav class="nav">
-        <a href="dashboard.html">لوحة التحكم</a>
-        <a href="projects.html">المشاريع</a>
-        <a href="members.html">الأعضاء</a>
-        <a href="admin.html">الإدارة</a>
-        <a href="javascript:void(0)" onclick="mzjLogout()">تسجيل الخروج</a>
-      </nav>
-    </header>
+      <div class="body">
+        <table id="membersTable">
+          <thead>
+            <tr>
+              <th>الاسم</th>
+              <th>البريد</th>
+              <th>الدور</th>
+              <th>اللون</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
 
-    <main class="page">
-      <!-- KPIs -->
-      <section class="cards">
-        <article class="card">
-          <h3>إجمالي الأعضاء</h3>
-          <div class="kpi" id="kpi-total">0</div>
-          <div class="progress"><span id="prog-total"></span></div>
-        </article>
-        <article class="card">
-          <h3>عدد المدراء</h3>
-          <div class="kpi" id="kpi-admins">0</div>
-          <div class="progress"><span id="prog-admins"></span></div>
-        </article>
-        <article class="card">
-          <h3>النشطون</h3>
-          <div class="kpi" id="kpi-active">0</div>
-          <div class="progress"><span id="prog-active"></span></div>
-        </article>
-      </section>
+  <footer>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</footer>
 
-      <!-- Tools -->
-      <section class="panel">
-        <div class="head">
-          <div class="tools">
-            <input id="search" class="input" placeholder="ابحث باسم العضو…"/>
-            <select id="roleFilter" class="select">
-              <option value="">كل الصلاحيات</option>
-              <option value="admin">مدير</option>
-              <option value="member">عضو</option>
-            </select>
-            <button class="btn secondary" id="btnClear">مسح الفلاتر</button>
-          </div>
-          <div id="who" class="muted"></div>
-        </div>
-        <div class="body">
-          <div class="list" id="membersList">
-            <div class="row head">
-              <div>الاسم</div>
-              <div>الدور</div>
-              <div>الحالة</div>
-              <div>UID</div>
-              <div>إجراءات</div>
-            </div>
-            <!-- rows injected -->
-          </div>
-        </div>
-      </section>
-
-      <!-- Admin-only form -->
-      <section class="grid2">
-        <div class="panel">
-          <div class="head"><strong>تعديل/إضافة عضو (Directory)</strong><span class="muted">للأدمِن فقط</span></div>
-          <div class="body">
-            <label>UID المستخدم (من Authentication)</label>
-            <input id="fUid" placeholder="الصق UID هنا — مثال: A1Eoc...Mf2">
-            <label>الاسم</label>
-            <input id="fName" placeholder="اسم العرض — مثال: Ahmed Naji">
-            <label>الدور</label>
-            <select id="fRole">
-              <option value="member">عضو</option>
-              <option value="admin">مدير</option>
-            </select>
-            <label>الحالة</label>
-            <select id="fActive">
-              <option value="true" selected>نشط</option>
-              <option value="false">موقّف</option>
-            </select>
-            <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn" id="btnUpsert">حفظ</button>
-              <button class="btn secondary" id="btnFormReset">تفريغ الحقول</button>
-              <span class="muted">مهم: هذا يحدّث مستند <code>users/{uid}</code>. إنشاء حساب الدخول يتم من صفحة التسجيل.</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="head"><strong>دعوة عضو</strong><span class="muted">خطوة إرشادية</span></div>
-          <div class="body">
-            <p class="muted">ابعث هذا الرابط للمدعو للتسجيل:</p>
-            <div class="actions" style="margin:8px 0">
-              <button class="mini primary" id="btnCopyRegister">نسخ رابط التسجيل</button>
-              <span id="regInfo" class="muted"></span>
-            </div>
-            <p class="muted">بعد ما يسجّل، انسخ UID من Authentication وضعه هنا بالأعلى ثم اضغط "حفظ".</p>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer class="footer"><small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small></footer>
-  </div>
-
-  <!-- Firebase + Members Directory -->
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-    import {
-      getFirestore, collection, onSnapshot, doc, setDoc, getDoc, updateDoc
-    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-    // 🔗 سويتشر روابط (Vercel / CodePen)
-    const CODEPEN = {
-      login:"https://codepen.io/evakkzkq-the-lessful/full/raxqmXB",
-      register:"https://codepen.io/evakkzkq-the-lessful/full/raxqZod",
-      dashboard:"https://codepen.io/evakkzkq-the-lessful/full/ogbaPOO",
-      projects:"https://codepen.io/evakkzkq-the-lessful/full/PwZydvZ",
-      members:"https://codepen.io/evakkzkq-the-lessful/full/GgoYXaJ",
-      admin:"https://codepen.io/evakkzkq-the-lessful/full/EaPdeMp"
-    };
-    const LOCAL = {login:"login.html",register:"register.html",dashboard:"dashboard.html",projects:"projects.html",members:"members.html",admin:"admin.html"};
-    const ON_VERCEL = /vercel\.app$/i.test(location.host) || (!/codepen\.io|cdpn\.io/i.test(location.host) && location.host !== '');
-    const L = ON_VERCEL ? LOCAL : CODEPEN;
-
-    // Firebase init
     const firebaseConfig = {
       apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
       authDomain: "mzj-workspace.firebaseapp.com",
@@ -199,160 +86,95 @@
       storageBucket: "mzj-workspace.firebasestorage.app",
       appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
     };
-    if (!getApps().length) initializeApp(firebaseConfig);
+
+    if(!getApps().length) initializeApp(firebaseConfig);
     const auth = getAuth();
-    const db   = getFirestore();
+    const db = getFirestore();
 
-    // حارس الدخول + زر الخروج
-    window.mzjLogout = async ()=>{ await signOut(auth); location.href = L.login; };
+    const membersTable = document.querySelector('#membersTable tbody');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const addBtn = document.getElementById('btnAddUser');
+
+    logoutBtn.onclick = async ()=>{ await signOut(auth); location.href="login.html"; };
+
+    let CURRENT_USER=null; let IS_ADMIN=false;
+
     onAuthStateChanged(auth, async (user)=>{
-      if (!user) { location.href = L.login; return; }
-      try {
-        const u = await getDoc(doc(db,"users", user.uid));
-        const name = u.exists()? (u.data().name||user.email): (user.email||'مستخدم');
-        const role = u.exists()? (u.data().role||'member'): 'member';
-        document.getElementById('who').textContent = `${name} — ${role==='admin'?'مدير':'عضو'}`;
-        // اخفاء نموذج الإدارة لو مش مدير
-        if (role !== 'admin') {
-          document.querySelectorAll('.grid2 .panel')[0].style.display = 'none';
-        }
-      } catch {}
+      if(!user){ location.href="login.html"; return; }
+      CURRENT_USER=user;
+      const u=await getDoc(doc(db,"users",user.uid));
+      const role = u.exists()? (u.data().role||"member") : "member";
+      IS_ADMIN = role==="admin";
+      if(!IS_ADMIN){ location.href="projects.html"; return; }
+      loadMembers();
     });
 
-    // KPI helpers
-    function setKpi(idNum, idProg, n, max=10){
-      document.getElementById(idNum).textContent = n;
-      document.getElementById(idProg).style.width = Math.min(100, (n/max)*100) + '%';
-    }
-
-    // ==== Live Members ====
-    const membersEl = document.getElementById('membersList');
-    const searchEl  = document.getElementById('search');
-    const roleEl    = document.getElementById('roleFilter');
-    const btnClear  = document.getElementById('btnClear');
-
-    let MEMBERS = []; // [{uid,name,role,active}]
-    function render(){
-      // remove old rows (keep header)
-      [...membersEl.querySelectorAll('.row:not(.head)')].forEach(n=>n.remove());
-
-      const q = (searchEl.value||'').toLowerCase().trim();
-      const rf = roleEl.value||'';
-
-      const filtered = MEMBERS.filter(m=>{
-        const okQ = !q || (m.name?.toLowerCase().includes(q));
-        const okR = !rf || (m.role===rf);
-        return okQ && okR;
-      });
-
-      filtered.forEach(m=>{
-        const row = document.createElement('div');
-        row.className = 'row';
-        row.innerHTML = `
-          <div><strong>${m.name||'—'}</strong> <span class="muted">${m.email||''}</span></div>
-          <div>
-            <span class="badge" data-role>${m.role||'member'}</span>
-          </div>
-          <div>${m.active===false?'<span class="muted">موقّف</span>':'نشط'}</div>
-          <div><span class="uid" title="انسخ UID">${m.uid}</span></div>
-          <div class="actions">
-            <button class="mini" data-copy>نسخ UID</button>
-            <button class="mini primary" data-toggle>تبديل الدور</button>
-            <button class="mini" data-toggleActive>${m.active===false?'تفعيل':'إيقاف'}</button>
-          </div>
-        `;
-        // actions
-        row.querySelector('[data-copy]').onclick = ()=> navigator.clipboard?.writeText(m.uid);
-        row.querySelector('[data-toggle]').onclick = ()=> toggleRole(m.uid, m.role);
-        row.querySelector('[data-toggleActive]').onclick = ()=> toggleActive(m.uid, m.active===false);
-        membersEl.appendChild(row);
-      });
-
-      // KPIs
-      const total = MEMBERS.length;
-      const admins = MEMBERS.filter(m=>m.role==='admin').length;
-      const active = MEMBERS.filter(m=>m.active!==false).length;
-      setKpi('kpi-total','prog-total', total, Math.max(10,total));
-      setKpi('kpi-admins','prog-admins', admins, Math.max(5,admins||5));
-      setKpi('kpi-active','prog-active', active, Math.max(10,active||10));
-    }
-
-    onSnapshot(collection(db, 'users'), (snap)=>{
-      MEMBERS = [];
+    async function loadMembers(){
+      const snap = await getDocs(collection(db,"users"));
+      membersTable.innerHTML='';
       snap.forEach(d=>{
-        const u = d.data()||{};
-        MEMBERS.push({
-          uid: d.id,
-          name: u.name || d.id.slice(0,6),
-          role: u.role || 'member',
-          email: u.email || '',
-          active: u.active !== false // default true
-        });
+        const data=d.data()||{};
+        const row=document.createElement('tr');
+        row.innerHTML=`
+          <td>${data.name||'—'}</td>
+          <td>${data.email||'—'}</td>
+          <td>${data.role==='admin'?'مدير':'عضو'}</td>
+          <td><input type="color" value="${data.color||'#bc8f74'}" data-uid="${d.id}" class="userColor" style="width:40px;height:30px;border:0;"></td>
+          <td>${data.active===false?'<span class="badge" style="background:#fdd">موقوف</span>':'<span class="badge">نشط</span>'}</td>
+          <td>
+            <button class="btn secondary small" data-act="toggle" data-uid="${d.id}">${data.active===false?'تفعيل':'إيقاف'}</button>
+            <button class="btn small" data-act="role" data-uid="${d.id}">تبديل الدور</button>
+          </td>
+        `;
+        membersTable.appendChild(row);
       });
-      render();
-    }, (err)=>{
-      console.error(err);
-      alert('⚠️ فشل قراءة قائمة الأعضاء. تأكد من قواعد Firestore (read للمستخدمين المسجّلين).');
-    });
-
-    searchEl.addEventListener('input', render);
-    roleEl.addEventListener('change', render);
-    btnClear.addEventListener('click', ()=>{
-      searchEl.value=''; roleEl.value=''; render();
-    });
-
-    // ==== Role & Active updates (Admin only; Rules must allow it) ====
-    async function toggleRole(uid, currentRole){
-      const newRole = currentRole==='admin' ? 'member' : 'admin';
-      try{
-        await updateDoc(doc(db,'users', uid), { role: newRole });
-      }catch(e){
-        console.error(e);
-        alert('⚠️ لا تملك صلاحية تعديل الدور. هذه العملية للأدمِن فقط.');
-      }
-    }
-    async function toggleActive(uid, willBeActive){
-      try{
-        await updateDoc(doc(db,'users', uid), { active: willBeActive });
-      }catch(e){
-        console.error(e);
-        alert('⚠️ لا تملك صلاحية تعديل الحالة. هذه العملية للأدمِن فقط.');
-      }
     }
 
-    // ==== Admin directory upsert ====
-    const fUid = document.getElementById('fUid');
-    const fName= document.getElementById('fName');
-    const fRole= document.getElementById('fRole');
-    const fActive = document.getElementById('fActive');
-    document.getElementById('btnUpsert').addEventListener('click', async ()=>{
-      const uid = (fUid.value||'').trim();
-      if (!uid) { alert('اكتب UID المستخدم من Authentication'); return; }
-      const payload = {
-        name: (fName.value||'').trim() || uid.slice(0,6),
-        role: fRole.value,
-        active: fActive.value === 'true'
-      };
-      try{
-        await setDoc(doc(db,'users', uid), payload, { merge: true });
-        alert('✅ تم الحفظ/التحديث في دليل الأعضاء');
-      }catch(e){
-        console.error(e);
-        alert('⚠️ فشل الحفظ. تأكد من صلاحيات الأدمِن وقواعد Firestore.');
+    // تغيير اللون أو الدور أو الحالة
+    membersTable.addEventListener('change', async (e)=>{
+      if(e.target.classList.contains('userColor')){
+        const uid=e.target.dataset.uid;
+        const val=e.target.value;
+        await updateDoc(doc(db,'users',uid),{color:val});
       }
     });
-    document.getElementById('btnFormReset').addEventListener('click', ()=>{
-      fUid.value=''; fName.value=''; fRole.value='member'; fActive.value='true';
+
+    membersTable.addEventListener('click', async (e)=>{
+      const uid=e.target.dataset.uid;
+      if(!uid) return;
+      const act=e.target.dataset.act;
+      const ref=doc(db,'users',uid);
+      const snap=await getDoc(ref);
+      if(!snap.exists()) return;
+      const data=snap.data();
+      if(act==='toggle'){
+        const newState=!(data.active===false);
+        await updateDoc(ref,{active:newState});
+      }
+      if(act==='role'){
+        const newRole=(data.role==='admin')?'member':'admin';
+        await updateDoc(ref,{role:newRole});
+      }
+      loadMembers();
     });
 
-    // ==== Invite helper ====
-    document.getElementById('btnCopyRegister').addEventListener('click', ()=>{
-      const url = L.register;
-      navigator.clipboard?.writeText(url);
-      const info = document.getElementById('regInfo');
-      info.textContent = 'تم نسخ رابط التسجيل ✅';
-      setTimeout(()=> info.textContent='', 2000);
-    });
+    // إضافة عضو جديد يدويًا
+    addBtn.onclick=async()=>{
+      const email=prompt('📧 بريد العضو الجديد:'); if(!email) return;
+      const password=prompt('🔑 كلمة المرور المبدئية: (لن تُرسل آليًا)'); if(!password) return;
+      const name=prompt('👤 اسم العضو:')||email.split('@')[0];
+      try{
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const id=cred.user.uid;
+        await setDoc(doc(db,'users',id),{
+          name,email,role:'member',color:'#bc8f74',active:true,createdAt:serverTimestamp()
+        });
+        alert('✅ تم إنشاء العضو بنجاح.');
+        loadMembers();
+      }catch(e){
+        alert('⚠️ فشل الإضافة: '+e.message);
+      }
+    };
   </script>
 </body>
 </html>

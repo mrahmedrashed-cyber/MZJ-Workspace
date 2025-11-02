@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Whiteboard — MZJ Workspace</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --muted:#6b7280; --radius:14px }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--cream);font-family:"Tajawal",system-ui,Arial;color:#1f2937;overflow:hidden}
+    a{color:inherit;text-decoration:none}
+
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--brown);color:#fff;box-shadow:0 6px 20px rgba(62,36,32,.2);position:relative;z-index:5}
+    .brand{display:flex;gap:10px;align-items:center}
+    .badge{inline-size:26px;block-size:26px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
+    .nav{display:flex;gap:10px;align-items:center}
+    .nav a{color:#fff;padding:8px 12px;border-radius:10px}
+    .nav a:hover{background:rgba(255,255,255,.14)}
+    .select{padding:8px 10px;border-radius:10px;border:0}
+
+    #wrap{position:relative;height:calc(100% - 58px);background:#fff}
+    #cwrap{position:absolute;inset:0}
+    canvas{background:#fff}
+
+    /* Bottom toolbar (dock) */
+    .dock{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;background:rgba(33,33,33,.92);color:#fff;border-radius:14px;padding:6px 8px;display:flex;gap:6px;align-items:center;z-index:6;backdrop-filter:blur(8px)}
+    .tool{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:700}
+    .tool.active{background:#222}
+    .tool:hover{background:#2b2b2b}
+    .sep{width:1px;height:22px;background:#444;margin:0 4px}
+    .tool input[type="file"]{display:none}
+    .tip{position:absolute;bottom:64px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;display:none}
+    .dock:hover + .tip{display:block}
+
+    /* Board picker */
+    .boardbar{position:absolute;top:72px;right:12px;z-index:7;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 12px 30px rgba(62,36,32,.12);padding:8px;display:flex;gap:6px;align-items:center}
+    .btn{padding:8px 10px;border-radius:10px;border:1px solid var(--brown);background:#fff;color:var(--brown);font-weight:800;cursor:pointer}
+    .btn.primary{background:var(--brown);color:#fff}
+    .btn.danger{background:#b91c1c;border-color:#b91c1c;color:#fff}
+    .muted{color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="badge"></span>
+      <strong>MZJ Workspace — Whiteboard</strong>
+    </div>
+    <nav class="nav">
+      <a id="navDashboard" href="dashboard.html">لوحة التحكم</a>
+      <a id="navProjects"  href="projects.html">المشاريع</a>
+      <a id="navMembers"   href="members.html">الأعضاء</a>
+      <a id="navAdmin"     href="admin.html">الإدارة</a>
+      <a href="javascript:void(0)" id="btnLogout">تسجيل الخروج</a>
+    </nav>
+  </header>
+
+  <div id="wrap">
+    <!-- اختيار/إنشاء بورد -->
+    <div class="boardbar">
+      <select id="boardSelect" class="select"></select>
+      <button class="btn" id="btnNewBoard">بورد جديد</button>
+      <span class="muted" id="saveState">—</span>
+    </div>
+
+    <!-- كانفس -->
+    <div id="cwrap"><canvas id="board"></canvas></div>
+
+    <!-- أدوات -->
+    <div class="dock" id="dock">
+      <div class="tool" data-tool="select" title="V">V</div>
+      <div class="tool" data-tool="hand"   title="H">🖐️</div>
+      <div class="tool" data-tool="draw"   title="D">✏️</div>
+      <div class="tool" data-tool="rect"   title="R">▭</div>
+      <div class="tool" data-tool="arrow"  title="A">↗︎</div>
+      <div class="tool" data-tool="note"   title="N">🗒️</div>
+      <div class="tool" data-tool="text"   title="T">T</div>
+      <label class="tool" title="رفع صورة">
+        🖼️
+        <input type="file" id="imgInput" accept="image/*">
+      </label>
+      <div class="sep"></div>
+      <div class="tool" data-act="undo" title="Undo">↶</div>
+      <div class="tool" data-act="redo" title="Redo">↷</div>
+      <div class="sep"></div>
+      <div class="tool" data-act="save" title="حفظ">💾</div>
+      <div class="tool" data-act="export" title="تصدير PNG">⬇️ PNG</div>
+      <div class="tool" data-act="clear" title="مسح الكل (أدمِن)">🗑️</div>
+    </div>
+    <div class="tip">⌘/Ctrl + عجلة الماوس: تكبير/تصغير — اضغط (H) للسحب</div>
+  </div>
+
+  <!-- Firebase + Fabric.js -->
+  <script src="https://cdn.jsdelivr.net/npm/fabric@6.0.0/dist/fabric.min.js"></script>
+  <script type="module">
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import {
+      getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc,
+      serverTimestamp, onSnapshot
+    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+    /* Firebase */
+    const firebaseConfig = {
+      apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
+      authDomain: "mzj-workspace.firebaseapp.com",
+      projectId: "mzj-workspace",
+      storageBucket: "mzj-workspace.firebasestorage.app",
+      appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
+    };
+    if(!getApps().length) initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db   = getFirestore();
+
+    /* Auth & navbar visibility */
+    let CURRENT_USER=null, IS_ADMIN=false;
+    document.getElementById('btnLogout').onclick = async()=>{ await signOut(auth); location.href="login.html"; };
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.href="login.html"; return; }
+      CURRENT_USER=user;
+      const u = await getDoc(doc(db,"users", user.uid));
+      const role = u.exists()? (u.data().role||'member') : 'member';
+      IS_ADMIN = role==='admin';
+      if(!IS_ADMIN){
+        document.getElementById('navDashboard').style.display='none';
+        document.getElementById('navMembers').style.display='none';
+        document.getElementById('navAdmin').style.display='none';
+      }
+      bootBoards();
+    });
+
+    /* Fabric canvas setup */
+    const canvas = new fabric.Canvas('board', { backgroundColor:'#fff', selection:true, preserveObjectStacking:true });
+    const cwrap  = document.getElementById('cwrap');
+    function resize(){
+      const r = cwrap.getBoundingClientRect();
+      canvas.setWidth(r.width); canvas.setHeight(r.height); canvas.requestRenderAll();
+    }
+    addEventListener('resize', resize); resize();
+
+    /* Tools */
+    let MODE='select'; // select | hand | draw | rect | arrow | note | text
+    let drawingArrow=null, isPanning=false;
+    const dock = document.getElementById('dock');
+    function setMode(m){
+      MODE=m;
+      isPanning=false;
+      canvas.isDrawingMode = (m==='draw');
+      canvas.selection = (m!=='hand');
+      document.querySelectorAll('.tool').forEach(t=> t.classList.toggle('active', t.dataset.tool===m));
+    }
+    setMode('select');
+
+    dock.addEventListener('click', (e)=>{
+      const t = e.target.closest('.tool');
+      if(!t) return;
+      if (t.dataset.tool) setMode(t.dataset.tool);
+      if (t.dataset.act==='undo') undo();
+      if (t.dataset.act==='redo') redo();
+      if (t.dataset.act==='save') saveBoard();
+      if (t.dataset.act==='export') exportPNG();
+      if (t.dataset.act==='clear'){
+        if(!IS_ADMIN) return alert('المسح الكامل للأدمِن فقط');
+        if(confirm('مسح كل محتوى البورد؟')){ canvas.clear(); canvas.setBackgroundColor('#fff', canvas.renderAll.bind(canvas)); pushHistory(); scheduleSave(); }
+      }
+    });
+
+    // Image upload
+    document.getElementById('imgInput').addEventListener('change', (e)=>{
+      const file=e.target.files[0]; if(!file) return;
+      const reader=new FileReader();
+      reader.onload=()=>{
+        fabric.Image.fromURL(reader.result, (img)=>{
+          img.set({ left:100, top:100, scaleX:0.6, scaleY:0.6, cornerStyle:'circle' });
+          canvas.add(img); pushHistory(); scheduleSave();
+        }, { crossOrigin:'anonymous' });
+      };
+      reader.readAsDataURL(file);
+      e.target.value='';
+    });
+
+    // Draw rectangle
+    let rectStart=null, rectObj=null;
+    canvas.on('mouse:down', (opt)=>{
+      const p=canvas.getPointer(opt.e);
+      if(MODE==='hand'){ isPanning=true; return; }
+      if(MODE==='rect'){
+        rectStart=p;
+        rectObj = new fabric.Rect({
+          left:p.x, top:p.y, width:1, height:1,
+          fill:'rgba(188,143,116,.22)', stroke:'#bc8f74', strokeWidth:2, rx:8, ry:8
+        });
+        canvas.add(rectObj);
+      }
+      if(MODE==='arrow'){
+        drawingArrow = new fabric.Line([p.x,p.y,p.x,p.y], { stroke:'#3e2420', strokeWidth:3, selectable:true });
+        const head = new fabric.Triangle({ width:14, height:16, fill:'#3e2420', left:p.x, top:p.y, originX:'center', originY:'center' });
+        const group = new fabric.Group([drawingArrow, head], { selectable:true });
+        group._isArrow=true;
+        canvas.add(group);
+      }
+      if(MODE==='note'){
+        const note = new fabric.Rect({ left:p.x, top:p.y, width:180, height:140, rx:12, ry:12, fill:'#fff8ef', stroke:'#e8d8cc' });
+        const fold = new fabric.Triangle({ left:p.x+160, top:p.y, width:20, height:18, fill:'#f0e1d6', angle:90, originX:'left', originY:'top' });
+        const text = new fabric.Textbox('اكتب ملاحظة…',{ left:p.x+12, top:p.y+12, width:156, fontFamily:'Tajawal', fontSize:16, fill:'#3e2420' });
+        const g = new fabric.Group([note, fold, text], { hasRotatingPoint:true, cornerStyle:'circle' });
+        g._isNote=true; canvas.add(g); pushHistory(); scheduleSave();
+      }
+      if(MODE==='text'){
+        const t = new fabric.Textbox('نص جديد',{ left:p.x, top:p.y, fontFamily:'Tajawal', fontSize:22, fill:'#3e2420' });
+        canvas.add(t); pushHistory(); scheduleSave();
+      }
+    });
+    canvas.on('mouse:move', (opt)=>{
+      const p=canvas.getPointer(opt.e);
+      if(isPanning){
+        const v=canvas.viewportTransform;
+        v[4] += opt.e.movementX;
+        v[5] += opt.e.movementY;
+        canvas.requestRenderAll();
+      }
+      if(MODE==='rect' && rectObj && rectStart){
+        rectObj.set({ width: p.x-rectStart.x, height:p.y-rectStart.y }); canvas.requestRenderAll();
+      }
+      if(MODE==='arrow' && drawingArrow){
+        const g = canvas.getObjects().slice(-1)[0]; if(!g || !g._isArrow) return;
+        const line=g.item(0), head=g.item(1);
+        line.set({ x2:p.x, y2:p.y });
+        const angle = Math.atan2(p.y-line.y1, p.x-line.x1)*180/Math.PI;
+        head.set({ left:p.x, top:p.y, angle:angle+90 });
+        canvas.requestRenderAll();
+      }
+    });
+    canvas.on('mouse:up', ()=>{
+      if(MODE==='rect' && rectObj){ rectObj.setCoords(); rectObj=null; rectStart=null; pushHistory(); scheduleSave(); }
+      if(MODE==='arrow' && drawingArrow){ drawingArrow=null; pushHistory(); scheduleSave(); }
+      isPanning=false;
+    });
+
+    // Zoom
+    canvas.on('mouse:wheel', (opt)=>{
+      const delta = opt.e.deltaY;
+      let zoom = canvas.getZoom();
+      zoom *= 0.999 ** delta;
+      zoom = Math.min(Math.max(zoom, 0.2), 4);
+      canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+      opt.e.preventDefault(); opt.e.stopPropagation();
+    });
+
+    // Keyboard shortcuts
+    addEventListener('keydown', (e)=>{
+      if(e.key==='Delete' || e.key==='Backspace'){
+        const active = canvas.getActiveObjects();
+        if(active.length){ active.forEach(o=> canvas.remove(o)); canvas.discardActiveObject(); canvas.requestRenderAll(); pushHistory(); scheduleSave(); }
+      }
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); }
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); }
+      // quick tools
+      const map={ 'v':'select','h':'hand','d':'draw','r':'rect','a':'arrow','n':'note','t':'text' };
+      const m = map[e.key?.toLowerCase()]; if(m){ setMode(m); }
+    });
+
+    /* Undo / Redo */
+    let HISTORY=[], FUTURE=[];
+    function pushHistory(){
+      FUTURE=[]; // clear redo
+      HISTORY.push(JSON.stringify(canvas.toJSON(['_isArrow','_isNote'])));
+      if(HISTORY.length>50) HISTORY.shift();
+    }
+    function loadFromJSON(json){
+      canvas.loadFromJSON(json, ()=> canvas.renderAll());
+    }
+    function undo(){
+      if(HISTORY.length<=1) return;
+      const cur = HISTORY.pop();
+      FUTURE.push(cur);
+      const prev = HISTORY[HISTORY.length-1];
+      loadFromJSON(prev);
+      scheduleSave();
+    }
+    function redo(){
+      if(!FUTURE.length) return;
+      const next = FUTURE.pop();
+      HISTORY.push(next);
+      loadFromJSON(next);
+      scheduleSave();
+    }
+    // أول حالة
+    pushHistory();
+
+    /* Export */
+    function exportPNG(){
+      const url = canvas.toDataURL({ format:'png', quality:1 });
+      const a=document.createElement('a'); a.href=url; a.download='whiteboard.png'; a.click();
+    }
+
+    /* Firestore: boards */
+    const boardSelect=document.getElementById('boardSelect');
+    const btnNewBoard=document.getElementById('btnNewBoard');
+    const saveState=document.getElementById('saveState');
+    let CURRENT_BOARD=null, unsubBoard=null, saveTimer=null;
+
+    async function bootBoards(){
+      // تحميل قائمة البوردات
+      onSnapshot(collection(db,'whiteboards'), (snap)=>{
+        const items=[]; snap.forEach(d=> items.push({ id:d.id, ...(d.data()||{}) }));
+        items.sort((a,b)=> (b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
+        boardSelect.innerHTML='';
+        items.forEach(b=>{
+          const opt=document.createElement('option');
+          opt.value=b.id; opt.textContent=b.name || ('Board '+b.id.slice(-4));
+          boardSelect.appendChild(opt);
+        });
+        if(!CURRENT_BOARD && items.length){
+          CURRENT_BOARD = items[0].id; boardSelect.value = CURRENT_BOARD; subscribeBoard();
+        }
+      });
+
+      boardSelect.addEventListener('change', ()=>{
+        CURRENT_BOARD = boardSelect.value;
+        subscribeBoard();
+      });
+
+      btnNewBoard.addEventListener('click', async ()=>{
+        const name = prompt('اسم البورد:', 'Whiteboard ' + new Date().toLocaleDateString('ar-SA')); if(!name) return;
+        const ref = await addDoc(collection(db,'whiteboards'), {
+          name, data: JSON.stringify(canvas.toJSON(['_isArrow','_isNote'])),
+          createdBy: CURRENT_USER?.uid||null, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+        });
+        CURRENT_BOARD = ref.id; boardSelect.value = CURRENT_BOARD; subscribeBoard();
+      });
+    }
+
+    function subscribeBoard(){
+      if(unsubBoard){ unsubBoard(); unsubBoard=null; }
+      if(!CURRENT_BOARD) return;
+      const ref = doc(db,'whiteboards', CURRENT_BOARD);
+      unsubBoard = onSnapshot(ref, (snap)=>{
+        const data = snap.data()||{};
+        const j = data.data;
+        if(j){
+          // تحميل بدون كسر الـ undo (نضيف لقائمة التاريخ حالة واحدة)
+          loadFromJSON(j);
+          HISTORY=[j]; FUTURE=[];
+        }
+      });
+    }
+
+    function scheduleSave(){
+      saveState.textContent='جاري الحفظ…';
+      if(saveTimer) clearTimeout(saveTimer);
+      saveTimer=setTimeout(saveBoard, 800);
+    }
+    async function saveBoard(){
+      if(!CURRENT_BOARD) return;
+      try{
+        const ref = doc(db,'whiteboards', CURRENT_BOARD);
+        await updateDoc(ref, { data: JSON.stringify(canvas.toJSON(['_isArrow','_isNote'])), updatedAt: serverTimestamp() });
+        saveState.textContent='تم الحفظ ✅';
+        setTimeout(()=> saveState.textContent='—', 1200);
+      }catch(e){
+        // لو الوثيقة لسه ما اتعملتش (نادرًا)، اعمل setDoc
+        const ref = doc(db,'whiteboards', CURRENT_BOARD);
+        await setDoc(ref, { data: JSON.stringify(canvas.toJSON(['_isArrow','_isNote'])), updatedAt: serverTimestamp() }, { merge:true });
+        saveState.textContent='تم الحفظ ✅';
+      }
+    }
+
+    // احفظ عند أي تغيير جوه الكانفس
+    canvas.on('object:added', scheduleSave);
+    canvas.on('object:modified', scheduleSave);
+    canvas.on('object:removed', scheduleSave);
+  </script>
+</body>
+</html>

@@ -17,7 +17,6 @@
     .nav{display:flex;gap:10px;align-items:center}
     .nav a{padding:8px 12px;border-radius:10px;color:#fff}
     .nav a:hover{background:rgba(255,255,255,.14)}
-    #bellDot{position:absolute; top:-4px; inline-size:18px; block-size:18px; background:#e11d48; color:#fff; font-size:12px; display:none; border-radius:999px; text-align:center; line-height:18px}
 
     .page{padding:18px;display:grid;gap:16px}
     .panel{background:#fff;border-radius:var(--radius);box-shadow:0 12px 30px rgba(62,36,32,.12)}
@@ -36,14 +35,18 @@
     @media(max-width:1400px){.board{grid-template-columns:repeat(3,1fr)}}
     @media(max-width:900px){.board{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:640px){.board{grid-template-columns:1fr}}
-    .col{background:#fff;border-radius:14px;display:flex;flex-direction:column;min-height:240px}
-    .col-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #f2e7df;background:#fff8ef;border-top-left-radius:14px;border-top-right-radius:14px}
+    .col{background:#fff;border-radius:14px;display:flex;flex-direction:column;min-height:240px;position:relative}
+    .col-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #f2e7df;background:#fff8ef;border-top-left-radius:14px;border-top-right-radius:14px;cursor:grab}
+    .col-head:active{cursor:grabbing}
     .col-title{color:var(--brown);font-weight:800}
     .col-actions{display:none;gap:6px}
     .col-actions .icon{cursor:pointer;font-size:13px;padding:6px 8px;border:1px solid #e9d8cc;border-radius:10px;background:#fff}
     .col-body{padding:10px;display:grid;gap:10px}
     .dropzone{min-height:120px;border:2px dashed transparent;border-radius:12px;transition:.15s}
     .dropzone.drag{border-color:#e5d2c6;background:#fffaf5}
+
+    .grip{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#6b7280;user-select:none}
+    .grip .dots{letter-spacing:2px;font-weight:700}
 
     /* Cards: الاسم فقط */
     .card{background:#fff;border:1px solid #eee;border-radius:12px;padding:8px;box-shadow:0 8px 20px rgba(62,36,32,.06);cursor:grab}
@@ -74,7 +77,16 @@
     .desc-box{background:#fff;border:1px solid #eee;border-radius:12px;padding:10px;max-height:32vh;overflow:auto;white-space:pre-wrap;line-height:1.6;font-size:14px}
     .col-body{gap:8px}
     .dropzone{min-height:100px}
-    @media (max-width: 600px){ .sheet{max-height:92vh} .sheet .footer{position:sticky;bottom:0} }
+
+    /* Dropdown (الجرس والقوائم) */
+    .dropdown-menu{position:absolute;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);display:none;min-width:280px;max-height:260px;overflow:auto}
+    .dd-item{padding:10px 12px;border-bottom:1px solid #f3f3f3;cursor:pointer}
+    .dd-item:hover{background:#fff8ef}
+
+    @media (max-width: 600px){
+      .sheet{max-height:92vh}
+      .sheet .footer{position:sticky;bottom:0}
+    }
   </style>
 </head>
 <body>
@@ -88,10 +100,10 @@
       <a href="projects.html">المشاريع</a>
       <a href="members.html">الأعضاء</a>
       <a href="admin.html">الإدارة</a>
-      <a href="javascript:void(0)" id="btnBell" style="position:relative">🔔<span id="bellDot">0</span></a>
+      <a href="javascript:void(0)" id="btnBell" style="position:relative">🔔<span id="bellDot" style="position:absolute;top:-6px;left:-6px;display:none;background:#e11d48;color:#fff;width:18px;height:18px;border-radius:50%;font-size:12px;line-height:18px;text-align:center">0</span></a>
       <a href="javascript:void(0)" onclick="mzjLogout()">تسجيل الخروج</a>
     </nav>
-    <div id="bellMenu" class="dropdown-menu" style="right:12px; top:56px; min-width:320px; position:absolute;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);display:none;max-height:280px;overflow:auto"></div>
+    <div id="bellMenu" class="dropdown-menu" style="right:12px; top:56px; min-width:320px;"></div>
   </header>
 
   <main class="page">
@@ -137,7 +149,7 @@
           <div style="position:relative">
             <label>المسؤول عن التاسك</label>
             <input id="tAssigneeSearch" placeholder="اكتب اسم العضو…">
-            <div id="assigneeMenu" class="dropdown-menu" style="position:absolute;right:0;top:60px;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);display:none;min-width:280px;max-height:260px;overflow:auto"></div>
+            <div id="assigneeMenu" class="dropdown-menu" style="right:0;top:60px;"></div>
             <div id="assigneeChip" class="chips"></div>
           </div>
           <div>
@@ -168,26 +180,31 @@
     </div>
   </div>
 
-  <!-- تفاصيل تاسك (للجميع) -->
+  <!-- تفاصيل تاسك (للجميع) — الوصف أولاً ثم المعلومات -->
   <div class="modal" id="detailModal">
     <div class="sheet">
       <div class="head"><strong id="dTitle">تفاصيل المهمة</strong></div>
       <div class="body">
-        <div class="grid2">
-          <div>
-            <div class="small muted">الوصف</div>
-            <div id="dDesc" class="desc-box"></div>
-          </div>
+        <label class="small muted" style="margin-top:2px">الوصف</label>
+        <div id="dDesc" class="desc-box"></div>
+
+        <div class="info" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div>
             <div class="small muted">المسؤول</div>
             <div id="dAssignee"></div>
-            <div class="small muted" style="margin-top:8px">تاريخ التسليم</div>
+          </div>
+          <div>
+            <div class="small muted">تاريخ التسليم</div>
             <div id="dDue"></div>
-            <div class="small muted" style="margin-top:8px">الحالة/العمود</div>
+          </div>
+          <div>
+            <div class="small muted">الحالة/العمود</div>
             <div id="dStatus"></div>
           </div>
         </div>
+
         <hr/>
+
         <div class="grid2">
           <div>
             <div class="small muted">المرفقات</div>
@@ -240,7 +257,7 @@
     } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
     import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 
-    // Firebase
+    /* Firebase */
     const firebaseConfig = {
       apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
       authDomain: "mzj-workspace.firebaseapp.com",
@@ -251,7 +268,7 @@
     if (!getApps().length) initializeApp(firebaseConfig);
     const auth = getAuth(); const db = getFirestore(); const storage = getStorage();
 
-    // Auth / Roles
+    /* Auth / Roles */
     let CURRENT_USER=null, CURRENT_ROLE='member', IS_ADMIN=false;
     window.mzjLogout = async ()=>{ await signOut(auth); location.href="login.html"; };
 
@@ -270,10 +287,11 @@
       document.querySelectorAll('.col-actions').forEach(el=> el.style.display = IS_ADMIN? 'flex' : 'none');
     });
 
-    // Columns & Spaces
+    /* Constants */
     const DEFAULT_COLUMNS = ["ريل مواصفات","ريل قصير","تصميم صور","يوتيوب"];
     const REVIEW_COLUMN   = "تصميم صور";
 
+    /* Spaces / Columns */
     const spaceSelect     = document.getElementById('spaceSelect');
     const newGroupNameEl  = document.getElementById('newGroupName');
     const btnAddGroup     = document.getElementById('btnAddGroup');
@@ -285,8 +303,7 @@
       const qy = query(collection(db,'spaces'), where('active','!=', false));
       const snap = await getDocs(qy);
       if (snap.empty){
-        const now = new Date();
-        const label = now.toLocaleDateString('ar-SA',{ year:'numeric', month:'long' });
+        const label = new Date().toLocaleDateString('ar-SA',{ year:'numeric', month:'long' });
         const ref = await addDoc(collection(db,'spaces'), { name:label, columns:DEFAULT_COLUMNS, createdAt:serverTimestamp(), active:true });
         return ref.id;
       } else {
@@ -298,9 +315,7 @@
     function fillSpaceDropdown(list, selectedId){
       spaceSelect.innerHTML='';
       list.forEach(s=>{
-        const opt=document.createElement('option');
-        opt.value=s.id; opt.textContent=s.name;
-        spaceSelect.appendChild(opt);
+        const opt=document.createElement('option'); opt.value=s.id; opt.textContent=s.name; spaceSelect.appendChild(opt);
       });
       if(selectedId) spaceSelect.value=selectedId;
     }
@@ -357,7 +372,7 @@
       SPACE_COLUMNS = cols; newGroupNameEl.value=''; renderBoardSkeleton(); renderTasks(); fillGroupSelect();
     });
 
-    // Users
+    /* Users */
     let USERS=[];
     async function loadUsers(){
       const snap = await getDocs(collection(db,'users'));
@@ -368,7 +383,7 @@
     }
     await loadUsers();
 
-    // Create Task
+    /* Create Task */
     const taskModal = document.getElementById('taskModal');
     const btnNewTask = document.getElementById('btnNewTask');
     const btnCloseModal = document.getElementById('btnCloseModal');
@@ -414,7 +429,6 @@
       USERS.filter(u=>u.name.toLowerCase().includes(f)).forEach(u=>{
         const it=document.createElement('div');
         it.className='dd-item';
-        it.style.cssText='padding:10px 12px;border-bottom:1px solid #f3f3f3;cursor:pointer';
         it.innerHTML=`<span class="row"><span class="color-dot" style="background:${u.color||'#bc8f74'}"></span> ${u.name} <span class="muted">(${u.role})</span></span>`;
         it.onclick=()=> selectAssignee(u);
         assigneeMenu.appendChild(it);
@@ -470,7 +484,7 @@
       }catch(e){ alert('حدث خطأ: '+(e?.message||e)); }
     });
 
-    // Board & Details
+    /* Board & Details */
     const board=document.getElementById('board');
     let TASKS=[]; let unsubTasks=null; let OPEN_TASK=null;
 
@@ -498,30 +512,79 @@
       actions.appendChild(btnRename); actions.appendChild(btnDelete); container.appendChild(actions);
     }
 
+    async function persistColumnsOrder(newOrder){
+      if (!CURRENT_SPACE) return;
+      try{ await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: newOrder }); }
+      catch(e){ console.error(e); alert('⚠️ تعذر حفظ ترتيب الأعمدة.'); }
+    }
+
     function renderBoardSkeleton(){
       board.innerHTML='';
-      (SPACE_COLUMNS||[]).forEach(col=>{
-        const sec=document.createElement('section'); sec.className='col'; sec.dataset.status=col;
-        sec.innerHTML=`<div class="col-head"><span class="col-title">${col}</span><div class="__actions"></div></div><div class="col-body"><div class="dropzone" data-zone="${col}"></div></div>`;
+
+      (SPACE_COLUMNS||[]).forEach((col, index)=>{
+        const sec=document.createElement('section');
+        sec.className='col';
+        sec.dataset.status=col;
+        sec.dataset.index=index;
+        sec.draggable = IS_ADMIN;      // سحب العمود للأدمِن فقط
+
+        sec.innerHTML=`
+          <div class="col-head">
+            <span class="col-title">${col}</span>
+            <div class="grip"><span class="dots">⋮⋮</span> اسحب</div>
+            <div class="__actions"></div>
+          </div>
+          <div class="col-body"><div class="dropzone" data-zone="${col}"></div></div>
+        `;
+
+        /* سحب الكولَم نفسه لتغيير الترتيب */
+        if (IS_ADMIN){
+          sec.addEventListener('dragstart', (e)=>{
+            const isHead = e.target.closest('.col-head');
+            if (!isHead){ e.preventDefault(); return; }
+            e.dataTransfer.effectAllowed='move';
+            e.dataTransfer.setData('text/col-index', String(index));
+            e.stopPropagation();
+          });
+          sec.addEventListener('dragover', (e)=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; });
+          sec.addEventListener('drop', async (e)=>{
+            e.preventDefault();
+            const from = parseInt(e.dataTransfer.getData('text/col-index'),10);
+            const to   = parseInt(sec.dataset.index,10);
+            if (isNaN(from)||isNaN(to)||from===to) return;
+            const newOrder = SPACE_COLUMNS.slice();
+            const [moved] = newOrder.splice(from,1);
+            newOrder.splice(to,0,moved);
+            SPACE_COLUMNS = newOrder;
+            renderBoardSkeleton(); renderTasks(); fillGroupSelect();
+            await persistColumnsOrder(newOrder);
+          });
+        }
+
         board.appendChild(sec);
         renderColumnHeaderActions(sec.querySelector('.__actions'), col);
       });
 
+      /* سحب الكروت بين الأعمدة */
       board.querySelectorAll('.dropzone').forEach(zone=>{
         zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('drag'); });
         zone.addEventListener('dragleave', ()=> zone.classList.remove('drag'));
-        zone.addEventListener('drop', async e=>{
+        zone.addEventListener('drop', async (e)=>{
           e.preventDefault(); zone.classList.remove('drag');
-          const taskId=e.dataTransfer.getData('text/plain'); const newStatus=zone.dataset.zone;
-          try{ await updateDoc(doc(db,'tasks', taskId), { status:newStatus }); }
-          catch(err){ alert('⚠️ تحديث الحالة يحتاج صلاحية.'); }
+          const cardId = e.dataTransfer.getData('text/plain');
+          if (!cardId) return;
+          const newStatus = zone.dataset.zone;
+          try{ await updateDoc(doc(db,'tasks', cardId), { status:newStatus }); }
+          catch(err){ alert('⚠️ تحديث الحالة يحتاج صلاحية كافية.'); }
         });
       });
+
+      /* حدّث الفهارس بعد البناء */
+      [...board.querySelectorAll('.col')].forEach((colEl,i)=> colEl.dataset.index=i);
     }
 
     function openDetail(task){
       OPEN_TASK=task;
-      const modal=document.getElementById('detailModal');
       const isAssignee = task.assignee?.uid === CURRENT_USER?.uid;
       const canContribute = (IS_ADMIN || isAssignee);
 
@@ -549,7 +612,7 @@
       document.getElementById('btnEditTask').style.display = IS_ADMIN ? '' : 'none';
       document.getElementById('btnDeleteTask').style.display = IS_ADMIN ? '' : 'none';
 
-      modal.classList.add('show');
+      document.getElementById('detailModal').classList.add('show');
     }
     document.getElementById('btnCloseDetail').addEventListener('click', ()=> document.getElementById('detailModal').classList.remove('show'));
     document.getElementById('detailModal').addEventListener('click', (e)=>{ if(e.target.id==='detailModal') document.getElementById('detailModal').classList.remove('show'); });
@@ -613,15 +676,15 @@
       },(err)=>{ console.error(err); alert('⚠️ فشل قراءة التاسكات. تأكد من القواعد.'); });
     }
 
-    // Notifications bell
+    /* Notifications (أيقونة الجرس) */
     const bellBtn=document.getElementById('btnBell');
     const bellDot=document.getElementById('bellDot');
     const bellMenu=document.getElementById('bellMenu');
 
     function renderNotifs(list){
-      bellMenu.innerHTML=''; if(!list.length){ bellMenu.innerHTML='<div style="padding:10px 12px">لا إشعارات جديدة.</div>'; return; }
+      bellMenu.innerHTML=''; if(!list.length){ bellMenu.innerHTML='<div class="dd-item">لا إشعارات جديدة.</div>'; return; }
       list.forEach(n=>{
-        const it=document.createElement('div'); it.style.cssText='padding:10px 12px;border-bottom:1px solid #f3f3f3;cursor:pointer';
+        const it=document.createElement('div'); it.className='dd-item';
         const kind=n.type==='mention'?'تم ذكرك':'تم تعيينك في مشروع';
         it.innerHTML=`<div><strong>${kind}</strong> — ${n.projectName||'-'}</div><div class="muted" style="font-size:12px">${n.id}</div>`;
         it.onclick=async ()=>{ try{ await updateDoc(doc(db,'notifications', n.id), { read:true }); }catch{} bellMenu.style.display='none'; };
@@ -639,7 +702,7 @@
     bellBtn?.addEventListener('click', ()=> bellMenu.style.display = (bellMenu.style.display==='block'?'none':'block'));
     document.addEventListener('click', (e)=>{ if(!bellMenu.contains(e.target) && e.target!==bellBtn && !bellBtn.contains(e.target)) bellMenu.style.display='none'; });
 
-    // Boot
+    /* Boot */
     (async ()=>{
       if(!CURRENT_SPACE){
         CURRENT_SPACE = await ensureDefaultSpace();
@@ -648,6 +711,7 @@
         renderBoardSkeleton(); listenTasks(); fillGroupSelect();
       }
     })();
+
   </script>
 </body>
 </html>

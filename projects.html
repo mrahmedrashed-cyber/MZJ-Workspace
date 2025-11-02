@@ -26,6 +26,7 @@
     .btn{padding:10px 12px;border-radius:12px;border:0;background:var(--brown);color:#fff;cursor:pointer;font-weight:800}
     .btn.secondary{background:#fff;color:var(--brown);border:1px solid var(--brown)}
     .muted{color:var(--muted)}
+    .hint{font-size:12px;color:var(--muted)}
 
     /* Board */
     .board{display:grid;gap:14px;grid-template-columns:repeat(5,1fr)}
@@ -35,6 +36,8 @@
     .col{background:#fff;border-radius:14px;display:flex;flex-direction:column;min-height:240px}
     .col-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #f2e7df;background:#fff8ef;border-top-left-radius:14px;border-top-right-radius:14px}
     .col-title{color:var(--brown);font-weight:800}
+    .col-actions{display:none;gap:6px}
+    .col-actions .icon{cursor:pointer;font-size:13px;padding:6px 8px;border:1px solid #e9d8cc;border-radius:10px;background:#fff}
     .col-body{padding:10px;display:grid;gap:10px}
     .dropzone{min-height:120px;border:2px dashed transparent;border-radius:12px;transition:.15s}
     .dropzone.drag{border-color:#e5d2c6;background:#fffaf5}
@@ -52,8 +55,8 @@
     /* Modals */
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;place-items:center;padding:16px}
     .modal.show{display:grid}
-    .sheet{background:#fff;border-radius:16px;max-width:820px;width:100%;box-shadow:0 30px 80px rgba(62,36,32,.25)}
-    .sheet .head{padding:14px 16px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+    .sheet{background:#fff;border-radius:16px;max-width:860px;width:100%;box-shadow:0 30px 80px rgba(62,36,32,.25)}
+    .sheet .head{padding:14px 16px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center}
     .sheet .body{padding:14px 16px;display:grid;gap:10px}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     @media(max-width:800px){.grid2{grid-template-columns:1fr}}
@@ -68,6 +71,8 @@
     .dropdown-menu.show{display:block}
     .dd-item{padding:10px 12px;border-bottom:1px solid #f3f3f3;cursor:pointer}
     .dd-item:hover{background:#fff8ef}
+
+    .danger{background:#b91c1c;color:#fff}
   </style>
 </head>
 <body>
@@ -94,12 +99,13 @@
         <div class="controls">
           <select id="spaceSelect" class="select"></select>
 
-          <!-- إضافة عمود جديد -->
-          <input id="newGroupName" class="input" placeholder="اسم عمود جديد — مثال: وصل حديثا" style="min-width:220px">
-          <button class="btn secondary" id="btnAddGroup">إضافة عمود</button>
+          <!-- إضافة عمود جديد (للأدمِن فقط) -->
+          <input id="newGroupName" class="input" placeholder="اسم عمود جديد — مثال: وصل حديثا" style="min-width:220px;display:none">
+          <button class="btn secondary" id="btnAddGroup" style="display:none">إضافة عمود</button>
 
-          <button class="btn secondary" id="btnNewSpace">Space جديد</button>
-          <button class="btn" id="btnNewTask">تاسك جديد</button>
+          <button class="btn secondary" id="btnNewSpace" style="display:none">Space جديد</button>
+          <button class="btn" id="btnNewTask" style="display:none">تاسك جديد</button>
+          <button class="btn secondary" id="btnSpaceManage" style="display:none">⚙️ إدارة الـSpace</button>
         </div>
         <div class="muted" id="who"></div>
       </div>
@@ -109,7 +115,7 @@
     </section>
   </main>
 
-  <!-- Task Create Modal -->
+  <!-- Task Create Modal (admin only) -->
   <div class="modal" id="taskModal">
     <div class="sheet">
       <div class="head">
@@ -165,12 +171,17 @@
     </div>
   </div>
 
-  <!-- Task Detail Modal -->
+  <!-- Task Detail Modal (all members can see, with actions) -->
   <div class="modal" id="detailModal">
     <div class="sheet">
       <div class="head">
         <strong id="dTitle">تفاصيل المهمة</strong>
-        <button class="btn secondary" id="btnCloseDetail">إغلاق</button>
+        <div class="row">
+          <button class="btn secondary" id="btnMarkReviewed">✅ تم للمراجعة</button>
+          <button class="btn" id="btnEditTask" style="display:none">تعديل</button>
+          <button class="btn danger" id="btnDeleteTask" style="display:none">حذف</button>
+          <button class="btn secondary" id="btnCloseDetail">إغلاق</button>
+        </div>
       </div>
       <div class="body">
         <div class="grid2">
@@ -215,7 +226,7 @@
               <button class="btn secondary" id="btnAddLink" style="margin-top:8px">إضافة رابط</button>
             </div>
           </div>
-          <p class="muted" style="font-size:12px">* الأدمِن أو المسؤول عن المهمة فقط يقدر يضيف مرفقات/روابط.</p>
+          <p class="hint">* الأدمِن أو المسؤول عن المهمة فقط يضيف مرفقات/روابط.</p>
         </div>
       </div>
       <div class="footer"><small>© مجموعة محمد بن ذعار العجمي — نجم الطريق</small></div>
@@ -229,7 +240,7 @@
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
     import {
-      getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
+      getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
       onSnapshot, query, where, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
     import {
@@ -249,38 +260,48 @@
     const db   = getFirestore();
     const storage = getStorage();
 
-    // Auth guard + عرض هوية المستخدم وإخفاء أدوات الأدمِن لغيره
+    // Roles / Auth
     let CURRENT_USER = null;
     let CURRENT_ROLE = 'member';
+    let IS_ADMIN = false;
+
     window.mzjLogout = async ()=>{ await signOut(auth); location.href="login.html"; };
+
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.href="login.html"; return; }
       CURRENT_USER = user;
       const u = await getDoc(doc(db,"users", user.uid));
       const name = u.exists()? (u.data().name || user.email) : (user.email || 'مستخدم');
       CURRENT_ROLE = u.exists()? (u.data().role || 'member') : 'member';
-      document.getElementById('who').textContent = `${name} — ${CURRENT_ROLE==='admin'?'مدير':'عضو'}`;
+      IS_ADMIN = CURRENT_ROLE==='admin';
+      document.getElementById('who').textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
 
-      const isAdmin = (CURRENT_ROLE==='admin');
-      ['btnNewSpace','btnAddGroup','newGroupName'].forEach(id=>{
+      // إظهار عناصر الأدمِن فقط
+      ['btnNewSpace','btnAddGroup','newGroupName','btnNewTask','btnSpaceManage'].forEach(id=>{
         const el = document.getElementById(id);
-        if (el) el.style.display = isAdmin? '' : 'none';
+        if (el) el.style.display = IS_ADMIN? '' : 'none';
       });
+
+      // إظهار أدوات الأعمدة للأدمِن
+      document.querySelectorAll('.col-actions').forEach(el=> el.style.display = IS_ADMIN? 'flex':'none');
     });
 
     // ───────────────────────── الأعمدة الافتراضية (ثابتة) ─────────────────────────
     const DEFAULT_COLUMNS = ["ريل مواصفات","ريل قصير","تصميم صور","يوتيوب"];
+    const REVIEW_COLUMN   = "تصميم صور"; // الهدف عند الضغط على "تم للمراجعة"
 
     // ───────────────────────────────── Spaces ─────────────────────────────────
     const spaceSelect     = document.getElementById('spaceSelect');
     const newGroupNameEl  = document.getElementById('newGroupName');
     const btnAddGroup     = document.getElementById('btnAddGroup');
+    const btnSpaceManage  = document.getElementById('btnSpaceManage');
 
     let CURRENT_SPACE = null;      // spaceId
     let SPACE_COLUMNS = DEFAULT_COLUMNS.slice();
 
     async function ensureDefaultSpace(){
-      const snap = await getDocs(collection(db,'spaces'));
+      const q = query(collection(db,'spaces'), where('active','!=', false));
+      const snap = await getDocs(q);
       if (snap.empty){
         const now = new Date();
         const label = now.toLocaleDateString('ar-SA',{ year:'numeric', month:'long' });
@@ -307,22 +328,25 @@
       if (selectedId) spaceSelect.value = selectedId;
     }
 
-    // استماع للـSpaces
+    // متابعة الـSpaces النشطة فقط
     onSnapshot(collection(db,'spaces'), snap=>{
       const items=[];
-      snap.forEach(d=> items.push({id:d.id, ...(d.data()||{})}));
+      snap.forEach(d=>{
+        const data=d.data()||{};
+        if (data.active!==false) items.push({id:d.id, ...data});
+      });
       items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
       fillSpaceDropdown(items, CURRENT_SPACE);
-      if (!CURRENT_SPACE && items.length){ 
-        CURRENT_SPACE = items[0].id; 
-        SPACE_COLUMNS = items[0].columns?.length ? items[0].columns : DEFAULT_COLUMNS; 
+      if (!CURRENT_SPACE && items.length){
+        CURRENT_SPACE = items[0].id;
+        SPACE_COLUMNS = items[0].columns?.length ? items[0].columns : DEFAULT_COLUMNS;
         renderBoardSkeleton(); listenTasks(); fillGroupSelect();
       }
     });
 
-    // إنشاء Space جديد (للأدمِن) باستخدام الأعمدة الافتراضية الثابتة
+    // إنشاء Space جديد (للأدمِن)
     document.getElementById('btnNewSpace').addEventListener('click', async ()=>{
-      if (CURRENT_ROLE!=='admin') return;
+      if (!IS_ADMIN) return;
       const name = prompt('اسم الـSpace (مثال: نوفمبر 2025):');
       if (!name) return;
       try{
@@ -331,8 +355,21 @@
         });
         CURRENT_SPACE = ref.id; SPACE_COLUMNS = DEFAULT_COLUMNS.slice();
         renderBoardSkeleton(); listenTasks(true); fillGroupSelect();
-      }catch(e){
-        alert('⚠️ إنشاء Space يحتاج صلاحية أدمِن.');
+      }catch(e){ alert('⚠️ إنشاء Space يحتاج صلاحية أدمِن.'); }
+    });
+
+    // إدارة الـSpace (إعادة تسمية / أرشفة)
+    btnSpaceManage.addEventListener('click', async ()=>{
+      if (!IS_ADMIN || !CURRENT_SPACE) return;
+      const action = prompt('اكتب:\nrename لإعادة التسمية\narchive لأرشفة الـSpace');
+      if (!action) return;
+      if (action.toLowerCase()==='rename'){
+        const nm = prompt('الاسم الجديد للـSpace:'); if (!nm) return;
+        await updateDoc(doc(db,'spaces', CURRENT_SPACE), { name:nm });
+      } else if (action.toLowerCase()==='archive'){
+        if (!confirm('تأكيد أرشفة الـSpace؟ سيتم إخفاؤه من القوائم.')) return;
+        await updateDoc(doc(db,'spaces', CURRENT_SPACE), { active:false, archivedAt: serverTimestamp() });
+        CURRENT_SPACE=null; // سيُعاد اختيار آخر Space نشط تلقائيًا من snapshot
       }
     });
 
@@ -346,7 +383,7 @@
 
     // إضافة عمود جديد (للأدمِن)
     btnAddGroup.addEventListener('click', async ()=>{
-      if (CURRENT_ROLE!=='admin') return;
+      if (!IS_ADMIN) return;
       if (!CURRENT_SPACE) return alert('اختر Space أولًا');
       const name = (newGroupNameEl.value || 'وصل حديثا').trim();
       if (!name) return;
@@ -357,9 +394,7 @@
         SPACE_COLUMNS = cols;
         newGroupNameEl.value = '';
         renderBoardSkeleton(); renderTasks(); fillGroupSelect();
-      }catch(e){
-        alert('⚠️ إضافة عمود تحتاج صلاحية أدمِن.');
-      }
+      }catch(e){ alert('⚠️ إضافة عمود تحتاج صلاحية أدمِن.'); }
     });
 
     // ─────────────────────────────── Users & Colors ───────────────────────────
@@ -401,7 +436,7 @@
       });
     }
 
-    function openCreate(){ taskModal.classList.add('show'); fillGroupSelect(); }
+    function openCreate(){ if(IS_ADMIN){ taskModal.classList.add('show'); fillGroupSelect(); } }
     function closeCreate(){ taskModal.classList.remove('show'); resetCreateForm(); }
 
     btnNewTask.addEventListener('click', ()=> openCreate());
@@ -434,12 +469,8 @@
       tColor.value = u.color || '#bc8f74';
       assigneeMenu.classList.remove('show');
     }
-    tAssigneeSearch.addEventListener('input', (e)=>{
-      renderAssigneeMenu(e.target.value.trim());
-    });
-    tAssigneeSearch.addEventListener('focus', ()=>{
-      renderAssigneeMenu(tAssigneeSearch.value);
-    });
+    tAssigneeSearch.addEventListener('input', (e)=>{ renderAssigneeMenu(e.target.value.trim()); });
+    tAssigneeSearch.addEventListener('focus', ()=>{ renderAssigneeMenu(tAssigneeSearch.value); });
     document.addEventListener('click', (e)=>{
       if (!assigneeMenu.contains(e.target) && e.target!==tAssigneeSearch) assigneeMenu.classList.remove('show');
     });
@@ -459,6 +490,8 @@
 
     btnSaveTask.addEventListener('click', async ()=>{
       if (!CURRENT_SPACE) return alert('اختر Space أولاً');
+      if (!IS_ADMIN) return alert('خاص بالأدمِن');
+
       const name = tName.value.trim();
       if (!name) return alert('اكتب اسم التاسك');
       const due = tDue.value || null;
@@ -495,8 +528,7 @@
         closeCreate();
       }catch(e){
         console.error(e);
-        if (e?.code==='permission-denied') alert('⚠️ إنشاء التاسك يحتاج صلاحية مناسبة وفق القواعد.');
-        else alert('حدث خطأ: '+e.message);
+        alert('حدث خطأ: '+(e?.message||e));
       }
     });
 
@@ -504,6 +536,51 @@
     const board = document.getElementById('board');
     let TASKS = []; // cache
     let unsubTasks = null;
+
+    function renderColumnHeaderActions(container, columnName){
+      const actions = document.createElement('div');
+      actions.className='col-actions';
+      actions.style.display = IS_ADMIN ? 'flex' : 'none';
+
+      const btnRename = document.createElement('button');
+      btnRename.className='icon';
+      btnRename.textContent='✏️';
+      btnRename.title='إعادة تسمية العمود';
+      btnRename.onclick = async ()=>{
+        if (!IS_ADMIN) return;
+        const nn = prompt('اسم العمود الجديد:', columnName);
+        if (!nn || nn===columnName) return;
+        const cols = SPACE_COLUMNS.map(c=> c===columnName? nn : c);
+        await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: cols });
+        SPACE_COLUMNS = cols;
+        renderBoardSkeleton(); renderTasks(); fillGroupSelect();
+      };
+
+      const btnDelete = document.createElement('button');
+      btnDelete.className='icon';
+      btnDelete.textContent='🗑️';
+      btnDelete.title='حذف العمود';
+      btnDelete.onclick = async ()=>{
+        if (!IS_ADMIN) return;
+        if (SPACE_COLUMNS.length<=1) return alert('لا يمكن حذف آخر عمود.');
+        const target = prompt(`سيتم حذف "${columnName}". اكتب اسم العمود الذي ستُنقل إليه المهام: \n${SPACE_COLUMNS.join(', ')}`);
+        if (!target || !SPACE_COLUMNS.includes(target) || target===columnName) return;
+        // انقل مهام هذا العمود إلى target
+        const affected = TASKS.filter(t=>t.status===columnName);
+        for (const t of affected){
+          try{ await updateDoc(doc(db,'tasks', t.id), { status: target }); }catch{}
+        }
+        // حدّث الأعمدة
+        const cols = SPACE_COLUMNS.filter(c=> c!==columnName);
+        await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: cols });
+        SPACE_COLUMNS = cols;
+        renderBoardSkeleton(); renderTasks(); fillGroupSelect();
+      };
+
+      actions.appendChild(btnRename);
+      actions.appendChild(btnDelete);
+      container.appendChild(actions);
+    }
 
     function renderBoardSkeleton(){
       board.innerHTML='';
@@ -514,11 +591,14 @@
         sec.innerHTML=`
           <div class="col-head">
             <span class="col-title">${col}</span>
+            <div class="__actions"></div>
           </div>
           <div class="col-body">
             <div class="dropzone" data-zone="${col}"></div>
           </div>`;
         board.appendChild(sec);
+        // add actions
+        renderColumnHeaderActions(sec.querySelector('.__actions'), col);
       });
 
       // DnD handlers
@@ -539,10 +619,14 @@
       });
     }
 
+    // Detail modal state
+    let OPEN_TASK = null;
+
     function openDetail(task){
+      OPEN_TASK = task;
       const modal = document.getElementById('detailModal');
       const isAssignee = task.assignee?.uid === CURRENT_USER?.uid;
-      const canContribute = (CURRENT_ROLE==='admin' || isAssignee);
+      const canContribute = (IS_ADMIN || isAssignee);
 
       document.getElementById('dTitle').textContent = task.name || 'تفاصيل المهمة';
       document.getElementById('dDesc').textContent  = task.description || '—';
@@ -572,42 +656,46 @@
         linksEl.appendChild(chip);
       });
 
-      // actions
-      const actions = document.getElementById('dActions');
-      actions.style.display = canContribute ? 'block' : 'none';
-
-      const fileInput = document.getElementById('dFiles');
-      const btnUpload = document.getElementById('btnUploadMore');
-      const btnAddLink= document.getElementById('btnAddLink');
-      const linkTitle = document.getElementById('dLinkTitle');
-      const linkUrl   = document.getElementById('dLinkUrl');
-
-      btnUpload.onclick = async ()=>{
-        try{
-          const atts = await uploadAttachmentsFor(task.id, fileInput);
-          if (atts.length){
-            const next = (task.attachments||[]).concat(atts);
-            await updateDoc(doc(db,'tasks', task.id), { attachments: next });
-            fileInput.value='';
-          }
-        }catch(e){ alert('⚠️ تعذر رفع المرفقات: '+e.message); }
-      };
-      btnAddLink.onclick = async ()=>{
-        const title = (linkTitle.value||'رابط').trim();
-        const url   = (linkUrl.value||'').trim();
-        if (!url) return alert('اكتب الرابط');
-        try{
-          const next = (task.links||[]).concat([{ title, url }]);
-          await updateDoc(doc(db,'tasks', task.id), { links: next });
-          linkTitle.value=''; linkUrl.value='';
-        }catch(e){ alert('⚠️ تعذر إضافة الرابط: '+e.message); }
-      };
+      // actions visibility
+      document.getElementById('dActions').style.display = canContribute ? 'block' : 'none';
+      document.getElementById('btnEditTask').style.display = IS_ADMIN ? '' : 'none';
+      document.getElementById('btnDeleteTask').style.display = IS_ADMIN ? '' : 'none';
 
       modal.classList.add('show');
     }
+
     document.getElementById('btnCloseDetail').addEventListener('click', ()=> document.getElementById('detailModal').classList.remove('show'));
     document.getElementById('detailModal').addEventListener('click', (e)=>{
       if (e.target.id==='detailModal') document.getElementById('detailModal').classList.remove('show');
+    });
+
+    // Member "Mark Reviewed" (moves to REVIEW_COLUMN)
+    document.getElementById('btnMarkReviewed').addEventListener('click', async ()=>{
+      if (!OPEN_TASK) return;
+      try{
+        await updateDoc(doc(db,'tasks', OPEN_TASK.id), { status: REVIEW_COLUMN });
+        document.getElementById('detailModal').classList.remove('show');
+      }catch(e){ alert('⚠️ تعذر تحديث الحالة: '+e.message); }
+    });
+
+    // Admin: Edit / Delete task
+    document.getElementById('btnEditTask').addEventListener('click', async ()=>{
+      if (!IS_ADMIN || !OPEN_TASK) return;
+      const newName = prompt('اسم المهمة:', OPEN_TASK.name||''); if (newName===null) return;
+      const newDesc = prompt('الوصف:', OPEN_TASK.description||''); if (newDesc===null) return;
+      const newDue  = prompt('تاريخ التسليم (YYYY-MM-DD):', OPEN_TASK.due||''); if (newDue===null) return;
+      try{
+        await updateDoc(doc(db,'tasks', OPEN_TASK.id), { name:newName, description:newDesc, due:newDue });
+      }catch(e){ alert('⚠️ فشل التعديل: '+e.message); }
+    });
+
+    document.getElementById('btnDeleteTask').addEventListener('click', async ()=>{
+      if (!IS_ADMIN || !OPEN_TASK) return;
+      if (!confirm('تأكيد حذف المهمة؟')) return;
+      try{
+        await deleteDoc(doc(db,'tasks', OPEN_TASK.id));
+        document.getElementById('detailModal').classList.remove('show');
+      }catch(e){ alert('⚠️ فشل الحذف: '+e.message); }
     });
 
     function renderTasks(){
@@ -659,7 +747,7 @@
       });
     }
 
-    // ─────────────────────────────── Notifications Bell ───────────────────────
+    // ───────────────────────────── Notifications Bell ─────────────────────────
     const bellBtn  = document.getElementById('btnBell');
     const bellDot  = document.getElementById('bellDot');
     const bellMenu = document.getElementById('bellMenu');

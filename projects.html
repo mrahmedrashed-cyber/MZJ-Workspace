@@ -45,45 +45,36 @@
     .dropzone{min-height:120px;border:2px dashed transparent;border-radius:12px;transition:.15s}
     .dropzone.drag{border-color:#e5d2c6;background:#fffaf5}
 
-    /* Card (name only) */
-    .card{background:#fff;border:1px solid #eee;border-radius:12px;padding:10px;box-shadow:0 8px 20px rgba(62,36,32,.06);cursor:grab}
-    .card h4{margin:0;color:var(--brown);font-size:16px;line-height:1.5}
+    /* Cards: الاسم فقط */
+    .card{background:#fff;border:1px solid #eee;border-radius:12px;padding:8px;box-shadow:0 8px 20px rgba(62,36,32,.06);cursor:grab}
+    .card h4{margin:0;color:var(--brown);font-size:15px;line-height:1.4}
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);display:inline-flex;align-items:center;gap:6px}
     .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
     .small{font-size:12px;color:var(--muted)}
 
-    /* Modal */
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;place-items:center;padding:16px}
+    /* Modal (مصغّر) */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;place-items:center;padding:16px;z-index:99}
     .modal.show{display:grid}
-    .sheet{
-      background:#fff;border-radius:16px;max-width:860px;width:100%;
-      box-shadow:0 30px 80px rgba(62,36,32,.25);
-      display:flex;flex-direction:column;max-height:90vh;
-    }
-    .sheet .head{padding:14px 16px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center}
-    .sheet .body{padding:14px 16px;display:grid;gap:12px;flex:1;overflow:auto}
-    .sheet .footer{
-      padding:12px 16px;border-top:1px solid #eee;background:#fff8ef;
-      display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;position:sticky;bottom:0
-    }
+    .sheet{background:#fff;border-radius:16px;max-width:760px;width:100%;box-shadow:0 30px 80px rgba(62,36,32,.25);display:flex;flex-direction:column;max-height:90vh}
+    .sheet .head{padding:10px 12px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center}
+    .sheet .body{padding:12px 12px;display:grid;gap:8px;flex:1;overflow:auto}
+    .sheet .footer{padding:10px 12px;border-top:1px solid #eee;background:#fff8ef;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;position:sticky;bottom:0}
 
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     @media(max-width:800px){.grid2{grid-template-columns:1fr}}
-
-    label{display:block;margin:8px 0 6px;font-weight:700;color:var(--brown)}
-    input,select,textarea{width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;font-family:inherit}
-    textarea{min-height:110px;resize:vertical}
+    label{display:block;margin:4px 0 4px;font-weight:700;color:var(--brown);font-size:13px}
+    input,select,textarea{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font-family:inherit;font-size:14px}
+    textarea{min-height:90px;resize:vertical}
     input:focus,select:focus,textarea:focus{outline:3px solid rgba(188,143,116,.25);border-color:var(--beige)}
 
     .chips{display:flex;gap:8px;flex-wrap:wrap}
     .color-dot{inline-size:14px;block-size:14px;border-radius:999px;border:1px solid #ddd}
 
-    /* Description box inside modal */
-    .desc-box{
-      background:#fff;border:1px solid #eee;border-radius:12px;padding:12px;
-      max-height:40vh;overflow:auto;white-space:pre-wrap;line-height:1.7
-    }
+    .desc-box{background:#fff;border:1px solid #eee;border-radius:12px;padding:10px;max-height:32vh;overflow:auto;white-space:pre-wrap;line-height:1.6;font-size:14px}
+    .col-body{gap:8px}
+    .dropzone{min-height:100px}
+    @media (max-width: 600px){ .sheet{max-height:92vh} .sheet .footer{position:sticky;bottom:0} }
   </style>
 </head>
 <body>
@@ -100,7 +91,7 @@
       <a href="javascript:void(0)" id="btnBell" style="position:relative">🔔<span id="bellDot">0</span></a>
       <a href="javascript:void(0)" onclick="mzjLogout()">تسجيل الخروج</a>
     </nav>
-    <div id="bellMenu" class="dropdown-menu" style="right:12px; top:56px; min-width:320px;"></div>
+    <div id="bellMenu" class="dropdown-menu" style="right:12px; top:56px; min-width:320px; position:absolute;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);display:none;max-height:280px;overflow:auto"></div>
   </header>
 
   <main class="page">
@@ -108,11 +99,9 @@
       <div class="head">
         <div class="controls">
           <select id="spaceSelect" class="select"></select>
-
-          <!-- admin-only controls -->
+          <!-- admin only -->
           <input id="newGroupName" class="input" placeholder="اسم عمود جديد — مثال: وصل حديثا" style="min-width:220px;display:none">
           <button class="btn secondary" id="btnAddGroup" style="display:none">إضافة عمود</button>
-
           <button class="btn secondary" id="btnNewSpace" style="display:none">Space جديد</button>
           <button class="btn" id="btnNewTask" style="display:none">تاسك جديد</button>
           <button class="btn secondary" id="btnSpaceManage" style="display:none">⚙️ إدارة الـSpace</button>
@@ -125,12 +114,10 @@
     </section>
   </main>
 
-  <!-- Task Create Modal (admin only) -->
+  <!-- إنشاء تاسك (أدمِن) -->
   <div class="modal" id="taskModal">
     <div class="sheet">
-      <div class="head">
-        <strong>تاسك جديد</strong>
-      </div>
+      <div class="head"><strong>تاسك جديد</strong></div>
       <div class="body">
         <div class="grid2">
           <div>
@@ -150,7 +137,7 @@
           <div style="position:relative">
             <label>المسؤول عن التاسك</label>
             <input id="tAssigneeSearch" placeholder="اكتب اسم العضو…">
-            <div id="assigneeMenu" class="dropdown-menu"></div>
+            <div id="assigneeMenu" class="dropdown-menu" style="position:absolute;right:0;top:60px;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);display:none;min-width:280px;max-height:260px;overflow:auto"></div>
             <div id="assigneeChip" class="chips"></div>
           </div>
           <div>
@@ -181,13 +168,10 @@
     </div>
   </div>
 
-  <!-- Task Detail Modal (all members can see) -->
+  <!-- تفاصيل تاسك (للجميع) -->
   <div class="modal" id="detailModal">
     <div class="sheet">
-      <div class="head">
-        <strong id="dTitle">تفاصيل المهمة</strong>
-      </div>
-
+      <div class="head"><strong id="dTitle">تفاصيل المهمة</strong></div>
       <div class="body">
         <div class="grid2">
           <div>
@@ -203,9 +187,7 @@
             <div id="dStatus"></div>
           </div>
         </div>
-
         <hr/>
-
         <div class="grid2">
           <div>
             <div class="small muted">المرفقات</div>
@@ -234,8 +216,6 @@
           <p class="hint">* الأدمِن أو المسؤول عن المهمة فقط يضيف مرفقات/روابط.</p>
         </div>
       </div>
-
-      <!-- ALL ACTIONS AT BOTTOM -->
       <div class="footer">
         <button class="btn secondary" id="btnMarkReviewed">✅ تم للمراجعة</button>
         <span style="flex:1"></span>
@@ -258,11 +238,9 @@
       getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
       onSnapshot, query, where, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-    import {
-      getStorage, ref as sRef, uploadBytes, getDownloadURL
-    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
+    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 
-    // Firebase init
+    // Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
       authDomain: "mzj-workspace.firebaseapp.com",
@@ -271,63 +249,49 @@
       appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
     };
     if (!getApps().length) initializeApp(firebaseConfig);
-    const auth = getAuth();
-    const db   = getFirestore();
-    const storage = getStorage();
+    const auth = getAuth(); const db = getFirestore(); const storage = getStorage();
 
-    // Roles / Auth
-    let CURRENT_USER = null;
-    let CURRENT_ROLE = 'member';
-    let IS_ADMIN = false;
-
+    // Auth / Roles
+    let CURRENT_USER=null, CURRENT_ROLE='member', IS_ADMIN=false;
     window.mzjLogout = async ()=>{ await signOut(auth); location.href="login.html"; };
 
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.href="login.html"; return; }
       CURRENT_USER = user;
       const u = await getDoc(doc(db,"users", user.uid));
-      const name = u.exists()? (u.data().name || user.email) : (user.email || 'مستخدم');
-      CURRENT_ROLE = u.exists()? (u.data().role || 'member') : 'member';
+      const name = u.exists()? (u.data().name||user.email) : (user.email||'مستخدم');
+      CURRENT_ROLE = u.exists()? (u.data().role||'member') : 'member';
       IS_ADMIN = CURRENT_ROLE==='admin';
       document.getElementById('who').textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
 
-      // admin-only buttons (including New Task)
       ['btnNewSpace','btnAddGroup','newGroupName','btnNewTask','btnSpaceManage'].forEach(id=>{
-        const el = document.getElementById(id);
-        if (el) el.style.display = IS_ADMIN? '' : 'none';
+        const el=document.getElementById(id); if(el) el.style.display = IS_ADMIN? '' : 'none';
       });
-
-      document.querySelectorAll('.col-actions').forEach(el=> el.style.display = IS_ADMIN? 'flex':'none');
+      document.querySelectorAll('.col-actions').forEach(el=> el.style.display = IS_ADMIN? 'flex' : 'none');
     });
 
-    // Columns defaults
+    // Columns & Spaces
     const DEFAULT_COLUMNS = ["ريل مواصفات","ريل قصير","تصميم صور","يوتيوب"];
     const REVIEW_COLUMN   = "تصميم صور";
 
-    // Spaces
     const spaceSelect     = document.getElementById('spaceSelect');
     const newGroupNameEl  = document.getElementById('newGroupName');
     const btnAddGroup     = document.getElementById('btnAddGroup');
     const btnSpaceManage  = document.getElementById('btnSpaceManage');
 
-    let CURRENT_SPACE = null;
-    let SPACE_COLUMNS = DEFAULT_COLUMNS.slice();
+    let CURRENT_SPACE=null; let SPACE_COLUMNS=DEFAULT_COLUMNS.slice();
 
     async function ensureDefaultSpace(){
-      const qSpaces = query(collection(db,'spaces'), where('active','!=', false));
-      const snap = await getDocs(qSpaces);
+      const qy = query(collection(db,'spaces'), where('active','!=', false));
+      const snap = await getDocs(qy);
       if (snap.empty){
         const now = new Date();
         const label = now.toLocaleDateString('ar-SA',{ year:'numeric', month:'long' });
-        const ref = await addDoc(collection(db,'spaces'), { name: label, columns: DEFAULT_COLUMNS, createdAt: serverTimestamp(), active:true });
+        const ref = await addDoc(collection(db,'spaces'), { name:label, columns:DEFAULT_COLUMNS, createdAt:serverTimestamp(), active:true });
         return ref.id;
       } else {
-        let lastId=null, lastTs=0;
-        snap.forEach(d=>{
-          const ts = d.data()?.createdAt?.seconds || 0;
-          if (ts>=lastTs){ lastTs=ts; lastId=d.id; }
-        });
-        return lastId;
+        let id=null, ts=0; snap.forEach(d=>{ const s=d.data()?.createdAt?.seconds||0; if(s>=ts){ts=s; id=d.id;} });
+        return id;
       }
     }
 
@@ -335,44 +299,42 @@
       spaceSelect.innerHTML='';
       list.forEach(s=>{
         const opt=document.createElement('option');
-        opt.value=s.id; opt.textContent=s.name; spaceSelect.appendChild(opt);
+        opt.value=s.id; opt.textContent=s.name;
+        spaceSelect.appendChild(opt);
       });
-      if (selectedId) spaceSelect.value = selectedId;
+      if(selectedId) spaceSelect.value=selectedId;
     }
 
     onSnapshot(collection(db,'spaces'), snap=>{
       const items=[];
-      snap.forEach(d=>{
-        const data=d.data()||{};
-        if (data.active!==false) items.push({id:d.id, ...data});
-      });
+      snap.forEach(d=>{ const data=d.data()||{}; if(data.active!==false) items.push({id:d.id, ...data}); });
       items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
       fillSpaceDropdown(items, CURRENT_SPACE);
-      if (!CURRENT_SPACE && items.length){
+      if(!CURRENT_SPACE && items.length){
         CURRENT_SPACE = items[0].id;
-        SPACE_COLUMNS = items[0].columns?.length ? items[0].columns : DEFAULT_COLUMNS;
+        SPACE_COLUMNS = items[0].columns?.length? items[0].columns : DEFAULT_COLUMNS;
         renderBoardSkeleton(); listenTasks(); fillGroupSelect();
       }
     });
 
     document.getElementById('btnNewSpace').addEventListener('click', async ()=>{
-      if (!IS_ADMIN) return;
-      const name = prompt('اسم الـSpace (مثال: نوفمبر 2025):'); if (!name) return;
-      const ref = await addDoc(collection(db,'spaces'), { name, columns: DEFAULT_COLUMNS, createdAt: serverTimestamp(), active:true });
+      if(!IS_ADMIN) return;
+      const name = prompt('اسم الـSpace (مثال: نوفمبر 2025):'); if(!name) return;
+      const ref = await addDoc(collection(db,'spaces'), { name, columns:DEFAULT_COLUMNS, createdAt:serverTimestamp(), active:true });
       CURRENT_SPACE = ref.id; SPACE_COLUMNS = DEFAULT_COLUMNS.slice();
       renderBoardSkeleton(); listenTasks(true); fillGroupSelect();
     });
 
     btnSpaceManage.addEventListener('click', async ()=>{
-      if (!IS_ADMIN || !CURRENT_SPACE) return;
+      if(!IS_ADMIN || !CURRENT_SPACE) return;
       const action = prompt('اكتب:\nrename لإعادة التسمية\narchive لأرشفة الـSpace');
-      if (!action) return;
-      if (action.toLowerCase()==='rename'){
-        const nm = prompt('الاسم الجديد للـSpace:'); if (!nm) return;
+      if(!action) return;
+      if(action.toLowerCase()==='rename'){
+        const nm = prompt('الاسم الجديد للـSpace:'); if(!nm) return;
         await updateDoc(doc(db,'spaces', CURRENT_SPACE), { name:nm });
-      } else if (action.toLowerCase()==='archive'){
-        if (!confirm('تأكيد أرشفة الـSpace؟')) return;
-        await updateDoc(doc(db,'spaces', CURRENT_SPACE), { active:false, archivedAt: serverTimestamp() });
+      } else if(action.toLowerCase()==='archive'){
+        if(!confirm('تأكيد أرشفة الـSpace؟')) return;
+        await updateDoc(doc(db,'spaces', CURRENT_SPACE), { active:false, archivedAt:serverTimestamp() });
         CURRENT_SPACE=null;
       }
     });
@@ -380,25 +342,23 @@
     spaceSelect.addEventListener('change', async (e)=>{
       CURRENT_SPACE = e.target.value;
       const d = await getDoc(doc(db,'spaces', CURRENT_SPACE));
-      SPACE_COLUMNS = d.exists()? (d.data().columns?.length ? d.data().columns : DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
+      SPACE_COLUMNS = d.exists()? (d.data().columns?.length? d.data().columns : DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
       renderBoardSkeleton(); listenTasks(true); fillGroupSelect();
     });
 
     btnAddGroup.addEventListener('click', async ()=>{
-      if (!IS_ADMIN) return;
-      if (!CURRENT_SPACE) return alert('اختر Space أولًا');
+      if(!IS_ADMIN) return;
+      if(!CURRENT_SPACE) return alert('اختر Space أولاً');
       const name = (newGroupNameEl.value || 'وصل حديثا').trim();
-      if (!name) return;
-      if (SPACE_COLUMNS.includes(name)) return alert('هذا الاسم موجود بالفعل');
+      if(!name) return;
+      if(SPACE_COLUMNS.includes(name)) return alert('الاسم موجود');
       const cols = SPACE_COLUMNS.concat([name]);
       await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: cols });
-      SPACE_COLUMNS = cols;
-      newGroupNameEl.value = '';
-      renderBoardSkeleton(); renderTasks(); fillGroupSelect();
+      SPACE_COLUMNS = cols; newGroupNameEl.value=''; renderBoardSkeleton(); renderTasks(); fillGroupSelect();
     });
 
     // Users
-    let USERS = [];
+    let USERS=[];
     async function loadUsers(){
       const snap = await getDocs(collection(db,'users'));
       USERS=[]; snap.forEach(d=>{
@@ -408,7 +368,7 @@
     }
     await loadUsers();
 
-    // Create task (admin only)
+    // Create Task
     const taskModal = document.getElementById('taskModal');
     const btnNewTask = document.getElementById('btnNewTask');
     const btnCloseModal = document.getElementById('btnCloseModal');
@@ -424,14 +384,12 @@
     const assigneeChip = document.getElementById('assigneeChip');
     const tColor = document.getElementById('tColor');
     const tGroup = document.getElementById('tGroup');
-    let SELECTED_ASSIGNEE = null;
+    let SELECTED_ASSIGNEE=null;
 
     function fillGroupSelect(){
       tGroup.innerHTML='';
       (SPACE_COLUMNS||[]).forEach(col=>{
-        const opt=document.createElement('option');
-        opt.value=col; opt.textContent=col;
-        tGroup.appendChild(opt);
+        const opt=document.createElement('option'); opt.value=col; opt.textContent=col; tGroup.appendChild(opt);
       });
     }
 
@@ -445,7 +403,7 @@
 
     function resetCreateForm(){
       tName.value=''; tDesc.value=''; tDue.value=''; tFiles.value='';
-      tAssigneeSearch.value=''; assigneeMenu.innerHTML=''; assigneeMenu.classList.remove('show');
+      tAssigneeSearch.value=''; assigneeMenu.innerHTML=''; assigneeMenu.style.display='none';
       assigneeChip.innerHTML=''; SELECTED_ASSIGNEE=null; tColor.value='#bc8f74';
       fillGroupSelect();
     }
@@ -456,29 +414,28 @@
       USERS.filter(u=>u.name.toLowerCase().includes(f)).forEach(u=>{
         const it=document.createElement('div');
         it.className='dd-item';
-        it.innerHTML = `<span class="row"><span class="color-dot" style="background:${u.color||'#bc8f74'}"></span> ${u.name} <span class="muted">(${u.role})</span></span>`;
+        it.style.cssText='padding:10px 12px;border-bottom:1px solid #f3f3f3;cursor:pointer';
+        it.innerHTML=`<span class="row"><span class="color-dot" style="background:${u.color||'#bc8f74'}"></span> ${u.name} <span class="muted">(${u.role})</span></span>`;
         it.onclick=()=> selectAssignee(u);
         assigneeMenu.appendChild(it);
       });
-      assigneeMenu.classList.add('show');
+      assigneeMenu.style.display='block';
     }
     function selectAssignee(u){
-      SELECTED_ASSIGNEE = { ...u };
+      SELECTED_ASSIGNEE = {...u};
       assigneeChip.innerHTML = `<span class="badge"><span class="dot" style="background:${u.color}"></span>${u.name}</span>`;
       tColor.value = u.color || '#bc8f74';
-      assigneeMenu.classList.remove('show');
+      assigneeMenu.style.display='none';
     }
     tAssigneeSearch.addEventListener('input', (e)=> renderAssigneeMenu(e.target.value.trim()));
     tAssigneeSearch.addEventListener('focus', ()=> renderAssigneeMenu(tAssigneeSearch.value));
-    document.addEventListener('click', (e)=>{ if (!assigneeMenu.contains(e.target) && e.target!==tAssigneeSearch) assigneeMenu.classList.remove('show'); });
+    document.addEventListener('click', (e)=>{ if(!assigneeMenu.contains(e.target) && e.target!==tAssigneeSearch) assigneeMenu.style.display='none'; });
 
     async function uploadAttachmentsFor(taskId, inputEl){
-      const files = Array.from(inputEl.files||[]);
-      const out = [];
-      for (const file of files){
+      const files = Array.from(inputEl.files||[]); const out=[];
+      for(const file of files){
         const path = `attachments/${taskId}/${Date.now()}_${file.name}`;
-        const ref = sRef(storage, path);
-        await uploadBytes(ref, file);
+        const ref = sRef(storage, path); await uploadBytes(ref,file);
         const url = await getDownloadURL(ref);
         out.push({ name:file.name, url, path });
       }
@@ -486,190 +443,143 @@
     }
 
     btnSaveTask.addEventListener('click', async ()=>{
-      if (!CURRENT_SPACE) return alert('اختر Space أولاً');
-      if (!IS_ADMIN) return alert('خاص بالأدمِن');
+      if(!CURRENT_SPACE) return alert('اختر Space أولاً');
+      if(!IS_ADMIN) return alert('خاص بالأدمِن');
 
-      const name = tName.value.trim();
-      if (!name) return alert('اكتب اسم التاسك');
-      const due = tDue.value || null;
-      const description = tDesc.value || null;
-      const assigneeUid = SELECTED_ASSIGNEE?.uid || null;
-      const assigneeName= SELECTED_ASSIGNEE?.name || null;
-      const color = (document.getElementById('tColor').value || '#bc8f74').trim();
-      const status = tGroup.value || (SPACE_COLUMNS[0] || DEFAULT_COLUMNS[0]);
+      const name=tName.value.trim(); if(!name) return alert('اكتب اسم التاسك');
+      const due=tDue.value||null; const description=tDesc.value||null;
+      const assigneeUid=SELECTED_ASSIGNEE?.uid||null; const assigneeName=SELECTED_ASSIGNEE?.name||null;
+      const color=(document.getElementById('tColor').value||'#bc8f74').trim();
+      const status=tGroup.value || (SPACE_COLUMNS[0]||DEFAULT_COLUMNS[0]);
 
       try{
-        if (assigneeUid){
+        if(assigneeUid){
           await setDoc(doc(db,'users', assigneeUid), { color }, { merge:true });
-          const idx = USERS.findIndex(u=>u.uid===assigneeUid);
-          if (idx>-1) USERS[idx].color=color;
+          const idx=USERS.findIndex(u=>u.uid===assigneeUid); if(idx>-1) USERS[idx].color=color;
         }
-
         const payload = {
           spaceId: CURRENT_SPACE, name, description, due, status,
-          assignee: assigneeUid ? { uid: assigneeUid, name: assigneeName, color } : null,
+          assignee: assigneeUid ? { uid:assigneeUid, name:assigneeName, color } : null,
           attachments: [], links: [],
-          createdBy: CURRENT_USER?.uid || null,
-          createdAt: serverTimestamp(), active:true
+          createdBy: CURRENT_USER?.uid || null, createdAt: serverTimestamp(), active:true
         };
         const ref = await addDoc(collection(db,'tasks'), payload);
         const atts = await uploadAttachmentsFor(ref.id, tFiles);
-        if (atts.length){ await updateDoc(doc(db,'tasks', ref.id), { attachments: atts }); }
+        if(atts.length){ await updateDoc(doc(db,'tasks', ref.id), { attachments: atts }); }
         alert('✅ تم حفظ التاسك'); closeCreate();
       }catch(e){ alert('حدث خطأ: '+(e?.message||e)); }
     });
 
     // Board & Details
-    const board = document.getElementById('board');
-    let TASKS = []; let unsubTasks = null; let OPEN_TASK = null;
+    const board=document.getElementById('board');
+    let TASKS=[]; let unsubTasks=null; let OPEN_TASK=null;
 
     function renderColumnHeaderActions(container, columnName){
-      const actions = document.createElement('div');
-      actions.className='col-actions';
-      actions.style.display = IS_ADMIN ? 'flex' : 'none';
-
-      const btnRename = document.createElement('button');
-      btnRename.className='icon'; btnRename.textContent='✏️'; btnRename.title='إعادة تسمية العمود';
-      btnRename.onclick = async ()=>{
-        if (!IS_ADMIN) return;
-        const nn = prompt('اسم العمود الجديد:', columnName);
-        if (!nn || nn===columnName) return;
-        const cols = SPACE_COLUMNS.map(c=> c===columnName? nn : c);
-        await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: cols });
-        SPACE_COLUMNS = cols; renderBoardSkeleton(); renderTasks(); fillGroupSelect();
+      const actions=document.createElement('div'); actions.className='col-actions'; actions.style.display=IS_ADMIN?'flex':'none';
+      const btnRename=document.createElement('button'); btnRename.className='icon'; btnRename.textContent='✏️'; btnRename.title='إعادة تسمية العمود';
+      btnRename.onclick=async ()=>{
+        if(!IS_ADMIN) return;
+        const nn=prompt('اسم العمود الجديد:', columnName); if(!nn||nn===columnName) return;
+        const cols=SPACE_COLUMNS.map(c=>c===columnName?nn:c); await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: cols });
+        SPACE_COLUMNS=cols; renderBoardSkeleton(); renderTasks(); fillGroupSelect();
       };
-
-      const btnDelete = document.createElement('button');
-      btnDelete.className='icon'; btnDelete.textContent='🗑️'; btnDelete.title='حذف العمود';
-      btnDelete.onclick = async ()=>{
-        if (!IS_ADMIN) return;
-        if (SPACE_COLUMNS.length<=1) return alert('لا يمكن حذف آخر عمود.');
-        const target = prompt(`سيتم حذف "${columnName}". اكتب اسم العمود الذي ستُنقل إليه المهام: \n${SPACE_COLUMNS.join(', ')}`);
-        if (!target || !SPACE_COLUMNS.includes(target) || target===columnName) return;
-        const affected = TASKS.filter(t=>t.status===columnName);
-        for (const t of affected){ try{ await updateDoc(doc(db,'tasks', t.id), { status: target }); }catch{} }
-        const cols = SPACE_COLUMNS.filter(c=> c!==columnName);
+      const btnDelete=document.createElement('button'); btnDelete.className='icon'; btnDelete.textContent='🗑️'; btnDelete.title='حذف العمود';
+      btnDelete.onclick=async ()=>{
+        if(!IS_ADMIN) return;
+        if(SPACE_COLUMNS.length<=1) return alert('لا يمكن حذف آخر عمود.');
+        const target=prompt(`سيتم حذف "${columnName}". انقل المهام إلى: \n${SPACE_COLUMNS.join(', ')}`);
+        if(!target || !SPACE_COLUMNS.includes(target) || target===columnName) return;
+        const affected=TASKS.filter(t=>t.status===columnName);
+        for(const t of affected){ try{ await updateDoc(doc(db,'tasks', t.id), { status:target }); }catch{} }
+        const cols=SPACE_COLUMNS.filter(c=>c!==columnName);
         await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: cols });
-        SPACE_COLUMNS = cols; renderBoardSkeleton(); renderTasks(); fillGroupSelect();
+        SPACE_COLUMNS=cols; renderBoardSkeleton(); renderTasks(); fillGroupSelect();
       };
-
-      actions.appendChild(btnRename); actions.appendChild(btnDelete);
-      container.appendChild(actions);
+      actions.appendChild(btnRename); actions.appendChild(btnDelete); container.appendChild(actions);
     }
 
     function renderBoardSkeleton(){
       board.innerHTML='';
       (SPACE_COLUMNS||[]).forEach(col=>{
-        const sec=document.createElement('section');
-        sec.className='col';
-        sec.dataset.status=col;
-        sec.innerHTML=`
-          <div class="col-head">
-            <span class="col-title">${col}</span>
-            <div class="__actions"></div>
-          </div>
-          <div class="col-body">
-            <div class="dropzone" data-zone="${col}"></div>
-          </div>`;
+        const sec=document.createElement('section'); sec.className='col'; sec.dataset.status=col;
+        sec.innerHTML=`<div class="col-head"><span class="col-title">${col}</span><div class="__actions"></div></div><div class="col-body"><div class="dropzone" data-zone="${col}"></div></div>`;
         board.appendChild(sec);
         renderColumnHeaderActions(sec.querySelector('.__actions'), col);
       });
 
-      // DnD
       board.querySelectorAll('.dropzone').forEach(zone=>{
         zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('drag'); });
         zone.addEventListener('dragleave', ()=> zone.classList.remove('drag'));
-        zone.addEventListener('drop', async (e)=>{
+        zone.addEventListener('drop', async e=>{
           e.preventDefault(); zone.classList.remove('drag');
-          const taskId = e.dataTransfer.getData('text/plain');
-          const newStatus = zone.dataset.zone;
+          const taskId=e.dataTransfer.getData('text/plain'); const newStatus=zone.dataset.zone;
           try{ await updateDoc(doc(db,'tasks', taskId), { status:newStatus }); }
-          catch(err){ alert('⚠️ تحديث الحالة يحتاج صلاحية كافية.'); }
+          catch(err){ alert('⚠️ تحديث الحالة يحتاج صلاحية.'); }
         });
       });
     }
 
     function openDetail(task){
-      OPEN_TASK = task;
-      const modal = document.getElementById('detailModal');
+      OPEN_TASK=task;
+      const modal=document.getElementById('detailModal');
       const isAssignee = task.assignee?.uid === CURRENT_USER?.uid;
       const canContribute = (IS_ADMIN || isAssignee);
 
-      document.getElementById('dTitle').textContent = task.name || 'تفاصيل المهمة';
-      document.getElementById('dDesc').textContent  = task.description || '—';
+      document.getElementById('dTitle').textContent=task.name||'تفاصيل المهمة';
+      document.getElementById('dDesc').textContent=task.description||'—';
       document.getElementById('dAssignee').innerHTML = task.assignee
         ? `<span class="badge"><span class="dot" style="background:${task.assignee.color||'#bc8f74'}"></span>${task.assignee.name||''}</span>`
         : '<span class="muted">—</span>';
-      document.getElementById('dDue').textContent    = task.due || '—';
-      document.getElementById('dStatus').textContent = task.status || '—';
+      document.getElementById('dDue').textContent=task.due||'—';
+      document.getElementById('dStatus').textContent=task.status||'—';
 
-      // attachments
-      const attEl = document.getElementById('dAttachments');
-      attEl.innerHTML='';
+      const attEl=document.getElementById('dAttachments'); attEl.innerHTML='';
       (task.attachments||[]).forEach(a=>{
-        const chip=document.createElement('span');
-        chip.className='badge';
-        chip.innerHTML=`📎 <a href="${a.url}" target="_blank" rel="noopener">${a.name}</a>`;
-        attEl.appendChild(chip);
+        const chip=document.createElement('span'); chip.className='badge';
+        chip.innerHTML=`📎 <a href="${a.url}" target="_blank" rel="noopener">${a.name}</a>`; attEl.appendChild(chip);
       });
 
-      // links
-      const linksEl = document.getElementById('dLinks');
-      linksEl.innerHTML='';
+      const linksEl=document.getElementById('dLinks'); linksEl.innerHTML='';
       (task.links||[]).forEach(l=>{
-        const chip=document.createElement('span');
-        chip.className='badge';
-        chip.innerHTML=`🔗 <a href="${l.url}" target="_blank" rel="noopener">${l.title||l.url}</a>`;
-        linksEl.appendChild(chip);
+        const chip=document.createElement('span'); chip.className='badge';
+        chip.innerHTML=`🔗 <a href="${l.url}" target="_blank" rel="noopener">${l.title||l.url}</a>`; linksEl.appendChild(chip);
       });
 
-      // visibility for actions
       document.getElementById('dActions').style.display = canContribute ? 'block' : 'none';
       document.getElementById('btnEditTask').style.display = IS_ADMIN ? '' : 'none';
       document.getElementById('btnDeleteTask').style.display = IS_ADMIN ? '' : 'none';
 
       modal.classList.add('show');
     }
-
     document.getElementById('btnCloseDetail').addEventListener('click', ()=> document.getElementById('detailModal').classList.remove('show'));
-    document.getElementById('detailModal').addEventListener('click', (e)=>{
-      if (e.target.id==='detailModal') document.getElementById('detailModal').classList.remove('show');
-    });
+    document.getElementById('detailModal').addEventListener('click', (e)=>{ if(e.target.id==='detailModal') document.getElementById('detailModal').classList.remove('show'); });
 
-    // Mark Reviewed (moves to REVIEW_COLUMN)
     document.getElementById('btnMarkReviewed').addEventListener('click', async ()=>{
-      if (!OPEN_TASK) return;
-      try{
-        await updateDoc(doc(db,'tasks', OPEN_TASK.id), { status: REVIEW_COLUMN });
-        document.getElementById('detailModal').classList.remove('show');
-      }catch(e){ alert('⚠️ تعذر تحديث الحالة: '+e.message); }
+      if(!OPEN_TASK) return;
+      try{ await updateDoc(doc(db,'tasks', OPEN_TASK.id), { status: REVIEW_COLUMN }); document.getElementById('detailModal').classList.remove('show'); }
+      catch(e){ alert('⚠️ تعذر تحديث الحالة: '+e.message); }
     });
 
-    // Admin: Edit / Delete
     document.getElementById('btnEditTask').addEventListener('click', async ()=>{
-      if (!IS_ADMIN || !OPEN_TASK) return;
-      const newName = prompt('اسم المهمة:', OPEN_TASK.name||''); if (newName===null) return;
-      const newDesc = prompt('الوصف:', OPEN_TASK.description||''); if (newDesc===null) return;
-      const newDue  = prompt('تاريخ التسليم (YYYY-MM-DD):', OPEN_TASK.due||''); if (newDue===null) return;
-      try{
-        await updateDoc(doc(db,'tasks', OPEN_TASK.id), { name:newName, description:newDesc, due:newDue });
-      }catch(e){ alert('⚠️ فشل التعديل: '+e.message); }
+      if(!IS_ADMIN || !OPEN_TASK) return;
+      const newName=prompt('اسم المهمة:', OPEN_TASK.name||''); if(newName===null) return;
+      const newDesc=prompt('الوصف:', OPEN_TASK.description||''); if(newDesc===null) return;
+      const newDue =prompt('تاريخ التسليم (YYYY-MM-DD):', OPEN_TASK.due||''); if(newDue===null) return;
+      try{ await updateDoc(doc(db,'tasks', OPEN_TASK.id), { name:newName, description:newDesc, due:newDue }); }
+      catch(e){ alert('⚠️ فشل التعديل: '+e.message); }
     });
 
     document.getElementById('btnDeleteTask').addEventListener('click', async ()=>{
-      if (!IS_ADMIN || !OPEN_TASK) return;
-      if (!confirm('تأكيد حذف المهمة؟')) return;
-      try{
-        await deleteDoc(doc(db,'tasks', OPEN_TASK.id));
-        document.getElementById('detailModal').classList.remove('show');
-      }catch(e){ alert('⚠️ فشل الحذف: '+e.message); }
+      if(!IS_ADMIN || !OPEN_TASK) return;
+      if(!confirm('تأكيد حذف المهمة؟')) return;
+      try{ await deleteDoc(doc(db,'tasks', OPEN_TASK.id)); document.getElementById('detailModal').classList.remove('show'); }
+      catch(e){ alert('⚠️ فشل الحذف: '+e.message); }
     });
 
     function renderTasks(){
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
 
-      const byStatus = {};
-      (SPACE_COLUMNS||[]).forEach(s=> byStatus[s]=[]);
+      const byStatus={}; (SPACE_COLUMNS||[]).forEach(s=> byStatus[s]=[]);
       TASKS.forEach(t=>{ (byStatus[t.status]||(byStatus[t.status]=[])).push(t); });
 
       (SPACE_COLUMNS||[]).forEach(status=>{
@@ -677,81 +587,64 @@
         const list = byStatus[status]||[];
         list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
         list.forEach(t=>{
-          const card=document.createElement('article');
-          card.className='card'; card.draggable=true; card.dataset.id=t.id;
-          const ass = t.assignee;
-          const attCount = (t.attachments||[]).length;
-          card.innerHTML=`
+          const card=document.createElement('article'); card.className='card'; card.draggable=true; card.dataset.id=t.id;
+          const ass=t.assignee; const attCount=(t.attachments||[]).length;
+          card.innerHTML = `
             <h4>${t.name||'-'}</h4>
             <div class="row" style="margin-top:6px">
-              ${ass ? `<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>` : ''}
-              ${t.due ? `<span class="small">📅 ${t.due}</span>`:''}
-              ${attCount? `<span class="small">📎 ${attCount}</span>`:''}
-            </div>
-          `;
-          card.addEventListener('dragstart', (e)=>{ e.dataTransfer.setData('text/plain', t.id); });
-          card.addEventListener('click', ()=>{
-            const fresh = TASKS.find(x=>x.id===t.id);
-            if (fresh) openDetail(fresh);
-          });
+              ${ass?`<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>`:''}
+              ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
+              ${attCount?`<span class="small">📎 ${attCount}</span>`:''}
+            </div>`;
+          card.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', t.id); });
+          card.addEventListener('click', ()=>{ const fresh=TASKS.find(x=>x.id===t.id); if(fresh) openDetail(fresh); });
           zone?.appendChild(card);
         });
       });
     }
 
     function listenTasks(){
-      if (unsubTasks) { unsubTasks(); unsubTasks=null; }
-      if (!CURRENT_SPACE) return;
-      const qy = query(collection(db,'tasks'), where('spaceId','==', CURRENT_SPACE));
-      unsubTasks = onSnapshot(qy, (snap)=>{
+      if(unsubTasks){ unsubTasks(); unsubTasks=null; }
+      if(!CURRENT_SPACE) return;
+      const qy=query(collection(db,'tasks'), where('spaceId','==', CURRENT_SPACE));
+      unsubTasks=onSnapshot(qy,(snap)=>{
         TASKS=[]; snap.forEach(d=> TASKS.push({ id:d.id, ...(d.data()||{}) }));
         renderTasks();
-      }, (err)=>{
-        console.error(err);
-        alert('⚠️ فشل قراءة التاسكات. تأكد من قواعد Firestore.');
-      });
+      },(err)=>{ console.error(err); alert('⚠️ فشل قراءة التاسكات. تأكد من القواعد.'); });
     }
 
-    // Notifications Bell
-    const bellBtn  = document.getElementById('btnBell');
-    const bellDot  = document.getElementById('bellDot');
-    const bellMenu = document.getElementById('bellMenu');
+    // Notifications bell
+    const bellBtn=document.getElementById('btnBell');
+    const bellDot=document.getElementById('bellDot');
+    const bellMenu=document.getElementById('bellMenu');
 
     function renderNotifs(list){
-      bellMenu.innerHTML='';
-      if (!list.length){ bellMenu.innerHTML='<div class="dd-item">لا إشعارات جديدة.</div>'; return; }
+      bellMenu.innerHTML=''; if(!list.length){ bellMenu.innerHTML='<div style="padding:10px 12px">لا إشعارات جديدة.</div>'; return; }
       list.forEach(n=>{
-        const it=document.createElement('div');
-        const kind = n.type==='mention' ? 'تم ذكرك' : 'تم تعيينك في مشروع';
-        it.className='dd-item';
+        const it=document.createElement('div'); it.style.cssText='padding:10px 12px;border-bottom:1px solid #f3f3f3;cursor:pointer';
+        const kind=n.type==='mention'?'تم ذكرك':'تم تعيينك في مشروع';
         it.innerHTML=`<div><strong>${kind}</strong> — ${n.projectName||'-'}</div><div class="muted" style="font-size:12px">${n.id}</div>`;
-        it.onclick=async ()=>{ try{ await updateDoc(doc(db,'notifications', n.id), { read:true }); }catch{} bellMenu.classList.remove('show'); };
+        it.onclick=async ()=>{ try{ await updateDoc(doc(db,'notifications', n.id), { read:true }); }catch{} bellMenu.style.display='none'; };
         bellMenu.appendChild(it);
       });
     }
-    onAuthStateChanged(auth, (user)=>{
-      if (!user) return;
-      const qn = query(collection(db,'notifications'),
-        where('toUid','==', user.uid),
-        where('read','==', false));
+    onAuthStateChanged(auth,(user)=>{
+      if(!user) return;
+      const qn=query(collection(db,'notifications'), where('toUid','==', user.uid), where('read','==', false));
       onSnapshot(qn,(snap)=>{
         const list=[]; snap.forEach(d=> list.push({ id:d.id, ...(d.data()||{}) }));
-        bellDot.style.display = list.length ? 'inline-block' : 'none';
-        bellDot.textContent = list.length || '0';
-        renderNotifs(list);
+        bellDot.style.display=list.length?'inline-block':'none'; bellDot.textContent=list.length||'0'; renderNotifs(list);
       });
     });
-    bellBtn?.addEventListener('click', ()=> bellMenu.classList.toggle('show'));
-    document.addEventListener('click', (e)=>{
-      if (!bellMenu.contains(e.target) && e.target!==bellBtn && !bellBtn.contains(e.target)) bellMenu.classList.remove('show');
-    });
+    bellBtn?.addEventListener('click', ()=> bellMenu.style.display = (bellMenu.style.display==='block'?'none':'block'));
+    document.addEventListener('click', (e)=>{ if(!bellMenu.contains(e.target) && e.target!==bellBtn && !bellBtn.contains(e.target)) bellMenu.style.display='none'; });
 
     // Boot
     (async ()=>{
-      if (!CURRENT_SPACE){
+      if(!CURRENT_SPACE){
         CURRENT_SPACE = await ensureDefaultSpace();
         const d = await getDoc(doc(db,'spaces', CURRENT_SPACE));
-        SPACE_COLUMNS = d.exists()? (d.data().columns?.length ? d.data().columns : DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
+        SPACE_COLUMNS = d.exists()? (d.data().columns?.length? d.data().columns : DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
         renderBoardSkeleton(); listenTasks(); fillGroupSelect();
       }
     })();

@@ -11,12 +11,15 @@
     body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal",system-ui,Arial;line-height:1.75}
     a{color:inherit;text-decoration:none}
     .layout{min-height:100dvh;display:grid;grid-template-rows:auto 1fr auto}
-    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--brown);color:#fff;box-shadow:0 4px 16px rgba(62,36,32,.18)}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--brown);color:#fff;box-shadow:0 4px 16px rgba(62,36,32,.18);position:sticky;top:0;z-index:10}
     .brand{display:flex;align-items:center;gap:10px}
     .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
-    .nav{display:flex;gap:10px;flex-wrap:wrap}
+    .nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .nav a{padding:8px 12px;border-radius:10px;color:#fff}
     .nav a:hover{background:rgba(255,255,255,.14)}
+    #bellDot{position:absolute; top:-4px; inline-size:18px; block-size:18px;
+      background:#e11d48; color:#fff; font-size:12px; display:none;
+      border-radius:999px; text-align:center; line-height:18px}
     .page{padding:20px;display:grid;gap:18px}
     .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
     @media(max-width:1100px){.grid{grid-template-columns:1fr}}
@@ -33,7 +36,7 @@
     .chip{display:inline-flex;align-items:center;gap:6px;background:#f7e9e0;color:var(--brown);padding:6px 10px;border-radius:999px;font-size:13px}
     .chip button{all:unset;cursor:pointer;opacity:.7}
     .dropdown{position:relative}
-    .dropdown-menu{position:absolute;inset-inline:0 auto;top:calc(100% + 6px);z-index:9999;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);max-height:260px;overflow:auto;display:none}
+    .dropdown-menu{position:absolute;right:0; top:calc(100% + 6px); z-index:9999;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);max-height:260px;overflow:auto;display:none;min-width:260px}
     .dropdown-menu.show{display:block}
     .dd-item{padding:10px 12px;border-bottom:1px solid #f3f3f3;cursor:pointer}
     .dd-item:hover{background:#fff8ef}
@@ -42,8 +45,6 @@
     .item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #f5f5f5}
     .muted{color:var(--muted)}
     .footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19)}
-    .hint{font-size:12px;color:var(--muted)}
-    .inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   </style>
 </head>
 <body>
@@ -58,8 +59,12 @@
         <a href="projects.html">المشاريع</a>
         <a href="members.html">الأعضاء</a>
         <a href="admin.html">الإدارة</a>
+        <!-- جرس الإشعارات -->
+        <a href="javascript:void(0)" id="btnBell" style="position:relative">🔔<span id="bellDot">0</span></a>
         <a href="javascript:void(0)" onclick="mzjLogout()">تسجيل الخروج</a>
       </nav>
+      <!-- قائمة الإشعارات -->
+      <div id="bellMenu" class="dropdown-menu" style="right:12px; top:56px; min-width:320px;"></div>
     </header>
 
     <main class="page">
@@ -106,13 +111,15 @@
             </div>
           </div>
 
+          <!-- المنشن -->
           <label>الوصف (اكتب @ لذكر عضو)</label>
-          <div class="dropdown">
+          <div class="dropdown" style="position:relative">
             <textarea id="projDesc" placeholder="اكتب تفاصيل المشروع… اكتب @ لذكر عضو."></textarea>
             <div id="mentionList" class="dropdown-menu"></div>
           </div>
-          <div class="hint">يتم حفظ الـUIDs المذكورة في <code>mentions[]</code>.</div>
+          <div class="muted" style="font-size:12px">تُحفظ الـUIDs المذكورة في <code>mentions[]</code>.</div>
 
+          <!-- تعيين أعضاء -->
           <label>تعيين أعضاء (اختيار متعدد)</label>
           <div class="dropdown">
             <input id="assigneeSearch" type="text" placeholder="ابحث باسم العضو…"/>
@@ -120,10 +127,10 @@
           </div>
           <div id="assigneeChips" class="chips"></div>
 
-          <div class="inline" style="margin-top:12px">
+          <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
             <button class="btn" id="btnCreateProject">إنشاء المشروع</button>
             <button class="btn secondary" id="btnReset">إعادة تعيين</button>
-            <span class="hint">سيتم إرسال إشعارات للمذكورين والمُعيّنين.</span>
+            <span class="muted">سيتم إرسال إشعارات للمذكورين والمُعيّنين.</span>
           </div>
         </section>
 
@@ -140,13 +147,13 @@
     <footer class="footer"><small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small></footer>
   </div>
 
-  <!-- Firebase + Mentions + Assignees + Notifications + Live Projects -->
+  <!-- Firebase + Mentions + Assignees + Notifications + Live Projects + Bell -->
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
     import {
-      getFirestore, collection, query, where, onSnapshot, addDoc, serverTimestamp,
-      doc, getDoc, getDocs
+      getFirestore, collection, onSnapshot, addDoc, serverTimestamp,
+      doc, getDoc, getDocs, updateDoc, query, where, orderBy
     } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
     // Firebase init
@@ -179,7 +186,6 @@
           USERS.push({ uid:d.id, name:u.name || d.id.slice(0,6), role:u.role || "member" });
         });
         renderAssigneeMenu('');
-        renderMentionMenu('');
       } catch (e) {
         console.error("loadUsers()", e);
         alert("⚠️ فشل تحميل قائمة الأعضاء. تأكد من قواعد Firestore (users read).");
@@ -269,7 +275,6 @@
       elMentionMenu.classList.remove('show');
       elDesc.focus();
     }
-    function renderMentionMenu(query){ showMentionMenu(query); }
     elDesc.addEventListener('input', ()=>{
       const caret = elDesc.selectionStart;
       const token = getAtToken(elDesc.value, caret);
@@ -279,13 +284,17 @@
     elDesc.addEventListener('blur', ()=> setTimeout(()=> elMentionMenu.classList.remove('show'), 120));
 
     // ========= إنشاء إشعارات =========
-    async function createNotifications(uids, projectId, projectName){
+    async function notifyUsers(uids, type, projectId, projectName){
       const unique = [...new Set(uids.filter(Boolean))];
-      const jobs = unique.map(uid=> addDoc(collection(db,'notifications'), {
-        toUid: uid, type: 'project_assigned',
-        projectId, projectName, createdAt: serverTimestamp(), read:false
-      }));
-      try{ await Promise.all(jobs); }catch(e){ console.warn('notify error', e); }
+      if (!unique.length) return;
+      await Promise.all(unique.map(uid=> addDoc(collection(db,'notifications'), {
+        toUid: uid,
+        type,                 // 'project_assigned' أو 'mention'
+        projectId,
+        projectName,
+        createdAt: serverTimestamp(),
+        read: false
+      })));
     }
 
     // ========= إنشاء مشروع =========
@@ -315,8 +324,10 @@
       };
       try{
         const ref = await addDoc(collection(db,'projects'), payload);
-        await createNotifications([...SELECTED_ASSIGNEES, ...MENTIONS], ref.id, name);
-        alert('✅ تم إنشاء المشروع بنجاح');
+        // إشعارات منفصلة لمزيد وضوح
+        await notifyUsers(SELECTED_ASSIGNEES, 'project_assigned', ref.id, name);
+        await notifyUsers(MENTIONS,            'mention',          ref.id, name);
+        alert('✅ تم إنشاء المشروع وإرسال الإشعارات');
         resetForm();
       }catch(e){
         console.error(e);
@@ -331,16 +342,15 @@
     function resetForm(){
       elName.value=''; elDesc.value=''; elStart.value=''; elDue.value='';
       SELECTED_ASSIGNEES=[]; MENTIONS=[];
-      document.getElementById('assigneeChips').innerHTML='';
-      document.getElementById('assigneeSearch').value='';
-      document.getElementById('assigneeMenu').classList.remove('show');
-      document.getElementById('mentionList').classList.remove('show');
+      elAssChips.innerHTML='';
+      elAssSearch.value=''; elAssMenu.classList.remove('show');
+      elMentionMenu.classList.remove('show');
     }
     document.getElementById('btnReset').addEventListener('click', resetForm);
 
-    // ========= عرض المشاريع Live (بدون orderBy؛ ترتيب يدوي آمن) =========
+    // ========= عرض المشاريع Live (بدون orderBy؛ ترتيب يدوي) =========
+    const projList = document.getElementById('projList');
     onSnapshot(collection(db,'projects'), (snap)=>{
-      const projList = document.getElementById('projList');
       projList.innerHTML='';
       if (snap.empty){
         projList.innerHTML = `<div class="item muted">لا توجد مشاريع بعد.</div>`;
@@ -371,6 +381,50 @@
     }, (err)=>{
       console.error(err);
       if (err?.code==='permission-denied') alert('⚠️ لا تملك صلاحية قراءة المشاريع.\nتأكد أن القاعدة تسمح read للمستخدمين المسجّلين.');
+    });
+
+    // ========= جرس الإشعارات (In-App) — يعمل في كل الصفحات =========
+    const bellBtn  = document.getElementById('btnBell');
+    const bellDot  = document.getElementById('bellDot');
+    const bellMenu = document.getElementById('bellMenu');
+
+    function renderNotifs(list){
+      bellMenu.innerHTML = '';
+      if (!list.length){ bellMenu.innerHTML = '<div class="dd-item">لا إشعارات جديدة.</div>'; return; }
+      list.forEach(n=>{
+        const it = document.createElement('div');
+        it.className='dd-item';
+        const kind = n.type==='mention' ? 'تم ذكرك' : 'تم تعيينك في مشروع';
+        it.innerHTML = `<div><strong>${kind}</strong> — ${n.projectName||'-'}</div>
+                        <div class="muted" style="font-size:12px">${n.id}</div>`;
+        it.onclick = async ()=>{
+          try{ await updateDoc(doc(db,'notifications', n.id), { read:true }); }catch{}
+          bellMenu.classList.remove('show');
+          location.href = 'projects.html';
+        };
+        bellMenu.appendChild(it);
+      });
+    }
+
+    onAuthStateChanged(auth, (user)=>{
+      if (!user) return;
+      const qn = query(collection(db,'notifications'),
+        where('toUid','==', user.uid),
+        where('read','==', false),
+        orderBy('createdAt','desc')
+      );
+      onSnapshot(qn, (snap)=>{
+        const list = [];
+        snap.forEach(d=> list.push({ id:d.id, ...(d.data()||{}) }));
+        bellDot.style.display = list.length ? 'inline-block' : 'none';
+        bellDot.textContent = list.length || '0';
+        renderNotifs(list);
+      });
+    });
+
+    bellBtn?.addEventListener('click', ()=> bellMenu.classList.toggle('show'));
+    document.addEventListener('click', (e)=>{
+      if (!bellMenu.contains(e.target) && e.target !== bellBtn) bellMenu.classList.remove('show');
     });
   </script>
 </body>

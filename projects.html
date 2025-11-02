@@ -75,7 +75,6 @@
     .color-dot{inline-size:14px;block-size:14px;border-radius:999px;border:1px solid #ddd}
 
     .desc-box{background:#fff;border:1px solid #eee;border-radius:12px;padding:10px;max-height:32vh;overflow:auto;white-space:pre-wrap;line-height:1.6;font-size:14px}
-    .col-body{gap:8px}
     .dropzone{min-height:100px}
 
     /* Dropdowns */
@@ -96,11 +95,15 @@
       <strong>MZJ Workspace — المشاريع</strong>
     </div>
     <nav class="nav">
-      <a href="dashboard.html">لوحة التحكم</a>
-      <a href="projects.html">المشاريع</a>
-      <a href="members.html">الأعضاء</a>
-      <a href="admin.html">الإدارة</a>
-      <a href="javascript:void(0)" id="btnBell" style="position:relative">🔔<span id="bellDot" style="position:absolute;top:-6px;left:-6px;display:none;background:#e11d48;color:#fff;width:18px;height:18px;border-radius:50%;font-size:12px;line-height:18px;text-align:center">0</span></a>
+      <!-- روابط للأدمِن فقط: هنخفيها بالـ JS لغير الأدمِن -->
+      <a id="navDashboard" href="dashboard.html">لوحة التحكم</a>
+      <a id="navProjects"  href="projects.html">المشاريع</a>
+      <a id="navMembers"   href="members.html">الأعضاء</a>
+      <a id="navAdmin"     href="admin.html">الإدارة</a>
+
+      <a href="javascript:void(0)" id="btnBell" style="position:relative">🔔
+        <span id="bellDot" style="position:absolute;top:-6px;left:-6px;display:none;background:#e11d48;color:#fff;width:18px;height:18px;border-radius:50%;font-size:12px;line-height:18px;text-align:center">0</span>
+      </a>
       <a href="javascript:void(0)" onclick="mzjLogout()">تسجيل الخروج</a>
     </nav>
     <div id="bellMenu" class="dropdown-menu" style="right:12px; top:56px; min-width:320px;"></div>
@@ -166,10 +169,7 @@
             <label>العمود / الجروب</label>
             <select id="tGroup"></select>
           </div>
-          <div>
-            <label>المرفقات</label>
-            <input id="tFiles" type="file" multiple>
-          </div>
+          <div></div>
         </div>
       </div>
       <div class="footer">
@@ -180,7 +180,7 @@
     </div>
   </div>
 
-  <!-- تفاصيل تاسك (للجميع) — الوصف أولاً ثم المعلومات -->
+  <!-- تفاصيل تاسك (روابط فقط) -->
   <div class="modal" id="detailModal">
     <div class="sheet">
       <div class="head"><strong id="dTitle">تفاصيل المهمة</strong></div>
@@ -205,32 +205,19 @@
 
         <hr/>
 
-        <div class="grid2">
-          <div>
-            <div class="small muted">المرفقات</div>
-            <div id="dAttachments" class="chips"></div>
-          </div>
-          <div>
-            <div class="small muted">روابط</div>
-            <div id="dLinks" class="chips"></div>
-          </div>
+        <div>
+          <div class="small muted">روابط</div>
+          <div id="dLinks" class="chips"></div>
         </div>
 
         <div id="dActions" style="margin-top:10px;display:block">
-          <div class="grid2">
-            <div>
-              <label>إضافة مرفقات</label>
-              <input id="dFiles" type="file" multiple>
-              <button class="btn" id="btnUploadMore" style="margin-top:8px">رفع المرفقات</button>
-            </div>
-            <div>
-              <label>إضافة رابط</label>
-              <input id="dLinkTitle" class="input" placeholder="عنوان الرابط — مثال: ملف جوجل درايف">
-              <input id="dLinkUrl" class="input" placeholder="https://…">
-              <button class="btn secondary" id="btnAddLink" style="margin-top:8px">إضافة رابط</button>
-            </div>
+          <div>
+            <label>إضافة رابط</label>
+            <input id="dLinkTitle" class="input" placeholder="عنوان الرابط — مثال: ملف جوجل درايف">
+            <input id="dLinkUrl" class="input" placeholder="https://…">
+            <button class="btn secondary" id="btnAddLink" style="margin-top:8px">إضافة رابط</button>
           </div>
-          <p class="hint"></p>
+          <p class="hint">* الروابط تظهر للجميع فورًا.</p>
         </div>
       </div>
       <div class="footer">
@@ -255,7 +242,6 @@
       getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
       onSnapshot, query, where, serverTimestamp, arrayUnion, Timestamp
     } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 
     /* Firebase */
     const firebaseConfig = {
@@ -266,7 +252,7 @@
       appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
     };
     if (!getApps().length) initializeApp(firebaseConfig);
-    const auth = getAuth(); const db = getFirestore(); const storage = getStorage();
+    const auth = getAuth(); const db = getFirestore();
 
     /* Auth / Roles */
     let CURRENT_USER=null, CURRENT_ROLE='member', IS_ADMIN=false;
@@ -281,10 +267,18 @@
       IS_ADMIN = CURRENT_ROLE==='admin';
       document.getElementById('who').textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
 
+      // إظهار/إخفاء أدوات الأدمِن
       ['btnNewSpace','btnAddGroup','newGroupName','btnNewTask','btnSpaceManage'].forEach(id=>{
         const el=document.getElementById(id); if(el) el.style.display = IS_ADMIN? '' : 'none';
       });
       document.querySelectorAll('.col-actions').forEach(el=> el.style.display = IS_ADMIN? 'flex' : 'none');
+
+      // 🔒 إخفاء روابط غير الأدمِن في الـ Navbar
+      if(!IS_ADMIN){
+        document.getElementById('navDashboard').style.display='none';
+        document.getElementById('navMembers').style.display='none';
+        document.getElementById('navAdmin').style.display='none';
+      }
     });
 
     /* Constants */
@@ -406,7 +400,6 @@
     const tName = document.getElementById('tName');
     const tDesc = document.getElementById('tDesc');
     const tDue  = document.getElementById('tDue');
-    const tFiles= document.getElementById('tFiles');
     const tAssigneeSearch = document.getElementById('tAssigneeSearch');
     const assigneeMenu = document.getElementById('assigneeMenu');
     const assigneeChip = document.getElementById('assigneeChip');
@@ -430,7 +423,7 @@
     taskModal.addEventListener('click', (e)=>{ if(e.target===taskModal) closeCreate(); });
 
     function resetCreateForm(){
-      tName.value=''; tDesc.value=''; tDue.value=''; tFiles.value='';
+      tName.value=''; tDesc.value=''; tDue.value='';
       tAssigneeSearch.value=''; assigneeMenu.innerHTML=''; assigneeMenu.style.display='none';
       assigneeChip.innerHTML=''; SELECTED_ASSIGNEE=null; tColor.value='#bc8f74';
       fillGroupSelect();
@@ -458,17 +451,6 @@
     tAssigneeSearch.addEventListener('focus', ()=> renderAssigneeMenu(tAssigneeSearch.value));
     document.addEventListener('click', (e)=>{ if(!assigneeMenu.contains(e.target) && e.target!==tAssigneeSearch) assigneeMenu.style.display='none'; });
 
-    async function uploadAttachmentsFor(taskId, inputEl){
-      const files = Array.from(inputEl.files||[]); const out=[];
-      for(const file of files){
-        const path = `attachments/${taskId}/${Date.now()}_${file.name}`;
-        const ref = sRef(storage, path); await uploadBytes(ref,file);
-        const url = await getDownloadURL(ref);
-        out.push({ name:file.name, url, path, by: CURRENT_USER?.uid || null, at: Timestamp.now() });
-      }
-      return out;
-    }
-
     btnSaveTask.addEventListener('click', async ()=>{
       if(!CURRENT_SPACE) return alert('اختر Space أولاً');
       if(!IS_ADMIN) return alert('خاص بالأدمِن');
@@ -487,12 +469,10 @@
         const payload = {
           spaceId: CURRENT_SPACE, name, description, due, status,
           assignee: assigneeUid ? { uid:assigneeUid, name:assigneeName, color } : null,
-          attachments: [], links: [],
+          links: [],
           createdBy: CURRENT_USER?.uid || null, createdAt: serverTimestamp(), active:true
         };
-        const ref = await addDoc(collection(db,'tasks'), payload);
-        const atts = await uploadAttachmentsFor(ref.id, tFiles);
-        if(atts.length){ await updateDoc(doc(db,'tasks', ref.id), { attachments: arrayUnion(...atts) }); }
+        await addDoc(collection(db,'tasks'), payload);
         alert('✅ تم حفظ التاسك'); closeCreate();
       }catch(e){ alert('حدث خطأ: '+(e?.message||e)); }
     });
@@ -549,7 +529,7 @@
           <div class="col-body"><div class="dropzone" data-zone="${col}"></div></div>
         `;
 
-        // سحب العمود: من المقبض فقط
+        // سحب العمود: من المقبض فقط (أدمِن)
         const grip = sec.querySelector('.grip');
         if (IS_ADMIN && grip){
           grip.setAttribute('draggable','true');
@@ -559,14 +539,13 @@
           });
         }
 
-        // إفلات عمود فوق عمود آخر لإعادة الترتيب
+        // إفلات عمود لإعادة الترتيب (أدمِن)
         sec.addEventListener('dragover',(e)=>{
           if (e.dataTransfer.types.includes(MIME_COLUMN)){
             e.preventDefault();
             e.dataTransfer.dropEffect='move';
           }
         });
-
         sec.addEventListener('drop', async (e)=>{
           if (!e.dataTransfer.types.includes(MIME_COLUMN)) return;
           e.preventDefault();
@@ -619,19 +598,15 @@
       document.getElementById('dDue').textContent=task.due||'—';
       document.getElementById('dStatus').textContent=task.status||'—';
 
-      const attEl=document.getElementById('dAttachments'); attEl.innerHTML='';
-      (task.attachments||[]).forEach(a=>{
-        const chip=document.createElement('span'); chip.className='badge';
-        chip.innerHTML=`📎 <a href="${a.url}" target="_blank" rel="noopener">${a.name}</a>`; attEl.appendChild(chip);
-      });
-
       const linksEl=document.getElementById('dLinks'); linksEl.innerHTML='';
       (task.links||[]).forEach(l=>{
         const chip=document.createElement('span'); chip.className='badge';
-        chip.innerHTML=`🔗 <a href="${l.url}" target="_blank" rel="noopener">${l.title||l.url}</a>`; linksEl.appendChild(chip);
+        chip.innerHTML=`🔗 <a href="${l.url}" target="_blank" rel="noopener">${l.title||l.url}</a>`;
+        linksEl.appendChild(chip);
       });
 
-      // أزرار الإدارة للأدمِن فقط
+      // عرض أدوات الإضافة / أزرار الإدارة للأدمِن فقط
+      document.getElementById('dActions').style.display = IS_ADMIN ? 'block' : 'none';
       document.getElementById('btnEditTask').style.display = IS_ADMIN ? '' : 'none';
       document.getElementById('btnDeleteTask').style.display = IS_ADMIN ? '' : 'none';
 
@@ -665,21 +640,10 @@
       catch(e){ alert('⚠️ فشل الحذف: '+e.message); }
     });
 
-    // إضافة مرفقات من نافذة التفاصيل (مسموح للجميع)
-    document.getElementById('btnUploadMore').addEventListener('click', async ()=>{
-      if(!OPEN_TASK) return alert('افتح مهمة أولاً');
-      try{
-        const list = await uploadAttachmentsFor(OPEN_TASK.id, document.getElementById('dFiles'));
-        if(list.length){
-          await updateDoc(doc(db,'tasks', OPEN_TASK.id), { attachments: arrayUnion(...list) });
-          document.getElementById('dFiles').value='';
-        }
-      }catch(e){ alert('⚠️ تعذر رفع المرفقات: '+e.message); }
-    });
-
-    // إضافة رابط من نافذة التفاصيل (مسموح للجميع) — باستخدام Timestamp.now()
+    // إضافة رابط — للأدمِن فقط
     document.getElementById('btnAddLink').addEventListener('click', async ()=>{
       if(!OPEN_TASK) return alert('افتح مهمة أولاً');
+      if(!IS_ADMIN) return alert('خاص بالأدمِن');
       const title = (document.getElementById('dLinkTitle').value||'رابط').trim();
       const url   = (document.getElementById('dLinkUrl').value||'').trim();
       if(!url || !/^https?:\/\//i.test(url)) return alert('اكتب رابط يبدأ بـ http(s)://');
@@ -705,13 +669,12 @@
         list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
         list.forEach(t=>{
           const card=document.createElement('article'); card.className='card'; card.dataset.id=t.id;
-          const ass=t.assignee; const attCount=(t.attachments||[]).length;
+          const ass=t.assignee;
           card.innerHTML = `
             <h4>${t.name||'-'}</h4>
             <div class="row" style="margin-top:6px">
               ${ass?`<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>`:''}
               ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
-              ${attCount?`<span class="small">📎 ${attCount}</span>`:''}
             </div>`;
 
           // سحب البطاقة بين الأعمدة
@@ -735,7 +698,6 @@
       unsubTasks=onSnapshot(qy,(snap)=>{
         TASKS=[]; snap.forEach(d=> TASKS.push({ id:d.id, ...(d.data()||{}) }));
         renderTasks();
-        // تحديث نافذة التفاصيل لو مفتوحة
         if(OPEN_TASK){
           const now = TASKS.find(t=>t.id===OPEN_TASK.id);
           if(now) openDetail(now);

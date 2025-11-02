@@ -2,198 +2,141 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>لوحة التحكم — MZJ Workspace</title>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
     :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px }
-    *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal",system-ui,Arial;line-height:1.75}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal",system-ui,Arial}
     a{color:inherit;text-decoration:none}
-    /* Topbar */
-    .layout{min-height:100dvh;display:grid;grid-template-rows:auto 1fr auto}
-    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--brown);color:#fff;box-shadow:0 4px 16px rgba(62,36,32,.18);position:sticky;top:0;z-index:5}
+
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--brown);color:#fff;position:sticky;top:0;z-index:10;box-shadow:0 6px 20px rgba(62,36,32,.2)}
     .brand{display:flex;align-items:center;gap:10px}
     .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
-    .nav{display:flex;gap:10px;flex-wrap:wrap}
+    .nav{display:flex;gap:10px;align-items:center}
     .nav a{padding:8px 12px;border-radius:10px;color:#fff}
     .nav a:hover{background:rgba(255,255,255,.14)}
-    .who{opacity:.9;font-size:13px}
-    /* Page */
-    .page{padding:22px}
-    /* Cards */
-    .cards{display:grid;gap:14px;grid-template-columns:repeat(4,1fr)}
-    @media(max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:650px){.cards{grid-template-columns:1fr}}
-    .card{background:#fff;border-radius:var(--radius);padding:18px;box-shadow:0 12px 28px rgba(62,36,32,.12);position:relative;overflow:hidden;transition:transform .2s ease, box-shadow .2s ease;cursor:pointer}
-    .card:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(62,36,32,.16)}
-    .card h3{margin:0 0 8px;color:var(--brown);font-size:16px}
-    .kpi{font-size:34px;font-weight:800;margin:6px 0 10px}
-    .progress{height:10px;background:#f1f1f1;border-radius:999px;overflow:hidden}
-    .progress>span{display:block;height:100%;background:var(--beige);width:0%}
-    .spark{position:absolute;inset:auto 10px 10px auto;font-size:12px;color:var(--muted)}
-    /* Sections */
-    .section{margin-top:22px}
-    .section h2{margin:0 0 10px;color:var(--brown);font-size:20px}
-    .grid2{display:grid;gap:14px;grid-template-columns:1.3fr .7fr}
-    @media(max-width:1000px){.grid2{grid-template-columns:1fr}}
-    .panel{background:#fff;border-radius:var(--radius);box-shadow:0 6px 22px rgba(62,36,32,.10)}
-    .panel .head{padding:14px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
-    .panel .body{padding:10px 12px}
-    .list{display:grid}
-    .item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #f5f5f5}
-    .item span.small{color:var(--muted);font-size:12px}
-    .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown)}
-    /* Skeletons */
-    .skeleton{position:relative;overflow:hidden;background:#f3f4f6}
-    .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(0,0,0,.04),transparent);animation:s 1.3s infinite}
-    @keyframes s{100%{transform:translateX(100%)}}
-    .footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19)}
-    .link{color:var(--beige)}
-  </style>
-  <!-- 🔔 Bell CSS -->
-<style>
-  /* شارة عدد الإشعارات */
-  #bellDot{
-    position:absolute; top:-4px; inline-size:18px; block-size:18px;
-    background:#e11d48; color:#fff; font-size:12px; display:none;
-    border-radius:999px; text-align:center; line-height:18px
-  }
-  /* منيو منسدلة عامة (تُستخدم للجرس) */
-  .dropdown-menu{
-    position:absolute; right:0; top:calc(100% + 6px); z-index:9999;
-    background:#fff; border:1px solid #eee; border-radius:12px;
-    box-shadow:0 10px 30px rgba(62,36,32,.12); max-height:260px; overflow:auto;
-    min-width:320px; display:none;
-  }
-  .dropdown-menu.show{ display:block }
-  .dd-item{ padding:10px 12px; border-bottom:1px solid #f3f3f3; cursor:pointer }
-  .dd-item:hover{ background:#fff8ef }
-  .muted{ color:#6b7280 }
-</style>
+    .nav .select{border-radius:10px;border:0;padding:8px 10px}
 
+    .page{padding:18px;display:grid;gap:16px}
+    .grid{display:grid;gap:16px}
+    @media(min-width:1100px){ .grid.two{grid-template-columns:2fr 1fr} }
+    @media(min-width:900px){ .grid.three{grid-template-columns:repeat(3,1fr)} }
+    @media(min-width:1100px){ .grid.four{grid-template-columns:repeat(4,1fr)} }
+
+    .panel{background:#fff;border-radius:var(--radius);box-shadow:0 12px 30px rgba(62,36,32,.12);overflow:hidden}
+    .panel .head{padding:12px 14px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+    .panel .body{padding:12px 14px}
+    .muted{color:var(--muted)}
+    .select,.input{padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
+
+    /* KPI tiles */
+    .kpis{display:grid;gap:12px}
+    @media(min-width:900px){ .kpis{grid-template-columns:repeat(5,1fr)} }
+    .kpi{background:#fff;border:1px solid #eee;border-radius:14px;padding:14px;display:grid;gap:6px}
+    .kpi .lbl{font-size:13px;color:var(--muted)}
+    .kpi .val{font-size:26px;font-weight:800;color:var(--brown)}
+    .kpi .hint{font-size:12px;color:var(--muted)}
+
+    /* Column counters */
+    .cols{display:grid;gap:10px}
+    @media(min-width:800px){ .cols{grid-template-columns:repeat(4,1fr)} }
+    .colbox{background:#fff8ef;border:1px solid #edd7ca;border-radius:14px;padding:12px}
+    .colbox .title{color:var(--brown);font-weight:800}
+    .colbox .num{font-size:22px;font-weight:800}
+
+    /* Tables */
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #f0f0f0;text-align:right}
+    th{color:var(--brown);font-weight:800;background:#fffaf5}
+    tr:hover td{background:#fffdf9}
+
+    .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);display:inline-flex;align-items:center;gap:6px}
+    .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
+
+    .empty{padding:14px;border:1px dashed #ead8cb;border-radius:12px;color:#8f7f76;background:#fffbf6}
+
+    footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);margin-top:8px}
+  </style>
 </head>
 <body>
-  <div class="layout">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-badge"></span>
-        <div>
-          <strong id="brandTitle">MZJ Workspace</strong>
-          <div class="who" id="whois">…</div>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-badge"></span>
+      <strong>MZJ Workspace — لوحة التحكم</strong>
+    </div>
+    <nav class="nav">
+      <a id="navDashboard" href="dashboard.html">لوحة التحكم</a>
+      <a id="navProjects"  href="projects.html">المشاريع</a>
+      <a id="navMembers"   href="members.html">الأعضاء</a>
+      <a id="navAdmin"     href="admin.html">الإدارة</a>
+      <select id="spaceSelect" class="select"></select>
+      <a href="javascript:void(0)" id="btnLogout">تسجيل الخروج</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="panel">
+      <div class="head">
+        <div><strong>ملخص الـ Space الحالي</strong></div>
+        <div class="muted" id="who"></div>
+      </div>
+      <div class="body">
+        <div class="kpis" id="kpis">
+          <div class="kpi"><div class="lbl">إجمالي المهام</div><div class="val" id="k_total">—</div><div class="hint">كل الأعمدة</div></div>
+          <div class="kpi"><div class="lbl">متأخرة</div><div class="val" id="k_overdue">—</div><div class="hint">تاريخ تسليم قبل اليوم</div></div>
+          <div class="kpi"><div class="lbl">تسليم اليوم</div><div class="val" id="k_today">—</div><div class="hint">تسليم خلال اليوم</div></div>
+          <div class="kpi"><div class="lbl">تحت المراجعة</div><div class="val" id="k_review">—</div><div class="hint">“تحت المراجعة”</div></div>
+          <div class="kpi"><div class="lbl">غير معيّنة</div><div class="val" id="k_unassigned">—</div><div class="hint">بدون مسؤول</div></div>
         </div>
       </div>
-      <nav class="nav">
-        <a href="dashboard.html">لوحة التحكم</a>
-        <a href="projects.html">المشاريع</a>
-        <a href="members.html">الأعضاء</a>
-        <a href="admin.html">الإدارة</a>
-        <a href="javascript:void(0)" onclick="mzjLogout()">تسجيل الخروج</a>
-      </nav>
-    </header>
+    </section>
 
-    <main class="page">
-      <!-- KPIs -->
-      <section class="cards">
-        <article class="card" id="card-today" title="مهام مستحقة اليوم">
-          <h3>مهام اليوم</h3>
-          <div class="kpi" id="kpi-today" aria-live="polite">0</div>
-          <div class="progress"><span id="prog-today"></span></div>
-          <div class="spark" id="spark-today">—</div>
-        </article>
+    <section class="panel">
+      <div class="head">
+        <div><strong>عداد الأعمدة</strong></div>
+        <div class="muted" id="colsHint">ريل مواصفات / ريل قصير / تصميم صور / يوتيوب / …</div>
+      </div>
+      <div class="body">
+        <div class="cols" id="cols"></div>
+      </div>
+    </section>
 
-        <article class="card" id="card-late" title="مهام متأخرة">
-          <h3>المهام المتأخرة</h3>
-          <div class="kpi" id="kpi-late">0</div>
-          <div class="progress"><span id="prog-late"></span></div>
-          <div class="spark" id="spark-late">—</div>
-        </article>
-
-        <article class="card" id="card-projects" title="المشاريع النشطة">
-          <h3>مشاريع نشطة</h3>
-          <div class="kpi" id="kpi-projects">0</div>
-          <div class="progress"><span id="prog-projects"></span></div>
-          <div class="spark" id="spark-projects">—</div>
-        </article>
-
-        <article class="card" id="card-newreq" title="طلبات جديدة">
-          <h3>طلبات جديدة</h3>
-          <div class="kpi" id="kpi-new">0</div>
-          <div class="progress"><span id="prog-new"></span></div>
-          <div class="spark" id="spark-new">—</div>
-        </article>
-      </section>
-
-      <!-- Lists -->
-      <section class="grid2 section">
-        <!-- My tasks -->
-        <div class="panel">
-          <div class="head">
-            <strong>مهامي</strong>
-            <a class="link" id="goProjects" href="projects.html">إدارة المهام ↗</a>
-          </div>
-          <div class="body">
-            <div id="myTasks" class="list">
-              <div class="item skeleton"><span>&nbsp;</span><span>&nbsp;</span></div>
-              <div class="item skeleton"><span>&nbsp;</span><span>&nbsp;</span></div>
-              <div class="item skeleton"><span>&nbsp;</span><span>&nbsp;</span></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Team activity -->
-        <div class="panel">
-          <div class="head">
-            <strong>نشاط الفريق (آخر المستجدات)</strong>
-          </div>
-          <div class="body">
-            <div id="feed" class="list">
-              <div class="item skeleton"><span>&nbsp;</span><span>&nbsp;</span></div>
-              <div class="item skeleton"><span>&nbsp;</span><span>&nbsp;</span></div>
-            </div>
-          </div>
+    <div class="grid two">
+      <section class="panel">
+        <div class="head"><strong>أقرب تسليم (Top 10)</strong></div>
+        <div class="body">
+          <div id="soonWrap"></div>
         </div>
       </section>
 
-      <!-- Projects list -->
-      <section class="section">
-        <div class="panel">
-          <div class="head">
-            <strong>المشاريع الحالية</strong>
-          </div>
-          <div class="body">
-            <div id="projList" class="list">
-              <div class="item skeleton"><span>&nbsp;</span><span>&nbsp;</span></div>
-              <div class="item skeleton"><span>&nbsp;</span><span>&nbsp;</span></div>
-            </div>
-          </div>
+      <section class="panel">
+        <div class="head"><strong>توزيع المهام على الأعضاء</strong></div>
+        <div class="body">
+          <div id="assigneesWrap"></div>
         </div>
       </section>
-    </main>
+    </div>
 
-    <footer class="footer"><small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small></footer>
-  </div>
+    <section class="panel">
+      <div class="head"><strong>نشاط حديث</strong><span class="muted">آخر 15 تحديث</span></div>
+      <div class="body" id="activityWrap"></div>
+    </section>
+  </main>
 
-  <!-- Firebase + Live Dashboard -->
+  <footer>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</footer>
+
+  <!-- Firebase + App -->
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-    import { getFirestore, collection, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+    import {
+      getFirestore, collection, doc, getDoc, getDocs, onSnapshot,
+      query, where, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-    // 🔗 سويتشر روابط CodePen/Vercel (بدون تعديل لاحقًا)
-    const CODEPEN = {
-      login:"https://codepen.io/evakkzkq-the-lessful/full/raxqmXB",
-      register:"https://codepen.io/evakkzkq-the-lessful/full/raxqZod",
-      dashboard:"https://codepen.io/evakkzkq-the-lessful/full/ogbaPOO",
-      projects:"https://codepen.io/evakkzkq-the-lessful/full/PwZydvZ",
-      members:"https://codepen.io/evakkzkq-the-lessful/full/GgoYXaJ",
-      admin:"https://codepen.io/evakkzkq-the-lessful/full/EaPdeMp"
-    };
-    const LOCAL = {login:"login.html",register:"register.html",dashboard:"dashboard.html",projects:"projects.html",members:"members.html",admin:"admin.html"};
-    const ON_VERCEL = /vercel\.app$/i.test(location.host) || (!/codepen\.io|cdpn\.io/i.test(location.host) && location.host !== '');
-    const L = ON_VERCEL ? LOCAL : CODEPEN;
-
-    // ⚙️ Firebase init
+    /* Config */
     const firebaseConfig = {
       apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
       authDomain: "mzj-workspace.firebaseapp.com",
@@ -201,126 +144,194 @@
       storageBucket: "mzj-workspace.firebasestorage.app",
       appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
     };
-    if (!getApps().length) initializeApp(firebaseConfig);
-
+    if(!getApps().length) initializeApp(firebaseConfig);
     const auth = getAuth();
     const db   = getFirestore();
 
-    // 🔒 حارس الدخول + زر الخروج
-    window.mzjLogout = async () => { await signOut(auth); location.href = L.login; };
+    /* UI refs */
+    const spaceSelect = document.getElementById('spaceSelect');
+    const whoEl       = document.getElementById('who');
+    document.getElementById('btnLogout').onclick = async()=>{ await signOut(auth); location.href="login.html"; };
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) { location.href = L.login; return; }
+    // KPI refs
+    const kTotal=document.getElementById('k_total');
+    const kOver=document.getElementById('k_overdue');
+    const kToday=document.getElementById('k_today');
+    const kRev  =document.getElementById('k_review');
+    const kUnas =document.getElementById('k_unassigned');
+    const colsBox = document.getElementById('cols');
+    const soonWrap = document.getElementById('soonWrap');
+    const assigneesWrap = document.getElementById('assigneesWrap');
+    const activityWrap  = document.getElementById('activityWrap');
 
-      // اسم ودور المستخدم (لو موجودين في users)
-      try {
-        const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js");
-        const u = await getDoc(doc(db,"users",user.uid));
-        const name = u.exists()? (u.data().name||'مستخدم'): (user.email||'مستخدم');
-        const role = u.exists()? (u.data().role||'member'): 'member';
-        document.getElementById('whois').textContent = `${name} — ${role === 'admin' ? 'مدير' : 'عضو'}`;
-      } catch {}
+    /* State */
+    let CURRENT_USER=null, IS_ADMIN=false;
+    let CURRENT_SPACE=null, SPACE_COLUMNS=["ريل مواصفات","ريل قصير","تصميم صور","يوتيوب","تحت المراجعة"];
+    let unsubTasks=null;
+    let TASKS=[];
 
-      // 🔴 مهم لظهور البيانات للأعضاء:
-      // لازم تكون القاعدة في Firestore تسمح read لأي مستخدم مسجَّل:
-      // match /{document=**} { allow read: if request.auth != null; }
+    function fmtDate(dstr){
+      if(!dstr) return '';
+      try{ const d=new Date(dstr+'T00:00:00'); return d.toLocaleDateString('ar-SA'); } catch{ return dstr; }
+    }
+    function todayYMD(){
+      const d=new Date(); const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${da}`;
+    }
 
-      // === KPIs Live ===
-      const kToday = document.getElementById('kpi-today'), pToday = document.getElementById('prog-today'), sToday=document.getElementById('spark-today');
-      const kLate  = document.getElementById('kpi-late'),  pLate  = document.getElementById('prog-late'),  sLate =document.getElementById('spark-late');
-      const kProj  = document.getElementById('kpi-projects'), pProj=document.getElementById('prog-projects'), sProj=document.getElementById('spark-projects');
-      const kNew   = document.getElementById('kpi-new'), pNew=document.getElementById('prog-new'), sNew=document.getElementById('spark-new');
+    // Auth gate: admin only, otherwise redirect to projects
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.href="login.html"; return; }
+      CURRENT_USER=user;
+      const u = await getDoc(doc(db,'users', user.uid));
+      const name = u.exists()? (u.data().name||user.email) : (user.email||'مستخدم');
+      const role = u.exists()? (u.data().role||'member') : 'member';
+      IS_ADMIN = role === 'admin';
+      whoEl.textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
 
-      const today = new Date().toISOString().slice(0,10); // YYYY-MM-DD
-      let allTasks = [];
+      if(!IS_ADMIN){
+        // إخفاء الروابط غير المسموحة ثم تحويل للمشاريع
+        document.getElementById('navMembers').style.display='none';
+        document.getElementById('navAdmin').style.display='none';
+        // المستخدم العضو ليس له صلاحية الدخول للوحة التحكم
+        location.href="projects.html";
+        return;
+      }
 
-      // مهامي (assigneeUid = uid)
-      const myTasksEl = document.getElementById('myTasks');
-      const qMy = query(collection(db,'tasks'), where('assigneeUid','==', user.uid), orderBy('createdAt','desc'));
-      onSnapshot(qMy, (snap)=>{
-        myTasksEl.innerHTML = '';
-        if (snap.empty) {
-          myTasksEl.innerHTML = `<div class="item"><span>لا توجد مهام مكلّف بها.</span><span class="small">—</span></div>`;
-          return;
-        }
-        snap.forEach(d=>{
-          const t=d.data();
-          const right = `<span class="small">${t.due||'-'}</span>`;
-          const left  = `<span>${t.title||'-'} <span class="badge">${t.status||'-'}</span></span>`;
-          const row = document.createElement('div'); row.className='item'; row.innerHTML = `${left}${right}`;
-          myTasksEl.appendChild(row);
-        });
-      });
-
-      // نشاط الفريق (أحدث المهام)
-      const feedEl = document.getElementById('feed');
-      const qFeed = query(collection(db,'tasks'), orderBy('createdAt','desc'));
-      onSnapshot(qFeed, (snap)=>{
-        feedEl.innerHTML = '';
-        let i=0;
-        snap.forEach(d=>{
-          if (i++>=8) return;
-          const t=d.data();
-          const row = document.createElement('div');
-          row.className='item';
-          row.innerHTML = `<span>${t.title||'-'} <span class="badge">${t.status||'-'}</span></span><span class="small">${t.due||'-'}</span>`;
-          feedEl.appendChild(row);
-        });
-      });
-
-      // المشاريع (لايف)
-      const projList = document.getElementById('projList');
-      onSnapshot(collection(db,'projects'), (snap)=>{
-        projList.innerHTML = '';
-        let count = 0;
-        snap.forEach(d=>{
-          count++;
-          const p=d.data();
-          const row = document.createElement('div');
-          row.className='item';
-          row.innerHTML = `<span>${p.name||'-'} <span class="badge">${p.department||'—'}</span></span><span class="small">${p.start||'—'}</span>`;
-          projList.appendChild(row);
-        });
-        // KPI projects
-        kProj.textContent = count; pProj.style.width = Math.min(100, count*10)+'%'; sProj.textContent = `مجموع المشاريع`;
-      });
-
-      // جميع المهام (لحساب Today/Late/New KPIs)
-      const qAll = query(collection(db,'tasks'), orderBy('createdAt','desc'));
-      onSnapshot(qAll, (snap)=>{
-        allTasks = [];
-        let nToday=0, nLate=0, nNew=0;
-
-        const now = new Date(today);
-        snap.forEach(d=>{
-          const t = d.data();
-          allTasks.push(t);
-          if (t.due === today) nToday++;
-          // متأخرة = تاريخ قبل اليوم ولم تُنجز
-          if (t.due && t.status !== 'done') {
-            const dd = new Date(t.due);
-            if (dd < now) nLate++;
-          }
-          if (t.status === 'new') nNew++;
-        });
-
-        // Today
-        kToday.textContent = nToday; pToday.style.width = Math.min(100,nToday*10)+'%'; sToday.textContent = today;
-        // Late
-        kLate.textContent  = nLate;  pLate.style.width  = Math.min(100,nLate*10)+'%';  sLate.textContent  = 'قبل اليوم';
-        // New
-        kNew.textContent   = nNew;   pNew.style.width   = Math.min(100,nNew*10)+'%';   sNew.textContent   = 'status = new';
-      });
-
-      // تنقّل الكروت للصفحات
-      document.getElementById('card-projects').onclick = ()=> location.href = L.projects;
-      document.getElementById('card-today').onclick    = ()=> location.href = L.projects;
-      document.getElementById('card-late').onclick     = ()=> location.href = L.projects;
-      document.getElementById('card-newreq').onclick   = ()=> location.href = L.projects;
-
-      // رابط إدارة المهام
-      document.getElementById('goProjects').href = L.projects;
+      bootSpaces();
     });
+
+    // Spaces dropdown + pick latest
+    async function bootSpaces(){
+      onSnapshot(collection(db,'spaces'), (snap)=>{
+        const items=[];
+        snap.forEach(d=>{
+          const data=d.data()||{};
+          if(data.active!==false) items.push({ id:d.id, ...data });
+        });
+        items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+
+        spaceSelect.innerHTML='';
+        items.forEach(s=>{
+          const opt=document.createElement('option');
+          opt.value=s.id; opt.textContent=s.name;
+          spaceSelect.appendChild(opt);
+        });
+
+        // select current
+        if(!CURRENT_SPACE && items.length){
+          CURRENT_SPACE = items[0].id;
+          SPACE_COLUMNS = (items[0].columns && items[0].columns.length)? items[0].columns.slice() : SPACE_COLUMNS;
+          if(!SPACE_COLUMNS.includes('تحت المراجعة')) SPACE_COLUMNS.push('تحت المراجعة');
+          spaceSelect.value = CURRENT_SPACE;
+          listenTasks();
+        }
+      });
+
+      spaceSelect.addEventListener('change', async (e)=>{
+        CURRENT_SPACE = e.target.value;
+        const d=await getDoc(doc(db,'spaces', CURRENT_SPACE));
+        if(d.exists()){
+          const cols = d.data().columns || [];
+          SPACE_COLUMNS = cols.length? cols.slice() : ["ريل مواصفات","ريل قصير","تصميم صور","يوتيوب"];
+          if(!SPACE_COLUMNS.includes('تحت المراجعة')) SPACE_COLUMNS.push('تحت المراجعة');
+        }
+        listenTasks(true);
+      });
+    }
+
+    function listenTasks(reset=false){
+      if(unsubTasks){ unsubTasks(); unsubTasks=null; }
+      if(!CURRENT_SPACE) return;
+
+      const qy = query(collection(db,'tasks'), where('spaceId','==', CURRENT_SPACE));
+      unsubTasks = onSnapshot(qy, (snap)=>{
+        TASKS=[]; snap.forEach(d=> TASKS.push({ id:d.id, ...(d.data()||{}) }));
+        renderAll();
+      }, (err)=>{ console.error(err); });
+    }
+
+    function renderAll(){
+      // KPIs
+      const today = todayYMD();
+      const total = TASKS.length;
+      const overdue = TASKS.filter(t=> t.due && t.due < today).length;
+      const dueToday= TASKS.filter(t=> t.due && t.due === today).length;
+      const review  = TASKS.filter(t=> t.status==='تحت المراجعة').length;
+      const unas    = TASKS.filter(t=> !t.assignee || !t.assignee.uid).length;
+
+      kTotal.textContent = total;
+      kOver.textContent  = overdue;
+      kToday.textContent = dueToday;
+      kRev.textContent   = review;
+      kUnas.textContent  = unas;
+
+      // Column counters
+      colsBox.innerHTML='';
+      SPACE_COLUMNS.forEach(c=>{
+        const n = TASKS.filter(t=> t.status===c).length;
+        const box=document.createElement('div');
+        box.className='colbox';
+        box.innerHTML=`<div class="title">${c}</div><div class="num">${n}</div>`;
+        colsBox.appendChild(box);
+      });
+
+      // Soon due (top 10 by due asc, valid due only)
+      const soon = TASKS.filter(t=> t.due).slice().sort((a,b)=> (a.due>b.due?1:-1)).slice(0,10);
+      soonWrap.innerHTML = soon.length? `
+        <table>
+          <thead><tr><th>المهمة</th><th>المسؤول</th><th>التاريخ</th><th>الحالة</th></tr></thead>
+          <tbody>
+            ${soon.map(t=>`
+              <tr>
+                <td>${t.name||'-'}</td>
+                <td>${t.assignee?`<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>`:'—'}</td>
+                <td>${fmtDate(t.due)||'—'}</td>
+                <td>${t.status||'—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : `<div class="empty">لا توجد تواريخ قريبة حاليًا.</div>`;
+
+      // Assignees distribution (top 10)
+      const mapAss={};
+      TASKS.forEach(t=>{
+        const key = t.assignee?.name || 'غير معيّن';
+        mapAss[key] = (mapAss[key]||0)+1;
+      });
+      const rows = Object.entries(mapAss).sort((a,b)=> b[1]-a[1]).slice(0,10);
+      assigneesWrap.innerHTML = rows.length? `
+        <table>
+          <thead><tr><th>العضو</th><th>عدد المهام</th></tr></thead>
+          <tbody>
+            ${rows.map(([n,c])=> `<tr><td>${n}</td><td>${c}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      ` : `<div class="empty">لا مهام مسندة بعد.</div>`;
+
+      // Recent activity (approx): آخر 15 حسب createdAt أو edited
+      const sorted = TASKS.slice().sort((a,b)=> (b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)).slice(0,15);
+      activityWrap.innerHTML = sorted.length? `
+        <table>
+          <thead><tr><th>المهمة</th><th>المسؤول</th><th>الحالة</th><th>إنشاء</th><th>روابط</th></tr></thead>
+          <tbody>
+            ${sorted.map(t=>{
+              const linksCount = Array.isArray(t.links)? t.links.length : 0;
+              const created = t.createdAt?.seconds ? new Date(t.createdAt.seconds*1000).toLocaleDateString('ar-SA') : '—';
+              return `
+                <tr>
+                  <td>${t.name||'-'}</td>
+                  <td>${t.assignee?`<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>`:'—'}</td>
+                  <td>${t.status||'—'}</td>
+                  <td>${created}</td>
+                  <td>${linksCount}</td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : `<div class="empty">لا نشاط حديث.</div>`;
+    }
   </script>
 </body>
 </html>

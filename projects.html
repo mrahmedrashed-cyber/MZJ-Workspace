@@ -1,99 +1,173 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>المشاريع — MZJ Workspace</title>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
-    :root { --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px }
+    :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal",system-ui,Arial;line-height:1.75}
+    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal",system-ui,Arial}
     a{color:inherit;text-decoration:none}
-    .layout{min-height:100dvh;display:grid;grid-template-rows:auto 1fr}
-    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--brown);color:#fff;box-shadow:0 4px 16px rgba(62,36,32,.18)}
-    .brand{display:flex;align-items:center;gap:10px;color:#fff}
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--brown);color:#fff;position:sticky;top:0;z-index:10;box-shadow:0 6px 20px rgba(62,36,32,.2)}
+    .brand{display:flex;align-items:center;gap:10px}
     .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
-    .nav{display:flex;gap:10px;flex-wrap:wrap}
+    .nav{display:flex;gap:10px;align-items:center}
     .nav a{padding:8px 12px;border-radius:10px;color:#fff}
     .nav a:hover{background:rgba(255,255,255,.14)}
-    .page{padding:20px}
-    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-    .btn{padding:10px 12px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
-    .btn-primary{background:var(--brown);border-color:var(--brown);color:#fff}
-    .kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-    @media(max-width:900px){.kanban{grid-template-columns:1fr}}
-    .col{background:#fff;border-radius:var(--radius);padding:12px;box-shadow:0 6px 22px rgba(62,36,32,.10);display:flex;flex-direction:column;gap:10px}
-    .col h3{margin:0;color:var(--brown)}
-    .ticket{background:#fff;border:1px solid #eee;border-radius:12px;padding:10px 12px;display:grid;gap:6px;cursor:pointer}
-    .ticket small{color:var(--muted)}
-    .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);justify-self:start}
-    .foot{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19)}
+    #bellDot{position:absolute; top:-4px; inline-size:18px; block-size:18px; background:#e11d48; color:#fff; font-size:12px; display:none; border-radius:999px; text-align:center; line-height:18px}
+    .page{padding:18px;display:grid;gap:16px}
+    .panel{background:#fff;border-radius:var(--radius);box-shadow:0 12px 30px rgba(62,36,32,.12)}
+    .panel .head{padding:12px 14px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center}
+    .panel .body{padding:12px 14px}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .select,.input{padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
+    .btn{padding:10px 12px;border-radius:12px;border:0;background:var(--brown);color:#fff;cursor:pointer;font-weight:800}
+    .btn.secondary{background:#fff;color:var(--brown);border:1px solid var(--brown)}
+    .muted{color:var(--muted)}
+
+    /* Board */
+    .board{display:grid;gap:14px;grid-template-columns:repeat(4,1fr)}
+    @media(max-width:1200px){.board{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:700px){.board{grid-template-columns:1fr}}
+    .col{background:#fff;border-radius:14px;display:flex;flex-direction:column;min-height:240px}
+    .col-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #f2e7df;background:#fff8ef;border-top-left-radius:14px;border-top-right-radius:14px}
+    .col-title{color:var(--brown);font-weight:800}
+    .col-body{padding:10px;display:grid;gap:10px}
+    .dropzone{min-height:120px;border:2px dashed transparent;border-radius:12px;transition:.15s}
+    .dropzone.drag{border-color:#e5d2c6;background:#fffaf5}
+
+    /* Card */
+    .card{background:#fff;border:1px solid #eee;border-radius:12px;padding:10px;box-shadow:0 8px 20px rgba(62,36,32,.06);cursor:grab}
+    .card h4{margin:0 0 6px;color:var(--brown);font-size:16px}
+    .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);display:inline-flex;align-items:center;gap:6px}
+    .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .small{font-size:12px;color:var(--muted)}
+    .att{display:inline-flex;gap:6px;align-items:center;font-size:12px}
+    .att a{color:var(--brown);text-decoration:underline}
+
+    /* Modal */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;place-items:center;padding:16px}
+    .modal.show{display:grid}
+    .sheet{background:#fff;border-radius:16px;max-width:720px;width:100%;box-shadow:0 30px 80px rgba(62,36,32,.25)}
+    .sheet .head{padding:14px 16px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+    .sheet .body{padding:14px 16px;display:grid;gap:10px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:800px){.grid2{grid-template-columns:1fr}}
+    label{display:block;margin:8px 0 6px;font-weight:700;color:var(--brown)}
+    input,select,textarea{width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;font-family:inherit}
+    textarea{min-height:110px;resize:vertical}
+    input:focus,select:focus,textarea:focus{outline:3px solid rgba(188,143,116,.25);border-color:var(--beige)}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .color-dot{inline-size:14px;block-size:14px;border-radius:999px;border:1px solid #ddd}
+    .footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);margin-top:10px}
+    .dropdown-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:9999;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);max-height:260px;overflow:auto;min-width:280px;display:none}
+    .dropdown-menu.show{display:block}
+    .dd-item{padding:10px 12px;border-bottom:1px solid #f3f3f3;cursor:pointer}
+    .dd-item:hover{background:#fff8ef}
   </style>
 </head>
 <body>
-  <div class="layout">
-    <header class="topbar">
-      <a class="brand" href="#" id="brandLink">
-        <span class="brand-badge"></span><strong>MZJ Workspace</strong>
-      </a>
-      <nav class="nav">
-        <a href="dashboard.html">لوحة التحكم</a>
-        <a href="projects.html">المشاريع</a>
-        <a href="members.html">الأعضاء</a>
-        <a href="admin.html">الإدارة</a>
-        <a href="javascript:void(0)" onclick="mzjLogout()">تسجيل الخروج</a>
-      </nav>
-    </header>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-badge"></span>
+      <strong>MZJ Workspace — المشاريع</strong>
+    </div>
+    <nav class="nav">
+      <a href="dashboard.html">لوحة التحكم</a>
+      <a href="projects.html">المشاريع</a>
+      <a href="members.html">الأعضاء</a>
+      <a href="admin.html">الإدارة</a>
+      <a href="javascript:void(0)" id="btnBell" style="position:relative">🔔<span id="bellDot">0</span></a>
+      <a href="javascript:void(0)" onclick="mzjLogout()">تسجيل الخروج</a>
+    </nav>
+    <div id="bellMenu" class="dropdown-menu" style="right:12px; top:56px; min-width:320px;"></div>
+  </header>
 
-    <main class="page">
-      <div class="toolbar">
-        <button class="btn btn-primary" id="btnNewProject">+ مشروع جديد</button>
-        <button class="btn" id="btnNewTask">+ مهمة جديدة</button>
-        <button class="btn" id="btnRefresh">تحديث</button>
+  <main class="page">
+    <!-- Spaces & Controls -->
+    <section class="panel">
+      <div class="head">
+        <div class="controls">
+          <select id="spaceSelect" class="select"></select>
+          <button class="btn secondary" id="btnNewSpace">Space جديد</button>
+          <button class="btn" id="btnNewTask">تاسك جديد</button>
+        </div>
+        <div class="muted" id="who"></div>
       </div>
+      <div class="body">
+        <div class="board" id="board">
+          <!-- الأعمدة ستُحقن ديناميكياً -->
+        </div>
+      </div>
+    </section>
+  </main>
 
-      <section class="kanban">
-        <div class="col" id="col-todo"><h3>To Do — للبدء</h3></div>
-        <div class="col" id="col-inprogress"><h3>In Progress — قيد التنفيذ</h3></div>
-        <div class="col" id="col-done"><h3>Done — منجز</h3></div>
-      </section>
-    </main>
+  <!-- Task Modal -->
+  <div class="modal" id="taskModal">
+    <div class="sheet">
+      <div class="head">
+        <strong>تاسك جديد</strong>
+        <button class="btn secondary" id="btnCloseModal">إغلاق</button>
+      </div>
+      <div class="body">
+        <div class="grid2">
+          <div>
+            <label>اسم التاسك</label>
+            <input id="tName" placeholder="مثال: تصوير إلنترا — ريل 30 ثانية">
+          </div>
+          <div>
+            <label>تاريخ التسليم</label>
+            <input id="tDue" type="date">
+          </div>
+        </div>
 
-    <footer class="foot"><small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small></footer>
+        <label>الوصف</label>
+        <textarea id="tDesc" placeholder="اكتب تفاصيل المهمة…"></textarea>
+
+        <div class="grid2">
+          <div style="position:relative">
+            <label>المسؤول عن التاسك</label>
+            <input id="tAssigneeSearch" placeholder="اكتب اسم العضو…">
+            <div id="assigneeMenu" class="dropdown-menu"></div>
+            <div id="assigneeChip" class="chips"></div>
+          </div>
+          <div>
+            <label>لون العضو</label>
+            <div class="row">
+              <input id="tColor" type="color" value="#bc8f74" style="width:70px;height:44px;padding:4px">
+              <span class="muted">يتم حفظ اللون للعضو ويظهر على البطاقات</span>
+            </div>
+          </div>
+        </div>
+
+        <label>المرفقات</label>
+        <input id="tFiles" type="file" multiple>
+      </div>
+      <div class="footer" style="display:flex;justify-content:flex-end;gap:10px">
+        <button class="btn secondary" id="btnCancelTask">إلغاء</button>
+        <button class="btn" id="btnSaveTask">حفظ التاسك</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Firebase + Firestore (الأساس) -->
+  <footer class="footer"><small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small></footer>
+
+  <!-- Firebase & App -->
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, serverTimestamp, updateDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import {
+      getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
+      onSnapshot, query, where, orderBy, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+    import {
+      getStorage, ref as sRef, uploadBytes, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 
-    // 🔗 سويتشر الروابط (Vercel / CodePen)
-    const CODEPEN = {
-      login:     "https://codepen.io/evakkzkq-the-lessful/full/raxqmXB",
-      register:  "https://codepen.io/evakkzkq-the-lessful/full/raxqZod",
-      dashboard: "https://codepen.io/evakkzkq-the-lessful/full/ogbaPOO",
-      projects:  "https://codepen.io/evakkzkq-the-lessful/full/PwZydvZ",
-      members:   "https://codepen.io/evakkzkq-the-lessful/full/GgoYXaJ",
-      admin:     "https://codepen.io/evakkzkq-the-lessful/full/EaPdeMp"
-    };
-    const LOCAL = {
-      login:"login.html", register:"register.html", dashboard:"dashboard.html",
-      projects:"projects.html", members:"members.html", admin:"admin.html"
-    };
-    const ON_VERCEL = /vercel\.app$/i.test(location.host) || (!/codepen\.io|cdpn\.io/i.test(location.host) && location.host !== '');
-    const L = ON_VERCEL ? LOCAL : CODEPEN;
-    document.getElementById('brandLink').href = L.dashboard;
-    document.querySelectorAll('.nav a').forEach(a=>{
-      const t=a.textContent||'';
-      if(t.includes('لوحة')) a.href=L.dashboard;
-      if(t.includes('المشاريع')) a.href=L.projects;
-      if(t.includes('الأعضاء')) a.href=L.members;
-      if(t.includes('الإدارة')) a.href=L.admin;
-    });
-
-    // ⚙️ Firebase init (مرة واحدة)
+    // Firebase init
     const firebaseConfig = {
       apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
       authDomain: "mzj-workspace.firebaseapp.com",
@@ -102,109 +176,351 @@
       appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
     };
     if (!getApps().length) initializeApp(firebaseConfig);
-
-    const db   = getFirestore();
     const auth = getAuth();
+    const db   = getFirestore();
+    const storage = getStorage();
 
-    // 🔒 حارس الدخول + زر الخروج
-    window.mzjLogout = async () => { await signOut(auth); location.href = L.login; };
-    onAuthStateChanged(auth, (user) => { if (!user) location.href = L.login; });
+    // Auth guard
+    window.mzjLogout = async ()=>{ await signOut(auth); location.href="login.html"; };
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.href="login.html"; return; }
+      const u = await getDoc(doc(db,"users", user.uid));
+      const name = u.exists()? (u.data().name || user.email) : (user.email || 'مستخدم');
+      const role = u.exists()? (u.data().role || 'member') : 'member';
+      document.getElementById('who').textContent = `${name} — ${role==='admin'?'مدير':'عضو'}`;
+    });
 
-    // 🗂️ تذكرة كانبان
-    const renderTicket = (t) => {
-      const el = document.createElement('article');
-      el.className = 'ticket';
-      el.innerHTML = `
-        <strong>${t.title}</strong>
-        <small>${t.assigneeUid ? ('المكلف: ' + t.assigneeUid) : 'غير معيّن'} — موعد: ${t.due||'-'}</small>
-        <span class="badge">${t.projectId||t.projectName||'بدون مشروع'}</span>`;
-      el.onclick = async () => {
-        // تدوير الحالة (قد تفشل لو المستخدم ليس المكلّف حسب القواعد)
-        const next = t.status==='todo'?'inprogress':(t.status==='inprogress'?'done':'todo');
-        try {
-          await updateDoc(doc(db,'tasks',t.id), { status: next });
-          loadKanban();
-        } catch(e){
-          alert('⚠️ لا تملك صلاحية تعديل هذه المهمة (مسموح للمكلّف أو للأدمِن فقط).');
-          console.error(e);
-        }
-      };
-      return el;
-    };
+    // ───────────────────────────────── Spaces ─────────────────────────────────
+    const DEFAULT_COLUMNS = ["قائمة المهام","قيد التنفيذ","للمراجعة","مكتمل"];
+    const spaceSelect = document.getElementById('spaceSelect');
+    let CURRENT_SPACE = null;      // spaceId
+    let SPACE_COLUMNS = DEFAULT_COLUMNS.slice();
 
-    // 🔁 تحميل الأعمدة
-    async function loadKanban(){
-      ['col-todo','col-inprogress','col-done'].forEach(id=>{
-        const col=document.getElementById(id);
-        col.querySelectorAll('.ticket').forEach(n=>n.remove());
+    async function ensureDefaultSpace(){
+      // لو مفيش Spaces، أنشئ Space للشهر الحالي
+      const snap = await getDocs(collection(db,'spaces'));
+      if (snap.empty){
+        const now = new Date();
+        const label = now.toLocaleDateString('ar-SA',{ year:'numeric', month:'long' });
+        const ref = await addDoc(collection(db,'spaces'), {
+          name: label, columns: DEFAULT_COLUMNS, createdAt: serverTimestamp(), active:true
+        });
+        return ref.id;
+      } else {
+        // رجّع أول Space أبجديًا بالوقت
+        let firstId=null, firstTs=0;
+        snap.forEach(d=>{
+          const ts = d.data()?.createdAt?.seconds || 0;
+          if (ts>=firstTs){ firstTs=ts; firstId=d.id; }
+        });
+        return firstId;
+      }
+    }
+
+    function fillSpaceDropdown(list, selectedId){
+      spaceSelect.innerHTML='';
+      list.forEach(s=>{
+        const opt=document.createElement('option');
+        opt.value=s.id; opt.textContent=s.name; spaceSelect.appendChild(opt);
       });
-      const snap=await getDocs(collection(db,'tasks'));
-      snap.forEach(d=>{
-        const t={ id:d.id, ...d.data() };
-        const target=t.status==='inprogress'?'col-inprogress':(t.status==='done'?'col-done':'col-todo');
-        document.getElementById(target).appendChild(renderTicket(t));
+      if (selectedId) spaceSelect.value = selectedId;
+    }
+
+    // listen spaces
+    onSnapshot(collection(db,'spaces'), snap=>{
+      const items=[];
+      snap.forEach(d=> items.push({id:d.id, ...(d.data()||{})}));
+      // رتب بالأحدث أولاً
+      items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+      fillSpaceDropdown(items, CURRENT_SPACE);
+      if (!CURRENT_SPACE && items.length){ CURRENT_SPACE = items[0].id; SPACE_COLUMNS = items[0].columns || DEFAULT_COLUMNS; renderBoardSkeleton(); listenTasks(); }
+    });
+
+    document.getElementById('btnNewSpace').addEventListener('click', async ()=>{
+      const name = prompt('اسم الـSpace (مثال: نوفمبر 2025):');
+      if (!name) return;
+      try{
+        const ref = await addDoc(collection(db,'spaces'), {
+          name, columns: DEFAULT_COLUMNS, createdAt: serverTimestamp(), active:true
+        });
+        CURRENT_SPACE = ref.id; SPACE_COLUMNS = DEFAULT_COLUMNS.slice();
+        renderBoardSkeleton(); listenTasks(true);
+      }catch(e){
+        alert('⚠️ إنشاء Space يحتاج صلاحية أدمِن.');
+      }
+    });
+
+    spaceSelect.addEventListener('change', async (e)=>{
+      CURRENT_SPACE = e.target.value;
+      const d = await getDoc(doc(db,'spaces', CURRENT_SPACE));
+      SPACE_COLUMNS = d.exists()? (d.data().columns || DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
+      renderBoardSkeleton(); listenTasks(true);
+    });
+
+    // ─────────────────────────────── Users & Colors ───────────────────────────
+    let USERS = []; // {uid,name,role,color}
+    async function loadUsers(){
+      const snap = await getDocs(collection(db,'users'));
+      USERS=[]; snap.forEach(d=>{
+        const u=d.data()||{};
+        USERS.push({ uid:d.id, name:u.name||d.id.slice(0,6), role:u.role||'member', color:u.color||'#bc8f74' });
+      });
+    }
+    await loadUsers();
+
+    // ─────────────────────────────── Task Modal UI ───────────────────────────
+    const taskModal = document.getElementById('taskModal');
+    const btnNewTask = document.getElementById('btnNewTask');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnCancelTask = document.getElementById('btnCancelTask');
+    const btnSaveTask = document.getElementById('btnSaveTask');
+
+    const tName = document.getElementById('tName');
+    const tDesc = document.getElementById('tDesc');
+    const tDue  = document.getElementById('tDue');
+    const tFiles= document.getElementById('tFiles');
+    const tAssigneeSearch = document.getElementById('tAssigneeSearch');
+    const assigneeMenu = document.getElementById('assigneeMenu');
+    const assigneeChip = document.getElementById('assigneeChip');
+    const tColor = document.getElementById('tColor');
+
+    let SELECTED_ASSIGNEE = null; // {uid,name,color}
+
+    function openModal(){ taskModal.classList.add('show'); }
+    function closeModal(){ taskModal.classList.remove('show'); resetForm(); }
+
+    btnNewTask.addEventListener('click', ()=> openModal());
+    btnCloseModal.addEventListener('click', ()=> closeModal());
+    btnCancelTask.addEventListener('click', ()=> closeModal());
+    taskModal.addEventListener('click', (e)=>{ if(e.target===taskModal) closeModal(); });
+
+    function resetForm(){
+      tName.value=''; tDesc.value=''; tDue.value=''; tFiles.value='';
+      tAssigneeSearch.value=''; assigneeMenu.innerHTML=''; assigneeMenu.classList.remove('show');
+      assigneeChip.innerHTML=''; SELECTED_ASSIGNEE=null; tColor.value='#bc8f74';
+    }
+
+    function renderAssigneeMenu(filter){
+      const f=(filter||'').toLowerCase();
+      assigneeMenu.innerHTML='';
+      USERS.filter(u=>u.name.toLowerCase().includes(f)).forEach(u=>{
+        const it=document.createElement('div');
+        it.className='dd-item';
+        it.innerHTML = `<span class="row"><span class="color-dot" style="background:${u.color||'#bc8f74'}"></span> ${u.name} <span class="muted">(${u.role})</span></span>`;
+        it.onclick=()=> selectAssignee(u);
+        assigneeMenu.appendChild(it);
+      });
+      assigneeMenu.classList.add('show');
+    }
+    function selectAssignee(u){
+      SELECTED_ASSIGNEE = { ...u };
+      assigneeChip.innerHTML = `<span class="badge"><span class="dot" style="background:${u.color}"></span>${u.name}</span>`;
+      tColor.value = u.color || '#bc8f74';
+      assigneeMenu.classList.remove('show');
+    }
+    tAssigneeSearch.addEventListener('input', (e)=>{
+      renderAssigneeMenu(e.target.value.trim());
+    });
+    tAssigneeSearch.addEventListener('focus', ()=>{
+      renderAssigneeMenu(tAssigneeSearch.value);
+    });
+    document.addEventListener('click', (e)=>{
+      if (!assigneeMenu.contains(e.target) && e.target!==tAssigneeSearch) assigneeMenu.classList.remove('show');
+    });
+
+    // ─────────────────────────── Save Task (+ attachments) ────────────────────
+    async function uploadAttachments(taskId){
+      const files = Array.from(tFiles.files||[]);
+      const out = [];
+      for (const file of files){
+        const path = `attachments/${taskId}/${Date.now()}_${file.name}`;
+        const ref = sRef(storage, path);
+        await uploadBytes(ref, file);
+        const url = await getDownloadURL(ref);
+        out.push({ name:file.name, url, path });
+      }
+      return out;
+    }
+
+    btnSaveTask.addEventListener('click', async ()=>{
+      if (!CURRENT_SPACE) return alert('اختر Space أولاً');
+      const name = tName.value.trim();
+      if (!name) return alert('اكتب اسم التاسك');
+      const due = tDue.value || null;
+      const description = tDesc.value || null;
+      const assigneeUid = SELECTED_ASSIGNEE?.uid || null;
+      const assigneeName= SELECTED_ASSIGNEE?.name || null;
+      const color = (document.getElementById('tColor').value || '#bc8f74').trim();
+
+      try{
+        // حدّث لون العضو المختار في users
+        if (assigneeUid){
+          await setDoc(doc(db,'users', assigneeUid), { color }, { merge:true });
+          // حدّث كاش المستخدمين
+          const idx = USERS.findIndex(u=>u.uid===assigneeUid);
+          if (idx>-1) USERS[idx].color=color;
+        }
+
+        // أنشئ التاسك
+        const payload = {
+          spaceId: CURRENT_SPACE,
+          name, description, due,
+          status: SPACE_COLUMNS[0],     // أول عمود
+          assignee: assigneeUid ? { uid: assigneeUid, name: assigneeName, color } : null,
+          attachments: [],
+          createdBy: auth.currentUser?.uid || null,
+          createdAt: serverTimestamp(),
+          active:true
+        };
+        const ref = await addDoc(collection(db,'tasks'), payload);
+
+        // ارفع المرفقات (إن وجدت) وحدث التاسك
+        const atts = await uploadAttachments(ref.id);
+        if (atts.length){
+          await updateDoc(doc(db,'tasks', ref.id), { attachments: atts });
+        }
+
+        alert('✅ تم حفظ التاسك');
+        closeModal();
+      }catch(e){
+        console.error(e);
+        if (e?.code==='permission-denied') alert('⚠️ إنشاء التاسك يحتاج صلاحية أدمِن وفق القواعد.');
+        else alert('حدث خطأ: '+e.message);
+      }
+    });
+
+    // ─────────────────────────────── Board Render & DnD ──────────────────────
+    const board = document.getElementById('board');
+    let TASKS = []; // cache
+
+    function renderBoardSkeleton(){
+      board.innerHTML='';
+      SPACE_COLUMNS.forEach(col=>{
+        const sec=document.createElement('section');
+        sec.className='col';
+        sec.dataset.status=col;
+        sec.innerHTML=`
+          <div class="col-head">
+            <span class="col-title">${col}</span>
+          </div>
+          <div class="col-body">
+            <div class="dropzone" data-zone="${col}"></div>
+          </div>`;
+        board.appendChild(sec);
+      });
+
+      // DnD handlers
+      board.querySelectorAll('.dropzone').forEach(zone=>{
+        zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('drag'); });
+        zone.addEventListener('dragleave', ()=> zone.classList.remove('drag'));
+        zone.addEventListener('drop', async (e)=>{
+          e.preventDefault(); zone.classList.remove('drag');
+          const taskId = e.dataTransfer.getData('text/plain');
+          const newStatus = zone.dataset.zone;
+          try{
+            await updateDoc(doc(db,'tasks', taskId), { status:newStatus });
+          }catch(err){
+            console.error(err);
+            alert('⚠️ تحديث الحالة يحتاج صلاحية كافية.');
+          }
+        });
       });
     }
 
-    // ➕ مشروع جديد (أدمِن فقط حسب القواعد)
-    document.getElementById('btnNewProject').addEventListener('click', async ()=>{
-      const name = prompt('اسم المشروع؟'); if(!name) return;
-      try{
-        await addDoc(collection(db,'projects'), { name, active:true, createdAt: serverTimestamp(), createdBy: auth.currentUser?.uid||null });
-        alert('✅ تم إنشاء المشروع'); 
-      }catch(e){
-        if (e?.code==='permission-denied') alert('⚠️ العملية للأدمِن فقط.');
-        else alert('حدث خطأ: ' + e.message);
-      }
-    });
+    function renderTasks(){
+      // امسح كل الج-dropzones
+      board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
 
-    // ➕ مهمة جديدة (تخزين createdBy + assigneeUid)
-    document.getElementById('btnNewTask').addEventListener('click', async ()=>{
-      const title = prompt('عنوان المهمة؟'); if(!title) return;
-      const projectId = prompt('ID/اسم المشروع (اختياري)') || null;
-      const assigneeUid = prompt('UID العضو المكلّف (مطلوب لتكليفه)') || null;
-      const due = prompt('تاريخ التسليم (YYYY-MM-DD)') || null;
-      try{
-        await addDoc(collection(db,'tasks'), {
-          title, status:'todo', projectId, assigneeUid, due,
-          createdBy: auth.currentUser?.uid || null,
-          createdAt: serverTimestamp()
-        });
-        loadKanban();
-      }catch(e){
-        if (e?.code==='permission-denied') alert('⚠️ العملية للأدمِن فقط.');
-        else alert('حدث خطأ: ' + e.message);
-      }
-    });
-
-    document.getElementById('btnRefresh').addEventListener('click', loadKanban);
-
-    // 🚀 أول تحميل
-    loadKanban();
-  </script>
-
-  <!-- 👥 إظهار أزرار الإدارة فقط للأدمِن + عرض الاسم والدور -->
-  <script type="module">
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-
-    const auth = getAuth();
-    const db   = getFirestore();
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return;
-      const u = await getDoc(doc(db, "users", user.uid));
-      const role = u.exists() ? u.data().role : "member";
-
-      ["btnNewProject", "btnNewTask"].forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = role === "admin" ? "inline-flex" : "none";
+      const byStatus = {};
+      SPACE_COLUMNS.forEach(s=> byStatus[s]=[]);
+      TASKS.forEach(t=>{
+        (byStatus[t.status]||(byStatus[t.status]=[])).push(t);
       });
+      SPACE_COLUMNS.forEach(status=>{
+        const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
+        const list = byStatus[status]||[];
+        list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+        list.forEach(t=>{
+          const card=document.createElement('article');
+          card.className='card'; card.draggable=true; card.dataset.id=t.id;
+          const ass = t.assignee;
+          const attCount = (t.attachments||[]).length;
+          card.innerHTML=`
+            <h4>${t.name||'-'}</h4>
+            <div class="row">
+              ${ass ? `<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>` : ''}
+              ${t.due ? `<span class="small">📅 ${t.due}</span>`:''}
+              ${attCount? `<span class="small att">📎 ${attCount} مرفق</span>`:''}
+            </div>
+            ${t.description? `<div class="small" style="margin-top:6px">${t.description}</div>`:''}
+          `;
+          card.addEventListener('dragstart', (e)=>{ e.dataTransfer.setData('text/plain', t.id); });
+          zone.appendChild(card);
+        });
+      });
+    }
 
-      const name = u.exists() ? u.data().name : "عضو";
-      const topbar = document.querySelector(".brand strong");
-      if (topbar) topbar.textContent = `${name} (${role === "admin" ? "مدير" : "عضو"})`;
+    let unsubTasks = null;
+    function listenTasks(reset=false){
+      if (unsubTasks) { unsubTasks(); unsubTasks=null; }
+      if (!CURRENT_SPACE) return;
+      const qy = query(collection(db,'tasks'), where('spaceId','==', CURRENT_SPACE));
+      unsubTasks = onSnapshot(qy, (snap)=>{
+        TASKS=[]; snap.forEach(d=> TASKS.push({ id:d.id, ...(d.data()||{}) }));
+        renderTasks();
+      }, (err)=>{
+        console.error(err);
+        alert('⚠️ فشل قراءة التاسكات. تأكد من قواعد Firestore للقراءة للمستخدمين المسجّلين.');
+      });
+    }
+
+    // ─────────────────────────────── Notifications Bell ───────────────────────
+    const bellBtn  = document.getElementById('btnBell');
+    const bellDot  = document.getElementById('bellDot');
+    const bellMenu = document.getElementById('bellMenu');
+
+    function renderNotifs(list){
+      bellMenu.innerHTML='';
+      if (!list.length){ bellMenu.innerHTML='<div class="dd-item">لا إشعارات جديدة.</div>'; return; }
+      list.forEach(n=>{
+        const it=document.createElement('div');
+        const kind = n.type==='mention' ? 'تم ذكرك' : 'تم تعيينك في مشروع';
+        it.className='dd-item';
+        it.innerHTML=`<div><strong>${kind}</strong> — ${n.projectName||'-'}</div><div class="muted" style="font-size:12px">${n.id}</div>`;
+        it.onclick=async ()=>{
+          try{ await updateDoc(doc(db,'notifications', n.id), { read:true }); }catch{}
+          bellMenu.classList.remove('show');
+        };
+        bellMenu.appendChild(it);
+      });
+    }
+    onAuthStateChanged(auth, (user)=>{
+      if (!user) return;
+      const qn = query(collection(db,'notifications'),
+        where('toUid','==', user.uid),
+        where('read','==', false),
+        orderBy('createdAt','desc'));
+      onSnapshot(qn,(snap)=>{
+        const list=[]; snap.forEach(d=> list.push({ id:d.id, ...(d.data()||{}) }));
+        bellDot.style.display = list.length ? 'inline-block' : 'none';
+        bellDot.textContent = list.length || '0';
+        renderNotifs(list);
+      });
     });
+    bellBtn?.addEventListener('click', ()=> bellMenu.classList.toggle('show'));
+    document.addEventListener('click', (e)=>{
+      if (!bellMenu.contains(e.target) && e.target!==bellBtn && !bellBtn.contains(e.target)) bellMenu.classList.remove('show');
+    });
+
+    // أول تشغيل
+    (async ()=>{
+      if (!CURRENT_SPACE){
+        CURRENT_SPACE = await ensureDefaultSpace();
+        const d = await getDoc(doc(db,'spaces', CURRENT_SPACE));
+        SPACE_COLUMNS = d.exists()? (d.data().columns || DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
+        renderBoardSkeleton(); listenTasks(true);
+      }
+    })();
   </script>
 </body>
 </html>

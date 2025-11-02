@@ -26,7 +26,6 @@
     .btn{padding:10px 12px;border-radius:12px;border:0;background:var(--brown);color:#fff;cursor:pointer;font-weight:800}
     .btn.secondary{background:#fff;color:var(--brown);border:1px solid var(--brown)}
     .muted{color:var(--muted)}
-    .hint{font-size:12px;color:var(--muted)}
 
     /* Board */
     .board{display:grid;gap:14px;grid-template-columns:repeat(5,1fr)}
@@ -69,9 +68,6 @@
     .dropdown-menu.show{display:block}
     .dd-item{padding:10px 12px;border-bottom:1px solid #f3f3f3;cursor:pointer}
     .dd-item:hover{background:#fff8ef}
-
-    /* Settings pill */
-    .pill{padding:8px 12px;border-radius:999px;background:#fff8ef;border:1px solid #f2e7df;color:var(--brown);cursor:pointer}
   </style>
 </head>
 <body>
@@ -105,10 +101,7 @@
           <button class="btn secondary" id="btnNewSpace">Space جديد</button>
           <button class="btn" id="btnNewTask">تاسك جديد</button>
         </div>
-        <div class="controls">
-          <span class="pill" id="btnOpenDefaults">إعداد الأعمدة الافتراضية</span>
-          <span class="muted" id="who"></span>
-        </div>
+        <div class="muted" id="who"></div>
       </div>
       <div class="body">
         <div class="board" id="board"></div>
@@ -172,7 +165,7 @@
     </div>
   </div>
 
-  <!-- Task Detail Modal (view / add attachments/links) -->
+  <!-- Task Detail Modal -->
   <div class="modal" id="detailModal">
     <div class="sheet">
       <div class="head">
@@ -222,7 +215,7 @@
               <button class="btn secondary" id="btnAddLink" style="margin-top:8px">إضافة رابط</button>
             </div>
           </div>
-          <p class="hint">* يستطيع الأدمِن أو المسؤول عن المهمة فقط إضافة مرفقات/روابط.</p>
+          <p class="muted" style="font-size:12px">* الأدمِن أو المسؤول عن المهمة فقط يقدر يضيف مرفقات/روابط.</p>
         </div>
       </div>
       <div class="footer"><small>© مجموعة محمد بن ذعار العجمي — نجم الطريق</small></div>
@@ -256,7 +249,7 @@
     const db   = getFirestore();
     const storage = getStorage();
 
-    // Auth guard + إظهار/إخفاء أزرار الأدمن
+    // Auth guard + عرض هوية المستخدم وإخفاء أدوات الأدمِن لغيره
     let CURRENT_USER = null;
     let CURRENT_ROLE = 'member';
     window.mzjLogout = async ()=>{ await signOut(auth); location.href="login.html"; };
@@ -269,35 +262,14 @@
       document.getElementById('who').textContent = `${name} — ${CURRENT_ROLE==='admin'?'مدير':'عضو'}`;
 
       const isAdmin = (CURRENT_ROLE==='admin');
-      ['btnNewSpace','btnAddGroup','newGroupName','btnOpenDefaults'].forEach(id=>{
+      ['btnNewSpace','btnAddGroup','newGroupName'].forEach(id=>{
         const el = document.getElementById(id);
         if (el) el.style.display = isAdmin? '' : 'none';
       });
     });
 
-    // ───────────────────────── إعداد الأعمدة الافتراضية العامة ─────────────────────────
-    const DEFAULT_FALLBACK = ["ريل مواصفات","ريل قصير","تصميم صور","يوتيوب"];
-    async function getDefaultColumns(){
-      const s = await getDoc(doc(db,'settings','app'));
-      return s.exists() && Array.isArray(s.data().defaultColumns) && s.data().defaultColumns.length
-        ? s.data().defaultColumns
-        : DEFAULT_FALLBACK;
-    }
-    async function setDefaultColumns(cols){
-      await setDoc(doc(db,'settings','app'), { defaultColumns: cols }, { merge:true });
-    }
-
-    // نافذة مبسطة لتعديل الأعمدة الافتراضية (أدمِن)
-    document.getElementById('btnOpenDefaults').addEventListener('click', async ()=>{
-      if (CURRENT_ROLE!=='admin') return;
-      const current = (await getDefaultColumns()).join(', ');
-      const next = prompt('اكتب الأعمدة الافتراضية مفصولة بفواصل:', current);
-      if (!next) return;
-      const cols = next.split(',').map(s=>s.trim()).filter(Boolean);
-      if (!cols.length) return alert('لا توجد أعمدة!');
-      await setDefaultColumns(cols);
-      alert('✅ تم حفظ الأعمدة الافتراضية.\nسيتم استخدامها مع أي Space جديد.');
-    });
+    // ───────────────────────── الأعمدة الافتراضية (ثابتة) ─────────────────────────
+    const DEFAULT_COLUMNS = ["ريل مواصفات","ريل قصير","تصميم صور","يوتيوب"];
 
     // ───────────────────────────────── Spaces ─────────────────────────────────
     const spaceSelect     = document.getElementById('spaceSelect');
@@ -305,16 +277,15 @@
     const btnAddGroup     = document.getElementById('btnAddGroup');
 
     let CURRENT_SPACE = null;      // spaceId
-    let SPACE_COLUMNS = DEFAULT_FALLBACK.slice();
+    let SPACE_COLUMNS = DEFAULT_COLUMNS.slice();
 
     async function ensureDefaultSpace(){
       const snap = await getDocs(collection(db,'spaces'));
       if (snap.empty){
         const now = new Date();
         const label = now.toLocaleDateString('ar-SA',{ year:'numeric', month:'long' });
-        const defaults = await getDefaultColumns();
         const ref = await addDoc(collection(db,'spaces'), {
-          name: label, columns: defaults, createdAt: serverTimestamp(), active:true
+          name: label, columns: DEFAULT_COLUMNS, createdAt: serverTimestamp(), active:true
         });
         return ref.id;
       } else {
@@ -344,22 +315,21 @@
       fillSpaceDropdown(items, CURRENT_SPACE);
       if (!CURRENT_SPACE && items.length){ 
         CURRENT_SPACE = items[0].id; 
-        SPACE_COLUMNS = items[0].columns?.length ? items[0].columns : DEFAULT_FALLBACK; 
+        SPACE_COLUMNS = items[0].columns?.length ? items[0].columns : DEFAULT_COLUMNS; 
         renderBoardSkeleton(); listenTasks(); fillGroupSelect();
       }
     });
 
-    // إنشاء Space جديد (للأدمِن) باستخدام الأعمدة الافتراضية الحالية في settings
+    // إنشاء Space جديد (للأدمِن) باستخدام الأعمدة الافتراضية الثابتة
     document.getElementById('btnNewSpace').addEventListener('click', async ()=>{
       if (CURRENT_ROLE!=='admin') return;
       const name = prompt('اسم الـSpace (مثال: نوفمبر 2025):');
       if (!name) return;
       try{
-        const defaults = await getDefaultColumns();
         const ref = await addDoc(collection(db,'spaces'), {
-          name, columns: defaults, createdAt: serverTimestamp(), active:true
+          name, columns: DEFAULT_COLUMNS, createdAt: serverTimestamp(), active:true
         });
-        CURRENT_SPACE = ref.id; SPACE_COLUMNS = defaults.slice();
+        CURRENT_SPACE = ref.id; SPACE_COLUMNS = DEFAULT_COLUMNS.slice();
         renderBoardSkeleton(); listenTasks(true); fillGroupSelect();
       }catch(e){
         alert('⚠️ إنشاء Space يحتاج صلاحية أدمِن.');
@@ -370,7 +340,7 @@
     spaceSelect.addEventListener('change', async (e)=>{
       CURRENT_SPACE = e.target.value;
       const d = await getDoc(doc(db,'spaces', CURRENT_SPACE));
-      SPACE_COLUMNS = d.exists()? (d.data().columns?.length ? d.data().columns : DEFAULT_FALLBACK) : DEFAULT_FALLBACK;
+      SPACE_COLUMNS = d.exists()? (d.data().columns?.length ? d.data().columns : DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
       renderBoardSkeleton(); listenTasks(true); fillGroupSelect();
     });
 
@@ -496,7 +466,7 @@
       const assigneeUid = SELECTED_ASSIGNEE?.uid || null;
       const assigneeName= SELECTED_ASSIGNEE?.name || null;
       const color = (document.getElementById('tColor').value || '#bc8f74').trim();
-      const status = tGroup.value || (SPACE_COLUMNS[0] || DEFAULT_FALLBACK[0]);
+      const status = tGroup.value || (SPACE_COLUMNS[0] || DEFAULT_COLUMNS[0]);
 
       try{
         if (assigneeUid){
@@ -602,11 +572,10 @@
         linksEl.appendChild(chip);
       });
 
-      // actions (only admin or assignee)
+      // actions
       const actions = document.getElementById('dActions');
       actions.style.display = canContribute ? 'block' : 'none';
 
-      // bind buttons
       const fileInput = document.getElementById('dFiles');
       const btnUpload = document.getElementById('btnUploadMore');
       const btnAddLink= document.getElementById('btnAddLink');
@@ -714,8 +683,7 @@
       if (!user) return;
       const qn = query(collection(db,'notifications'),
         where('toUid','==', user.uid),
-        where('read','==', false),
-        );
+        where('read','==', false));
       onSnapshot(qn,(snap)=>{
         const list=[]; snap.forEach(d=> list.push({ id:d.id, ...(d.data()||{}) }));
         bellDot.style.display = list.length ? 'inline-block' : 'none';
@@ -733,7 +701,7 @@
       if (!CURRENT_SPACE){
         CURRENT_SPACE = await ensureDefaultSpace();
         const d = await getDoc(doc(db,'spaces', CURRENT_SPACE));
-        SPACE_COLUMNS = d.exists()? (d.data().columns?.length ? d.data().columns : await getDefaultColumns()) : await getDefaultColumns();
+        SPACE_COLUMNS = d.exists()? (d.data().columns?.length ? d.data().columns : DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
         renderBoardSkeleton(); listenTasks(); fillGroupSelect();
       }
     })();

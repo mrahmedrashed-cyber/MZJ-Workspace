@@ -64,7 +64,7 @@
 
     <main class="page">
       <div class="grid">
-        <!-- إنشاء مشروع احترافي -->
+        <!-- إنشاء مشروع -->
         <section class="card">
           <h3>إنشاء مشروع جديد</h3>
 
@@ -179,7 +179,6 @@
           USERS.push({ uid:d.id, name:u.name || d.id.slice(0,6), role:u.role || "member" });
         });
         renderAssigneeMenu('');
-        // في البداية خليه فاضي، هيتحدث عند الكتابة بـ@
         renderMentionMenu('');
       } catch (e) {
         console.error("loadUsers()", e);
@@ -270,6 +269,7 @@
       elMentionMenu.classList.remove('show');
       elDesc.focus();
     }
+    function renderMentionMenu(query){ showMentionMenu(query); }
     elDesc.addEventListener('input', ()=>{
       const caret = elDesc.selectionStart;
       const token = getAtToken(elDesc.value, caret);
@@ -338,9 +338,9 @@
     }
     document.getElementById('btnReset').addEventListener('click', resetForm);
 
-    // ========= عرض المشاريع Live (بدون orderBy؛ ترتيب يدوي) =========
-    const projList = document.getElementById('projList');
+    // ========= عرض المشاريع Live (بدون orderBy؛ ترتيب يدوي آمن) =========
     onSnapshot(collection(db,'projects'), (snap)=>{
+      const projList = document.getElementById('projList');
       projList.innerHTML='';
       if (snap.empty){
         projList.innerHTML = `<div class="item muted">لا توجد مشاريع بعد.</div>`;

@@ -24,15 +24,33 @@
     #cwrap{position:absolute;inset:0}
     canvas{background:#fff}
 
-    /* Bottom toolbar (dock) */
+    /* ============= Bottom toolbar (dock) ============= */
     .dock{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;background:rgba(33,33,33,.92);color:#fff;border-radius:14px;padding:6px 8px;display:flex;gap:6px;align-items:center;z-index:6;backdrop-filter:blur(8px)}
-    .tool{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:700}
+    .tool{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:700;position:relative}
     .tool.active{background:#222}
     .tool:hover{background:#2b2b2b}
     .sep{width:1px;height:22px;background:#444;margin:0 4px}
     .tool input[type="file"]{display:none}
-    .tip{position:absolute;bottom:64px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;display:none}
-    .dock:hover + .tip{display:block}
+
+    /* ===== Custom tooltips (like screenshots) ===== */
+    .tool[data-tip]::after,
+    .tool[data-tip]::before{
+      position:absolute; left:50%; transform:translateX(-50%);
+      opacity:0; pointer-events:none; transition:.15s ease; z-index:20;
+    }
+    .tool[data-tip]::after{
+      content:attr(data-tip);
+      bottom:42px; /* فوق الزر */
+      background:rgba(17,17,17,.95); color:#fff;
+      padding:6px 10px; border-radius:8px; font-size:12px; white-space:nowrap;
+      box-shadow:0 8px 20px rgba(0,0,0,.35)
+    }
+    .tool[data-tip]::before{
+      content:""; bottom:36px;
+      width:0; height:0; border:6px solid transparent; border-top-color:rgba(17,17,17,.95)
+    }
+    .tool:hover[data-tip]::after,
+    .tool:hover[data-tip]::before{ opacity:1 }
 
     /* Board picker */
     .boardbar{position:absolute;top:72px;right:12px;z-index:7;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 12px 30px rgba(62,36,32,.12);padding:8px;display:flex;gap:6px;align-items:center}
@@ -68,38 +86,39 @@
     <!-- كانفس -->
     <div id="cwrap"><canvas id="board"></canvas></div>
 
-    <!-- أدوات -->
+    <!-- أدوات مع Tooltips -->
     <div class="dock" id="dock">
-      <div class="tool" data-tool="select" title="V">V</div>
-      <div class="tool" data-tool="hand"   title="H">🖐️</div>
-      <div class="tool" data-tool="draw"   title="D">✏️</div>
-      <div class="tool" data-tool="rect"   title="R">▭</div>
-      <div class="tool" data-tool="arrow"  title="A">↗︎</div>
-      <div class="tool" data-tool="note"   title="N">🗒️</div>
-      <div class="tool" data-tool="text"   title="T">T</div>
-      <label class="tool" title="رفع صورة">
+      <div class="tool" data-tool="select" data-tip="Select item   V">V</div>
+      <div class="tool" data-tool="hand"   data-tip="Hand   H">🖐️</div>
+      <div class="tool" data-tool="draw"   data-tip="Draw   D">✏️</div>
+      <div class="tool" data-tool="rect"   data-tip="Shapes   R">▭</div>
+      <div class="tool" data-tool="arrow"  data-tip="Arrow   A">↗︎</div>
+      <div class="tool" data-tool="note"   data-tip="Sticky Note   N">🗒️</div>
+      <div class="tool" data-tool="text"   data-tip="Text   T">T</div>
+      <label class="tool" data-tip="Image   Ctrl + U" title="">
         🖼️
         <input type="file" id="imgInput" accept="image/*">
       </label>
       <div class="sep"></div>
-      <div class="tool" data-act="undo" title="Undo">↶</div>
-      <div class="tool" data-act="redo" title="Redo">↷</div>
+      <div class="tool" data-act="undo" data-tip="Undo   Ctrl + Z">↶</div>
+      <div class="tool" data-act="redo" data-tip="Redo   Ctrl + Y">↷</div>
       <div class="sep"></div>
-      <div class="tool" data-act="save" title="حفظ">💾</div>
-      <div class="tool" data-act="export" title="تصدير PNG">⬇️ PNG</div>
-      <div class="tool" data-act="clear" title="مسح الكل (أدمِن)">🗑️</div>
+      <div class="tool" data-act="save"   data-tip="Save   S">💾</div>
+      <div class="tool" data-act="export" data-tip="Export PNG">⬇️ PNG</div>
+      <div class="tool" data-act="clear"  data-tip="Clear (Admin)">🗑️</div>
     </div>
-    <div class="tip">⌘/Ctrl + عجلة الماوس: تكبير/تصغير — اضغط (H) للسحب</div>
   </div>
 
-  <!-- Firebase + Fabric.js -->
+  <!-- Fabric.js -->
   <script src="https://cdn.jsdelivr.net/npm/fabric@6.0.0/dist/fabric.min.js"></script>
+
+  <!-- Firebase + App -->
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
     import {
-      getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc,
-      serverTimestamp, onSnapshot
+      getFirestore, collection, doc, getDoc, onSnapshot, updateDoc, setDoc, addDoc,
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
     /* Firebase */
@@ -144,6 +163,7 @@
     /* Tools */
     let MODE='select'; // select | hand | draw | rect | arrow | note | text
     let drawingArrow=null, isPanning=false;
+
     const dock = document.getElementById('dock');
     function setMode(m){
       MODE=m;
@@ -168,8 +188,9 @@
       }
     });
 
-    // Image upload
-    document.getElementById('imgInput').addEventListener('change', (e)=>{
+    // Image upload + shortcut
+    const imgInput = document.getElementById('imgInput');
+    imgInput.addEventListener('change', (e)=>{
       const file=e.target.files[0]; if(!file) return;
       const reader=new FileReader();
       reader.onload=()=>{
@@ -181,8 +202,13 @@
       reader.readAsDataURL(file);
       e.target.value='';
     });
+    addEventListener('keydown', (e)=>{
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='u'){
+        e.preventDefault(); imgInput.click();
+      }
+    });
 
-    // Draw rectangle
+    // Shapes
     let rectStart=null, rectObj=null;
     canvas.on('mouse:down', (opt)=>{
       const p=canvas.getPointer(opt.e);
@@ -258,7 +284,6 @@
       }
       if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); }
       if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); }
-      // quick tools
       const map={ 'v':'select','h':'hand','d':'draw','r':'rect','a':'arrow','n':'note','t':'text' };
       const m = map[e.key?.toLowerCase()]; if(m){ setMode(m); }
     });
@@ -307,7 +332,7 @@
       // تحميل قائمة البوردات
       onSnapshot(collection(db,'whiteboards'), (snap)=>{
         const items=[]; snap.forEach(d=> items.push({ id:d.id, ...(d.data()||{}) }));
-        items.sort((a,b)=> (b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
+        items.sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
         boardSelect.innerHTML='';
         items.forEach(b=>{
           const opt=document.createElement('option');
@@ -315,7 +340,9 @@
           boardSelect.appendChild(opt);
         });
         if(!CURRENT_BOARD && items.length){
-          CURRENT_BOARD = items[0].id; boardSelect.value = CURRENT_BOARD; subscribeBoard();
+          CURRENT_BOARD = items[0].id;
+          boardSelect.value = CURRENT_BOARD;
+          subscribeBoard();
         }
       });
 
@@ -362,14 +389,14 @@
         saveState.textContent='تم الحفظ ✅';
         setTimeout(()=> saveState.textContent='—', 1200);
       }catch(e){
-        // لو الوثيقة لسه ما اتعملتش (نادرًا)، اعمل setDoc
+        // لو الوثيقة لسه ما اتعملتش
         const ref = doc(db,'whiteboards', CURRENT_BOARD);
         await setDoc(ref, { data: JSON.stringify(canvas.toJSON(['_isArrow','_isNote'])), updatedAt: serverTimestamp() }, { merge:true });
         saveState.textContent='تم الحفظ ✅';
       }
     }
 
-    // احفظ عند أي تغيير جوه الكانفس
+    // احفظ عند أي تغيير
     canvas.on('object:added', scheduleSave);
     canvas.on('object:modified', scheduleSave);
     canvas.on('object:removed', scheduleSave);

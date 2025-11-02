@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>الإدارة — MZJ Workspace</title>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
@@ -10,33 +10,49 @@
     *{box-sizing:border-box}
     body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal",system-ui,Arial;line-height:1.75}
     a{color:inherit;text-decoration:none}
-    .layout{min-height:100dvh;display:grid;grid-template-rows:auto 1fr}
+    .layout{min-height:100dvh;display:grid;grid-template-rows:auto 1fr auto}
     .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--brown);color:#fff;box-shadow:0 4px 16px rgba(62,36,32,.18)}
-    .brand{display:flex;align-items:center;gap:10px;color:#fff}
+    .brand{display:flex;align-items:center;gap:10px}
     .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
     .nav{display:flex;gap:10px;flex-wrap:wrap}
     .nav a{padding:8px 12px;border-radius:10px;color:#fff}
     .nav a:hover{background:rgba(255,255,255,.14)}
-    .page{padding:20px;display:grid;gap:16px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    @media(max-width:1000px){.grid{grid-template-columns:1fr}}
-    .card{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:0 6px 22px rgba(62,36,32,.10)}
-    .card h3{margin:0 0 10px;color:var(--brown)}
-    label{display:block;margin:10px 0 6px;font-weight:600;color:var(--brown)}
-    input,select{width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
-    input:focus,select:focus{outline:3px solid rgba(188,143,116,.25);border-color:var(--beige)}
-    .btn{padding:12px 14px;border-radius:12px;border:0;background:var(--brown);color:#fff;cursor:pointer;font-weight:700;margin-top:12px}
-    ul{margin:0;padding:0;list-style:none}
-    li{padding:8px 0;border-bottom:1px solid #f0f0f0}
-    .foot{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19)}
+    .page{padding:20px;display:grid;gap:18px}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
+    @media(max-width:1100px){.grid{grid-template-columns:1fr}}
+    .card{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:0 8px 26px rgba(62,36,32,.10)}
+    .card h3{margin:0 0 12px;color:var(--brown)}
+    label{display:block;margin:8px 0 6px;font-weight:700;color:var(--brown)}
+    input,select,textarea{width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;font-family:inherit}
+    textarea{min-height:120px;resize:vertical}
+    input:focus,select:focus,textarea:focus{outline:3px solid rgba(188,143,116,.25);border-color:var(--beige)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .btn{padding:12px 14px;border-radius:12px;border:0;background:var(--brown);color:#fff;cursor:pointer;font-weight:800}
+    .btn.secondary{background:#fff;color:var(--brown);border:1px solid var(--brown)}
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .chip{display:inline-flex;align-items:center;gap:6px;background:#f7e9e0;color:var(--brown);padding:6px 10px;border-radius:999px;font-size:13px}
+    .chip button{all:unset;cursor:pointer;opacity:.7}
+    .dropdown{position:relative}
+    .dropdown-menu{position:absolute;inset-inline:0 auto;top:calc(100% + 6px);z-index:10;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);max-height:260px;overflow:auto;display:none}
+    .dropdown-menu.show{display:block}
+    .dd-item{padding:10px 12px;border-bottom:1px solid #f3f3f3;cursor:pointer}
+    .dd-item:hover{background:#fff8ef}
+    .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown)}
+    .list{display:grid}
+    .item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #f5f5f5}
+    .muted{color:var(--muted)}
+    .footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19)}
+    .hint{font-size:12px;color:var(--muted)}
+    .inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   </style>
 </head>
 <body>
   <div class="layout">
     <header class="topbar">
-      <a class="brand" href="#" id="brandLink">
-        <span class="brand-badge"></span><strong>MZJ Workspace</strong>
-      </a>
+      <div class="brand">
+        <span class="brand-badge"></span>
+        <strong>MZJ Workspace — الإدارة</strong>
+      </div>
       <nav class="nav">
         <a href="dashboard.html">لوحة التحكم</a>
         <a href="projects.html">المشاريع</a>
@@ -48,77 +64,89 @@
 
     <main class="page">
       <div class="grid">
+        <!-- إنشاء مشروع احترافي -->
         <section class="card">
-          <h3>إضافة مستخدم (واجهة فقط الآن)</h3>
-          <label>الاسم</label>
-          <input type="text" placeholder="الاسم الكامل" />
-          <label>البريد الإلكتروني</label>
-          <input type="email" placeholder="name@example.com" />
-          <label>الصلاحية</label>
-          <select>
-            <option>عضو</option>
-            <option>مشرف</option>
-            <option selected>مدير</option>
-          </select>
-          <button class="btn" onclick="alert('هذه واجهة فقط — الربط عبر Firebase Auth/Custom Claims لاحقًا')">حفظ المستخدم</button>
+          <h3>إنشاء مشروع جديد</h3>
+
+          <label>اسم المشروع</label>
+          <input id="projName" type="text" placeholder="مثال: حملة أقساط نوفمبر"/>
+
+          <div class="row">
+            <div>
+              <label>التصنيف</label>
+              <div class="dropdown">
+                <select id="projCategory">
+                  <option value="حملة تسويقية">حملة تسويقية</option>
+                  <option value="إنتاج محتوى">إنتاج محتوى</option>
+                  <option value="مبيعات">مبيعات</option>
+                  <option value="تحسين موقع">تحسين موقع</option>
+                  <option value="دعم">دعم</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label>القسم</label>
+              <select id="projDept">
+                <option>التسويق</option>
+                <option>المبيعات</option>
+                <option>الدعم</option>
+                <option>الإدارة</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>تاريخ البدء</label>
+              <input id="projStart" type="date"/>
+            </div>
+            <div>
+              <label>تاريخ التسليم</label>
+              <input id="projDue" type="date"/>
+            </div>
+          </div>
+
+          <label>الوصف (ادعم @منشن للأعضاء)</label>
+          <div class="dropdown">
+            <textarea id="projDesc" placeholder="اكتب تفاصيل المشروع… اكتب @ لذكر عضو."></textarea>
+            <div id="mentionList" class="dropdown-menu"></div>
+          </div>
+          <div class="hint">المنشن يتحفظ تلقائيًا في <code>mentions[]</code> عند الإنشاء.</div>
+
+          <label>تعيين أعضاء (اختيار متعدد)</label>
+          <div class="dropdown">
+            <input id="assigneeSearch" type="text" placeholder="ابحث باسم العضو…"/>
+            <div id="assigneeMenu" class="dropdown-menu"></div>
+          </div>
+          <div id="assigneeChips" class="chips"></div>
+
+          <div class="inline" style="margin-top:12px">
+            <button class="btn" id="btnCreateProject">إنشاء المشروع</button>
+            <button class="btn secondary" id="btnReset">إعادة تعيين</button>
+            <span class="hint">سيتم إرسال إشعارات للمذكورين والمُعيّنين.</span>
+          </div>
         </section>
 
+        <!-- المشاريع الحالية (لايف) -->
         <section class="card">
-          <h3>إنشاء مشروع (Firestore)</h3>
-          <label>اسم المشروع</label>
-          <input id="projName" type="text" placeholder="مثلًا: حملة أقساط نوفمبر" />
-          <label>القسم</label>
-          <select id="projDept">
-            <option>التسويق</option>
-            <option>المبيعات</option>
-            <option>الدعم</option>
-          </select>
-          <label>تاريخ البدء</label>
-          <input id="projStart" type="date" />
-          <button class="btn" id="btnCreateProject">إنشاء</button>
+          <h3>المشاريع الحالية</h3>
+          <div id="projList" class="list">
+            <div class="item muted">جار التحميل…</div>
+          </div>
         </section>
       </div>
-
-      <section class="card">
-        <h3>المشاريع الحالية</h3>
-        <ul id="projList"></ul>
-      </section>
     </main>
 
-    <footer class="foot"><small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small></footer>
+    <footer class="footer"><small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small></footer>
   </div>
 
-  <!-- Firebase + Firestore + Auth -->
+  <!-- Firebase + تنظيم الفورم + Mentions + Notifications -->
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-    // 🔗 سويتشر الروابط (Vercel / CodePen)
-    const CODEPEN = {
-      login:     "https://codepen.io/evakkzkq-the-lessful/full/raxqmXB",
-      register:  "https://codepen.io/evakkzkq-the-lessful/full/raxqZod",
-      dashboard: "https://codepen.io/evakkzkq-the-lessful/full/ogbaPOO",
-      projects:  "https://codepen.io/evakkzkq-the-lessful/full/PwZydvZ",
-      members:   "https://codepen.io/evakkzkq-the-lessful/full/GgoYXaJ",
-      admin:     "https://codepen.io/evakkzkq-the-lessful/full/EaPdeMp"
-    };
-    const LOCAL = {
-      login:"login.html", register:"register.html", dashboard:"dashboard.html",
-      projects:"projects.html", members:"members.html", admin:"admin.html"
-    };
-    const ON_VERCEL = /vercel\.app$/i.test(location.host) || (!/codepen\.io|cdpn\.io/i.test(location.host) && location.host !== '');
-    const L = ON_VERCEL ? LOCAL : CODEPEN;
-    document.getElementById('brandLink').href = L.dashboard;
-    document.querySelectorAll('.nav a').forEach(a=>{
-      const t=a.textContent||'';
-      if(t.includes('لوحة')) a.href=L.dashboard;
-      if(t.includes('المشاريع')) a.href=L.projects;
-      if(t.includes('الأعضاء')) a.href=L.members;
-      if(t.includes('الإدارة')) a.href=L.admin;
-    });
-
-    // ⚙️ Firebase init
+    // Firebase init
     const firebaseConfig = {
       apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
       authDomain: "mzj-workspace.firebaseapp.com",
@@ -127,77 +155,202 @@
       appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
     };
     if (!getApps().length) initializeApp(firebaseConfig);
-
-    const db   = getFirestore();
     const auth = getAuth();
+    const db   = getFirestore();
 
-    // 🔒 حارس الدخول + الخروج
-    window.mzjLogout = async () => { await signOut(auth); location.href = L.login; };
-    onAuthStateChanged(auth, (user) => { if (!user) location.href = L.login; });
+    // حارس الدخول
+    window.mzjLogout = async ()=>{ await signOut(auth); location.href = "login.html"; };
+    onAuthStateChanged(auth, (user)=>{ if(!user) location.href="login.html"; });
 
-    // 📋 تحميل المشاريع
-    async function refreshProjects(){
-      const ul = document.getElementById('projList'); ul.innerHTML='';
-      try{
-        const snap = await getDocs(collection(db,'projects'));
-        snap.forEach(d=>{
-          const p=d.data();
-          const li=document.createElement('li');
-          li.textContent = `${p.name||'-'} — ${p.department||'-'}${p.start?(' — يبدأ: '+p.start):''}`;
-          ul.appendChild(li);
-        });
-      }catch(e){
-        if (e?.code==='permission-denied') alert('⚠️ لا تملك صلاحية قراءة المشاريع.');
-        else console.error(e);
+    // ====== تحميل الأعضاء (users) لإتاحتها في Dropdown & Mentions ======
+    let USERS = []; // {uid, name, role, email}
+    async function loadUsers(){
+      const snap = await getDocs(collection(db, "users"));
+      USERS = [];
+      snap.forEach(d=>{
+        const u=d.data();
+        USERS.push({ uid:d.id, name:u.name||d.id.slice(0,6), role:u.role||"member" });
+      });
+      renderAssigneeMenu('');
+      renderMentionMenu('');
+    }
+    await loadUsers();
+
+    // ====== عناصر الواجهة ======
+    const elName = document.getElementById('projName');
+    const elCat  = document.getElementById('projCategory');
+    const elDept = document.getElementById('projDept');
+    const elStart= document.getElementById('projStart');
+    const elDue  = document.getElementById('projDue');
+    const elDesc = document.getElementById('projDesc');
+
+    const elAssSearch = document.getElementById('assigneeSearch');
+    const elAssMenu   = document.getElementById('assigneeMenu');
+    const elAssChips  = document.getElementById('assigneeChips');
+
+    const elMentionMenu = document.getElementById('mentionList');
+
+    let SELECTED_ASSIGNEES = []; // array of uids
+    let MENTIONS = [];           // array of uids (from @mentions)
+
+    // ====== Multi-Select للأعضاء ======
+    function renderAssigneeMenu(filter){
+      const f = (filter||'').toLowerCase();
+      elAssMenu.innerHTML = '';
+      USERS.filter(u => u.name.toLowerCase().includes(f)).forEach(u=>{
+        const div = document.createElement('div');
+        div.className = 'dd-item';
+        div.innerHTML = `${u.name} <span class="muted">(${u.role})</span>`;
+        div.onclick = ()=> addAssignee(u);
+        elAssMenu.appendChild(div);
+      });
+    }
+    function addAssignee(u){
+      if (SELECTED_ASSIGNEES.includes(u.uid)) return;
+      SELECTED_ASSIGNEES.push(u.uid);
+      const chip = document.createElement('span');
+      chip.className='chip';
+      chip.dataset.uid = u.uid;
+      chip.innerHTML = `${u.name}<button title="إزالة">✕</button>`;
+      chip.querySelector('button').onclick = ()=>{
+        SELECTED_ASSIGNEES = SELECTED_ASSIGNEES.filter(id=>id!==u.uid);
+        chip.remove();
+      };
+      elAssChips.appendChild(chip);
+    }
+    elAssSearch.addEventListener('input', (e)=>{
+      const val = e.target.value.trim();
+      if (val.length>=0) { elAssMenu.classList.add('show'); renderAssigneeMenu(val); }
+    });
+    elAssSearch.addEventListener('focus', ()=>{ elAssMenu.classList.add('show'); renderAssigneeMenu(elAssSearch.value); });
+    document.addEventListener('click', (e)=>{
+      if (!elAssMenu.contains(e.target) && e.target!==elAssSearch) elAssMenu.classList.remove('show');
+      if (!elMentionMenu.contains(e.target) && e.target!==elDesc) elMentionMenu.classList.remove('show');
+    });
+
+    // ====== Mentions داخل الوصف (@) ======
+    function renderMentionMenu(filter){
+      const f=(filter||'').toLowerCase();
+      elMentionMenu.innerHTML='';
+      USERS.filter(u=>u.name.toLowerCase().includes(f)).slice(0,8).forEach(u=>{
+        const it=document.createElement('div');
+        it.className='dd-item';
+        it.textContent=u.name;
+        it.onclick=()=> insertMention(u);
+        elMentionMenu.appendChild(it);
+      });
+    }
+    function insertMention(u){
+      // أدرج @Name في المكان الحالي
+      const start = elDesc.selectionStart, end = elDesc.selectionEnd;
+      const before = elDesc.value.slice(0,start);
+      const after  = elDesc.value.slice(end);
+      elDesc.value = before + '@' + u.name + ' ' + after;
+      elDesc.focus();
+      // خزّن UID
+      if (!MENTIONS.includes(u.uid)) MENTIONS.push(u.uid);
+      elMentionMenu.classList.remove('show');
+    }
+    elDesc.addEventListener('input', ()=>{
+      const pos = elDesc.selectionStart;
+      const text = elDesc.value.slice(0,pos);
+      const atIndex = Math.max(text.lastIndexOf('@'), 0);
+      const token = text.slice(atIndex+1);
+      if (text.endsWith('@') || (text.includes('@') && token.length>=0 && token.length<=20)) {
+        elMentionMenu.classList.add('show');
+        renderMentionMenu(token.trim());
+      } else {
+        elMentionMenu.classList.remove('show');
       }
+    });
+    elDesc.addEventListener('focus', ()=>{
+      // لو كتب @ نفتح
+      const t=elDesc.value; if (t.includes('@')) elMentionMenu.classList.add('show');
+    });
+
+    // ====== إنشاء إشعارات للأعضاء المعيّنين/المذكورين ======
+    async function createNotifications(uids, projectId, projectName){
+      const unique = [...new Set(uids.filter(Boolean))];
+      const batch = unique.map(uid=>{
+        return addDoc(collection(db,'notifications'), {
+          toUid: uid,
+          type: 'project_assigned',
+          projectId,
+          projectName,
+          createdAt: serverTimestamp(),
+          read: false
+        });
+      });
+      try{ await Promise.all(batch); }catch(e){ console.warn('notify error', e); }
     }
 
-    // ➕ إنشاء مشروع (أدمِن فقط حسب القواعد)
+    // ====== إنشاء مشروع ======
     document.getElementById('btnCreateProject').addEventListener('click', async ()=>{
-      const name = document.getElementById('projName').value.trim();
-      const department = document.getElementById('projDept').value;
-      const start = document.getElementById('projStart').value || null;
-      if(!name) return alert('اكتب اسم المشروع');
+      const name = elName.value.trim();
+      if (!name) return alert('اكتب اسم المشروع');
+      const user = auth.currentUser;
+      const payload = {
+        name,
+        category: elCat.value,
+        department: elDept.value,
+        start: elStart.value || null,
+        due: elDue.value || null,
+        description: elDesc.value || null,
+        assignees: SELECTED_ASSIGNEES,
+        mentions: MENTIONS,
+        status: 'open',
+        active: true,
+        createdBy: user ? user.uid : null,
+        createdAt: serverTimestamp()
+      };
       try{
-        await addDoc(collection(db,'projects'), {
-          name, department, start, active:true,
-          createdBy: auth.currentUser?.uid || null,
-          createdAt: serverTimestamp()
-        });
-        document.getElementById('projName').value='';
-        await refreshProjects();
-        alert('✅ تم إنشاء المشروع');
+        const ref = await addDoc(collection(db,'projects'), payload);
+        await createNotifications([...SELECTED_ASSIGNEES, ...MENTIONS], ref.id, name);
+        alert('✅ تم إنشاء المشروع بنجاح');
+        resetForm();
       }catch(e){
-        if (e?.code==='permission-denied') alert('⚠️ العملية للأدمِن فقط.');
+        if (e?.code==='permission-denied') alert('⚠️ العملية مخصصة للأدمِن فقط. تأكد من دورك وقواعد Firestore.');
         else alert('حدث خطأ: ' + e.message);
       }
     });
 
-    // أول تحميل
-    refreshProjects();
-  </script>
+    function resetForm(){
+      elName.value=''; elDesc.value=''; elStart.value=''; elDue.value='';
+      SELECTED_ASSIGNEES=[]; MENTIONS=[];
+      elAssChips.innerHTML='';
+      elAssSearch.value=''; elAssMenu.classList.remove('show');
+      elMentionMenu.classList.remove('show');
+    }
+    document.getElementById('btnReset').addEventListener('click', resetForm);
 
-  <!-- 👥 إظهار أزرار الإدارة فقط للأدمِن + عرض الاسم والدور -->
-  <script type="module">
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-
-    const auth = getAuth();
-    const db   = getFirestore();
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return;
-      const u = await getDoc(doc(db, "users", user.uid));
-      const role = u.exists() ? u.data().role : "member";
-
-      // زر الإنشاء للأدمِن فقط
-      const el = document.getElementById('btnCreateProject');
-      if (el) el.style.display = role === "admin" ? "inline-flex" : "none";
-
-      // عرض الاسم والدور في الأعلى
-      const name = u.exists() ? u.data().name : "عضو";
-      const topbar = document.querySelector(".brand strong");
-      if (topbar) topbar.textContent = `${name} (${role === "admin" ? "مدير" : "عضو"})`;
+    // ====== عرض المشاريع Live ======
+    const projList = document.getElementById('projList');
+    onSnapshot(query(collection(db,'projects'), orderBy('createdAt','desc')), (snap)=>{
+      projList.innerHTML='';
+      if (snap.empty){
+        projList.innerHTML = `<div class="item muted">لا توجد مشاريع بعد.</div>`;
+        return;
+      }
+      snap.forEach(d=>{
+        const p=d.data();
+        const membersCount = (p.assignees||[]).length;
+        const row = document.createElement('div');
+        row.className='item';
+        row.innerHTML = `
+          <span>
+            ${p.name||'-'}
+            <span class="badge" title="التصنيف">${p.category||'—'}</span>
+            <span class="badge" title="القسم">${p.department||'—'}</span>
+          </span>
+          <span class="muted">
+            ${p.start||'—'} → ${p.due||'—'}
+            • 👥 ${membersCount}
+          </span>`;
+        projList.appendChild(row);
+      });
+    }, (err)=>{
+      if (err?.code==='permission-denied') alert('⚠️ لا تملك صلاحية قراءة المشاريع.');
+      console.error(err);
     });
   </script>
 </body>

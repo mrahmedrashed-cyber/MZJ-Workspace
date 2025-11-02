@@ -1,139 +1,89 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>المشاريع — MZJ Workspace</title>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal";line-height:1.75}
-    a{color:inherit;text-decoration:none}
-    .layout{min-height:100dvh;display:grid;grid-template-rows:auto 1fr}
-    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--brown);color:#fff;box-shadow:0 4px 16px rgba(62,36,32,.18)}
-    .brand{display:flex;align-items:center;gap:10px;color:#fff}
-    .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
-    .nav{display:flex;gap:10px;flex-wrap:wrap}
-    .nav a{padding:8px 12px;border-radius:10px;color:#fff}
-    .nav a.active,.nav a:hover{background:rgba(255,255,255,.14)}
-    .page{padding:20px}
-    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-    .btn{padding:10px 12px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
-    .btn-primary{background:var(--brown);border-color:var(--brown);color:#fff}
-    .kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-    @media(max-width:900px){.kanban{grid-template-columns:1fr}}
-    .col{background:#fff;border-radius:var(--radius);padding:12px;box-shadow:0 6px 22px rgba(62,36,32,.10);display:flex;flex-direction:column;gap:10px}
-    .col h3{margin:0;color:var(--brown)}
-    .ticket{background:#fff;border:1px solid #eee;border-radius:12px;padding:10px 12px;display:grid;gap:6px}
-    .ticket small{color:var(--muted)}
-    .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);justify-self:start}
-  </style>
-</head>
-<body>
-  <div class="layout">
-    <header class="topbar">
-      <a class="brand" href="dashboard.html"><span class="brand-badge"></span><strong>MZJ Workspace</strong></a>
-      <nav class="nav">
-        <a href="dashboard.html">لوحة التحكم</a>
-        <a href="projects.html">المشاريع</a>
-        <a href="members.html">الأعضاء</a>
-        <a href="admin.html">الإدارة</a>
-      </nav>
-    </header>
+<!-- Firebase Firestore -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, serverTimestamp, updateDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-    <main class="page">
-      <div class="toolbar">
-        <button class="btn btn-primary" id="btnNewProject">+ مشروع جديد</button>
-        <button class="btn" id="btnNewTask">+ مهمة جديدة</button>
-        <button class="btn" id="btnRefresh">تحديث</button>
-      </div>
-      <section class="kanban">
-        <div class="col" id="col-todo"><h3>To Do — للبدء</h3></div>
-        <div class="col" id="col-inprogress"><h3>In Progress — قيد التنفيذ</h3></div>
-        <div class="col" id="col-done"><h3>Done — منجز</h3></div>
-      </section>
-    </main>
-  </div>
+  const app = initializeApp({
+    apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
+    authDomain: "mzj-workspace.firebaseapp.com",
+    projectId: "mzj-workspace"
+  });
+  const db = getFirestore(app);
 
-  <script>
-    (function(){
-      var path = (location.pathname.split('/').pop() || 'projects.html').toLowerCase();
-      document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',(a.getAttribute('href')||'').toLowerCase()===path));
-    })();
-  </script>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, serverTimestamp, updateDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-
-    const app = initializeApp({
-      apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
-      authDomain: "mzj-workspace.firebaseapp.com",
-      projectId: "mzj-workspace"
-    });
-    const db = getFirestore(app);
-
-    const renderTicket = (t) => {
-      const el = document.createElement('article');
-      el.className = 'ticket';
-      el.innerHTML = `<strong>${t.title}</strong><small>${t.member||'غير معيّن'} — موعد: ${t.due||'-'}</small><span class="badge">${t.projectName||'بدون مشروع'}</span>`;
-      el.onclick = async ()=>{
-        const next = t.status==='todo'?'inprogress':(t.status==='inprogress'?'done':'todo');
-        await updateDoc(doc(db,'tasks',t.id), { status: next });
-        loadKanban();
-      };
-      return el;
-    };
-
-    async function loadKanban(){
-      ['col-todo','col-inprogress','col-done'].forEach(id=>{
-        const col = document.getElementById(id);
-        [...col.querySelectorAll('.ticket')].forEach(n=>n.remove());
-      });
-      const snap = await getDocs(collection(db,'tasks'));
-      snap.forEach(d=>{
-        const t = { id:d.id, ...d.data() };
-        const target = t.status==='inprogress'?'col-inprogress':(t.status==='done'?'col-done':'col-todo');
-        document.getElementById(target).appendChild(renderTicket(t));
-      });
-    }
-
-    document.getElementById('btnNewProject').addEventListener('click', async ()=>{
-      const name = prompt('اسم المشروع؟'); if(!name) return;
-      await addDoc(collection(db,'projects'), { name, createdAt: serverTimestamp(), active:true });
-      alert('تم إنشاء المشروع');
-    });
-
-    document.getElementById('btnNewTask').addEventListener('click', async ()=>{
-      const title = prompt('عنوان المهمة؟'); if(!title) return;
-      const projectName = prompt('اسم المشروع (اختياري)');
-      const member = prompt('اسم العضو المسؤول (اختياري)');
-      const due = prompt('تاريخ التسليم (YYYY-MM-DD)');
-      await addDoc(collection(db,'tasks'), { title, status:'todo', projectName: projectName||null, member: member||null, due: due||null, createdAt: serverTimestamp() });
+  // 🗂️ إنشاء تذكرة مهمة في الـKanban
+  const renderTicket = (t) => {
+    const el = document.createElement('article');
+    el.className = 'ticket';
+    el.innerHTML = `<strong>${t.title}</strong>
+                    <small>${t.member||'غير معيّن'} — موعد: ${t.due||'-'}</small>
+                    <span class="badge">${t.projectName||'بدون مشروع'}</span>`;
+    el.onclick = async () => {
+      const next = t.status==='todo'?'inprogress':(t.status==='inprogress'?'done':'todo');
+      await updateDoc(doc(db,'tasks',t.id), { status: next });
       loadKanban();
+    };
+    return el;
+  };
+
+  async function loadKanban(){
+    ['col-todo','col-inprogress','col-done'].forEach(id=>{
+      const col=document.getElementById(id);
+      col.querySelectorAll('.ticket').forEach(n=>n.remove());
     });
+    const snap=await getDocs(collection(db,'tasks'));
+    snap.forEach(d=>{
+      const t={ id:d.id, ...d.data() };
+      const target=t.status==='inprogress'?'col-inprogress':(t.status==='done'?'col-done':'col-todo');
+      document.getElementById(target).appendChild(renderTicket(t));
+    });
+  }
 
-    document.getElementById('btnRefresh').addEventListener('click', loadKanban);
-
-    loadKanban();
-  </script>
-  <script type="module">
-  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-
-  const auth = getAuth();
-
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = "login.html"; // تحويل غير المسجلين إلى صفحة الدخول
-    }
+  document.getElementById('btnNewProject').addEventListener('click', async ()=>{
+    const name = prompt('اسم المشروع؟');
+    if(!name) return;
+    await addDoc(collection(db,'projects'), { name, createdAt: serverTimestamp(), active:true });
+    alert('✅ تم إنشاء المشروع');
   });
 
-  window.mzjLogout = async () => {
-    await signOut(auth);
-    window.location.href = "login.html";
-  };
+  document.getElementById('btnNewTask').addEventListener('click', async ()=>{
+    const title = prompt('عنوان المهمة؟');
+    if(!title) return;
+    const projectName = prompt('اسم المشروع (اختياري)');
+    const member = prompt('اسم العضو المسؤول (اختياري)');
+    const due = prompt('تاريخ التسليم (YYYY-MM-DD)');
+    await addDoc(collection(db,'tasks'), {
+      title, status:'todo', projectName:projectName||null, member:member||null, due:due||null, createdAt: serverTimestamp()
+    });
+    loadKanban();
+  });
+
+  document.getElementById('btnRefresh').addEventListener('click', loadKanban);
+  loadKanban();
 </script>
 
-</body>
-</html>
+<!-- 🔒 كود صلاحيات الأدمِن / الأعضاء -->
+<script type="module">
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+  const auth = getAuth();
+  const db2   = getFirestore();
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) return;
+
+    const u = await getDoc(doc(db2, "users", user.uid));
+    const role = u.exists() ? u.data().role : "member";
+
+    // إظهار أزرار الإدارة فقط للأدمِن
+    ["btnNewProject", "btnNewTask"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = role === "admin" ? "inline-flex" : "none";
+    });
+
+    // عرض الاسم والدور في الأعلى
+    const name = u.exists() ? u.data().name : "عضو";
+    const topbar = document.querySelector(".brand strong");
+    if (topbar) topbar.textContent = `${name} (${role === "admin" ? "مدير" : "عضو"})`;
+  });
+</script>

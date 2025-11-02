@@ -51,6 +51,27 @@
     .footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19)}
     .link{color:var(--beige)}
   </style>
+  <!-- 🔔 Bell CSS -->
+<style>
+  /* شارة عدد الإشعارات */
+  #bellDot{
+    position:absolute; top:-4px; inline-size:18px; block-size:18px;
+    background:#e11d48; color:#fff; font-size:12px; display:none;
+    border-radius:999px; text-align:center; line-height:18px
+  }
+  /* منيو منسدلة عامة (تُستخدم للجرس) */
+  .dropdown-menu{
+    position:absolute; right:0; top:calc(100% + 6px); z-index:9999;
+    background:#fff; border:1px solid #eee; border-radius:12px;
+    box-shadow:0 10px 30px rgba(62,36,32,.12); max-height:260px; overflow:auto;
+    min-width:320px; display:none;
+  }
+  .dropdown-menu.show{ display:block }
+  .dd-item{ padding:10px 12px; border-bottom:1px solid #f3f3f3; cursor:pointer }
+  .dd-item:hover{ background:#fff8ef }
+  .muted{ color:#6b7280 }
+</style>
+
 </head>
 <body>
   <div class="layout">
@@ -302,25 +323,4 @@
     });
   </script>
 </body>
-  <!-- 🔔 Bell CSS -->
-<style>
-  /* شارة عدد الإشعارات */
-  #bellDot{
-    position:absolute; top:-4px; inline-size:18px; block-size:18px;
-    background:#e11d48; color:#fff; font-size:12px; display:none;
-    border-radius:999px; text-align:center; line-height:18px
-  }
-  /* منيو منسدلة عامة (تُستخدم للجرس) */
-  .dropdown-menu{
-    position:absolute; right:0; top:calc(100% + 6px); z-index:9999;
-    background:#fff; border:1px solid #eee; border-radius:12px;
-    box-shadow:0 10px 30px rgba(62,36,32,.12); max-height:260px; overflow:auto;
-    min-width:320px; display:none;
-  }
-  .dropdown-menu.show{ display:block }
-  .dd-item{ padding:10px 12px; border-bottom:1px solid #f3f3f3; cursor:pointer }
-  .dd-item:hover{ background:#fff8ef }
-  .muted{ color:#6b7280 }
-</style>
-
 </html>

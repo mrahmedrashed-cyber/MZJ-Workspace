@@ -502,4 +502,66 @@ function boot(){ updateKPIs(); renderEditor(); renderFilteredTable(); }
 boot();
 </script>
 </body>
+  <!-- Firebase Setup -->
+<script type="module">
+  // 📦 استيراد مكتبات Firebase
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+  import {
+    getFirestore, collection, addDoc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, doc, query, where, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+  // ⚙️ إعداد Firebase بنفس المشروع الموجود
+  const firebaseConfig = {
+    apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
+    authDomain: "mzj-workspace.firebaseapp.com",
+    projectId: "mzj-workspace",
+    storageBucket: "mzj-workspace.firebasestorage.app",
+    appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
+  };
+
+  // ✅ التهيئة
+  if (!getApps().length) initializeApp(firebaseConfig);
+  const auth = getAuth();
+  const db   = getFirestore();
+
+  // 🔐 تأكيد تسجيل الدخول
+  onAuthStateChanged(auth, (user)=>{
+    if(!user){
+      alert("يجب تسجيل الدخول أولاً");
+      location.href = "login.html";
+    }else{
+      console.log("✅ تم تسجيل الدخول:", user.email);
+      document.getElementById("welcome").textContent = "مرحبًا " + (user.displayName || user.email);
+    }
+  });
+
+  // 💾 مثال: حفظ بيانات بسيطة في Firestore
+  document.getElementById("btnSave")?.addEventListener("click", async ()=>{
+    const name  = document.getElementById("name").value.trim();
+    const notes = document.getElementById("notes").value.trim();
+
+    if(!name) return alert("⚠️ اكتب الاسم أولاً");
+
+    try{
+      await addDoc(collection(db, "test_data"), {
+        name,
+        notes,
+        createdAt: serverTimestamp(),
+        createdBy: auth.currentUser?.uid || "unknown"
+      });
+      alert("✅ تم الحفظ بنجاح");
+    }catch(err){
+      console.error(err);
+      alert("حدث خطأ أثناء الحفظ");
+    }
+  });
+
+  // 🚪 تسجيل الخروج (اختياري)
+  window.logout = async ()=>{
+    await signOut(auth);
+    location.href = "login.html";
+  };
+</script>
+
 </html>

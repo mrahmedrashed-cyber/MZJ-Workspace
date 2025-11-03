@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>MZJ — Production Tracker (Editor + Readonly Results)</title>
+<title>MZJ — Production Tracker (Firestore)</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -31,7 +31,7 @@
   .metric h3{margin:0;font-size:14px;color:var(--muted)}
   .metric strong{font-size:22px}
   label{font-weight:700;font-size:13px;color:var(--brown);display:block;margin-bottom:6px}
-  input,select{width:100%;padding:10px 12px;border-radius:12px;border:1px solid #e7dbd2;background:#fff;outline:none;font-size:14px}
+  input,select{width:100%;padding:10px 12px;border-radius:12px;border:1px solid #e7dbd2;background:#fff;outline:none;font-size:14px;appearance:auto}
   input:focus,select:focus{border-color:var(--beige);box-shadow:0 0 0 3px rgba(188,143,116,.18)}
   .row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
   @media (max-width:1100px){ .row{grid-template-columns:repeat(3,1fr)} }
@@ -48,34 +48,28 @@
   .p-orange{background:#fff7ed;border-color:#fed7aa}
   .p-gray{background:#f3f4f6;border-color:#e5e7eb}
 
-  .hidden{display:none !important}
-  .banner{margin-top:8px;background:#fff4e6;color:#5b3b2f;border:1px solid #f0e0d6;padding:8px 10px;border-radius:10px}
-  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .hidden{display:none}
 </style>
 </head>
 <body>
   <div class="container">
-    <!-- Topbar -->
     <div class="topbar">
       <div style="display:flex;gap:12px;align-items:center">
         <div class="logo">MZJ</div>
         <div>
-          <h1>لوحة متابعة إنتاج المحتوى للسيارات</h1>
-          <div id="roleBanner" class="muted"></div>
+          <h1>لوحة متابعة إنتاج المحتوى — Firestore</h1>
+          <div class="muted" id="who">—</div>
         </div>
       </div>
       <div class="actions">
+        <button id="btnWipeFS" class="btn btn-danger">تفريغ Firestore</button>
         <button id="btnExportXLSX" class="btn btn-secondary">تصدير XLSX</button>
         <label class="btn btn-secondary" for="xlsxImport" style="cursor:pointer">استيراد XLSX (إضافة)</label>
         <input id="xlsxImport" type="file" accept=".xlsx" style="display:none"/>
         <button id="btnTemplate" class="btn btn-ghost">تحميل Template XLSX</button>
-        <button id="btnReset" class="btn btn-danger">تفريغ البيانات (محلي)</button>
       </div>
     </div>
 
-    <div id="loginWarn" class="banner hidden">يجب تسجيل الدخول لعرض/إضافة البيانات.</div>
-
-    <!-- KPIs -->
     <div class="grid grid-4 panel" style="margin-top:14px">
       <div class="card metric"><h3>إجمالي السيارات</h3><strong id="kTotal">0</strong></div>
       <div class="card metric"><h3>تم التصوير</h3><strong id="kShot">0</strong></div>
@@ -83,13 +77,12 @@
       <div class="card metric"><h3>داخل الأجندة</h3><strong id="kAgenda">0</strong></div>
     </div>
 
-    <!-- إضافة سريعة -->
-    <div id="editorPanel" class="panel hidden">
+    <div class="panel">
       <h2 style="margin:0 0 10px 0;color:var(--brown);font-size:18px">إضافة سيارة سريعة</h2>
       <div class="row">
         <div><label>العلامة</label><select id="iBrand"></select></div>
         <div><label>الموديل</label><select id="iModel" disabled></select></div>
-        <div><label>السنة</label><input id="iYear" type="number" min="2015" max="2030" value="2026"></div>
+        <div><label>السنة</label><input id="iYear" type="number" min="2015" max="2035" value="2026"></div>
         <div><label>الفئة</label><select id="iTrim"></select></div>
         <div><label>اللون الخارجي</label><input id="iColor" placeholder="مثال: أبيض لؤلؤي"></div>
         <div><label>اللون الداخلي</label><input id="iIntColor" placeholder="مثال: جلد بيج"></div>
@@ -117,10 +110,9 @@
         <div style="grid-column: span 2"><label>ملاحظات</label><input id="iNotes" placeholder="مثلاً: ينتظر مراجعة SEO / صور ناقصة"></div>
         <div><label>&nbsp;</label><button id="btnAdd" class="btn btn-primary" style="width:100%">إضافة</button></div>
       </div>
-      <div class="muted" style="margin-top:6px">* الحفظ على Firestore (collection: <code>cars_production</code>). الاستيراد XLSX يضيف على الموجود.</div>
+      <div class="muted" style="margin-top:6px">* الحفظ الآن يتم على Firestore مباشرة. الاستيراد XLSX يضيف على الموجود.</div>
     </div>
 
-    <!-- جدول التحرير -->
     <div class="panel table-soft" style="padding:0">
       <table id="carsTable">
         <thead>
@@ -132,11 +124,10 @@
             <th>مرفوع على الموقع؟</th><th>رابط الصفحة</th><th>ملاحظات</th><th>إجراءات</th>
           </tr>
         </thead>
-        <tbody id="tbody"></tbody>
+        <tbody id="tbody"><tr><td colspan="16" style="padding:14px">جار التحميل…</td></tr></tbody>
       </table>
     </div>
 
-    <!-- فلاتر + نتيجة عرض فقط -->
     <div class="panel">
       <h2 style="margin:0 0 10px 0;color:var(--brown);font-size:18px">نتيجة الفلتر (عرض فقط)</h2>
       <div class="row">
@@ -157,21 +148,11 @@
       <table id="filteredTable">
         <thead>
           <tr>
-            <th>العلامة</th>
-            <th>الموديل</th>
-            <th>السنة</th>
-            <th>الفئة</th>
-            <th>اللون الخارجي</th>
-            <th>اللون الداخلي</th>
-            <th>تصوير</th>
-            <th>مونتاج</th>
-            <th>نوع المحتوى</th>
-            <th>تاريخ التصوير</th>
-            <th>داخل الأجندة؟</th>
-            <th>تاريخ الأجندة</th>
-            <th>مرفوع على الموقع؟</th>
-            <th>رابط الصفحة</th>
-            <th>ملاحظات</th>
+            <th>العلامة</th><th>الموديل</th><th>السنة</th><th>الفئة</th>
+            <th>اللون الخارجي</th><th>اللون الداخلي</th>
+            <th>تصوير</th><th>مونتاج</th><th>نوع المحتوى</th>
+            <th>تاريخ التصوير</th><th>داخل الأجندة؟</th><th>تاريخ الأجندة</th>
+            <th>مرفوع على الموقع؟</th><th>رابط الصفحة</th><th>ملاحظات</th>
           </tr>
         </thead>
         <tbody id="filteredTBody"></tbody>
@@ -180,17 +161,16 @@
     </div>
   </div>
 
-<!-- ======================= Firebase + App ======================= -->
+<!-- ===== Firebase (Module) + App Logic ===== -->
 <script type="module">
-/* ---------- Firebase ---------- */
+/* ==== Firebase Init ==== */
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDoc, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, orderBy, serverTimestamp
+  getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
+  onSnapshot, query, orderBy, serverTimestamp, limit
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-/* ====== إعداد Firebase (عدّل لو عندك مشروع مختلف) ====== */
 const firebaseConfig = {
   apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
   authDomain: "mzj-workspace.firebaseapp.com",
@@ -202,15 +182,30 @@ if (!getApps().length) initializeApp(firebaseConfig);
 const auth = getAuth();
 const db   = getFirestore();
 
-/* ---------- ثوابت الصفحة (خاصة بهذه الصفحة فقط) ---------- */
-const CARS_COL = "cars_production"; // كولكشن مستقل للصفحة دي فقط
+/* ==== Auth / Role ==== */
+let CURRENT_USER=null, CURRENT_ROLE='member', IS_ADMIN=false;
+onAuthStateChanged(auth, async (user)=>{
+  if(!user){ location.href="login.html"; return; }
+  CURRENT_USER = user;
+  const u = await getDoc(doc(db,"users", user.uid));
+  CURRENT_ROLE = u.exists()? (u.data().role||'member') : 'member';
+  IS_ADMIN = CURRENT_ROLE==='admin';
+  document.getElementById('who').textContent = `${u.exists()? (u.data().name||user.email): (user.email||'User')} — ${IS_ADMIN?'مدير':'عضو'}`;
 
-/* ---------- بيانات ثابتة للقوائم ---------- */
+  // زر تفريغ Firestore يظهر للمدير فقط
+  document.getElementById('btnWipeFS').style.display = IS_ADMIN? '' : 'none';
+
+  boot(); // بعد تحديد الدور
+});
+
+/* ====== Constants & Master Data ====== */
+const CARS_COL = "cars_production";
+
 const BRANDS = ["هيونداي","شانجان","شيري","فورد","ام جي","نيسان"];
 const MODELS_BY_BRAND = {
   "هيونداي": ["سوناتا","النترا","اكسنت","جراند i10","كريتا","جراند كريتا","ستار جيزر","فينيو","ازيرا","سنتافي","توسان","كونا","ستاريا","بالسييد"],
   "شانجان": ["سي اس 75","سي اس 35","ايدو بلس","ال سيفن","يوني كي","يوني تي","يوني في","سي اس 95","يوني اس","هانتر اب"],
-  "شيري": ["تيجو 2 برو","اريزو 8","اريزو 6 برو","اريزو 5 برو","أكسييد ال اكس","تيجو 8 برة","تيجو 7","تيجو 4 برو"],
+  "شيري": ["تيجو 2 برو","اريزو 8","اريزو 6 برو","اريزو 5 برو","أكسييد ال اكس","تيجو 8 برو","تيجو 7","تيجو 4 برو"],
   "فورد": ["رينجر","اكسبلور","تيريتوري","تورس"],
   "ام جي": ["جي تي","ام جي 3","ام جي 7","ام جي 5","اتش أس","ار اكس 5","ون","زد أس","تي 60","ار أكس 9","وال","ار أكس 8"],
   "نيسان": ["اكس تريل","ماجنايت","كيكس","صني","اكس تيرا","التيما"]
@@ -222,110 +217,120 @@ const CONTENT_TYPES = ["صور","فيديو","ريل","موشن","AI"];
 const YESNO = ["لا","نعم"];
 const MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 
-/* ---------- عناصر DOM ---------- */
+/* ====== State ====== */
+let ROWS = []; // مرآة للبيانات من Firestore
+let FILTERS = {brand:"", trim:"", shoot:"", edit:"", color:"", intColor:"", agenda:"", q:""};
+
+/* ===== Helpers ===== */
 const $ = s=>document.querySelector(s);
-const banner = $("#loginWarn");
-const roleBanner = $("#roleBanner");
-const editor = $("#editorPanel");
-const btnAdd = $("#btnAdd");
-
-/* ---------- دور المستخدم ---------- */
-let CURRENT_USER = null;
-let IS_ADMIN = false;
-
-async function loadRole(uid){
-  try{
-    const u = await getDoc(doc(db,"users", uid));
-    return u.exists() ? (u.data().role || "member") : "member";
-  }catch{ return "member"; }
-}
-
-/* ---------- تعبئة القوائم ---------- */
-function fillSelect(el, arr, withBlank=false, blankLabel="— اختر —"){
+function $fill(el, arr, withBlank=false, blankLabel="الكل"){
   el.innerHTML = withBlank ? `<option value="">${blankLabel}</option>` : "";
-  arr.forEach(v=>{
-    const o=document.createElement("option");
-    o.value=v; o.textContent=v; el.appendChild(o);
-  });
+  arr.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; el.appendChild(o); });
 }
-function initAddFields(){
-  fillSelect($("#iBrand"), BRANDS, true);
-  fillSelect($("#iTrim"), TRIMS, true);
-  fillSelect($("#iShoot"), SHOOT_STATUS, true);
-  fillSelect($("#iEdit"), EDIT_STATUS, true);
-  fillSelect($("#iType"), CONTENT_TYPES, true);
-  fillSelect($("#iInAgenda"), YESNO, true);
-  fillSelect($("#iOnSite"), YESNO, true);
-  fillSelect($("#iAgendaMonth"), MONTHS, true);
+function $fillStrict(el, arr, withBlank=false){
+  el.innerHTML = withBlank ? `<option value="">— اختر —</option>` : "";
+  arr.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; el.appendChild(o); });
+}
+function escapeHTML(s){ return (s??"").toString().replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;"); }
+function badgePill(val, kind){
+  const cls = kind==="green"?"p-green":kind==="orange"?"p-orange":"p-gray";
+  return `<span class="pill ${cls}">${escapeHTML(val)}</span>`;
+}
+
+/* ====== Populate Add Controls ====== */
+function initAddControls(){
+  $fillStrict($("#iBrand"), BRANDS, true);
+  $fillStrict($("#iTrim"), TRIMS, true);
+  $fillStrict($("#iShoot"), SHOOT_STATUS, true);
+  $fillStrict($("#iEdit"), EDIT_STATUS, true);
+  $fillStrict($("#iType"), CONTENT_TYPES, true);
+  $fillStrict($("#iInAgenda"), YESNO, true);
+  $fillStrict($("#iOnSite"), YESNO, true);
+  $fillStrict($("#iAgendaMonth"), MONTHS, true);
   $("#iAgendaYear").value = new Date().getFullYear();
 
-  // بعد اختيار العلامة — فعّل الموديل
-  $("#iBrand").addEventListener("change", ()=>{
+  function refreshAddModels(){
     const b = $("#iBrand").value;
     const models = MODELS_BY_BRAND[b] || [];
     $("#iModel").disabled = models.length===0;
-    fillSelect($("#iModel"), models, true);
-  });
-
-  // حقول شرطية
-  $("#iInAgenda").addEventListener("change", ()=>{
-    $("#agendaFields").classList.toggle("hidden", $("#iInAgenda").value!=="نعم");
-  });
-  $("#iOnSite").addEventListener("change", ()=>{
-    $("#siteLinkField").classList.toggle("hidden", $("#iOnSite").value!=="نعم");
-  });
-
-  // افتراضيًا اجعل العلامة الأولى مختارة لفتح الموديلات بسرعة (اختياري)
-  if(!$("#iBrand").value){
-    $("#iBrand").value = BRANDS[0];
-    $("#iBrand").dispatchEvent(new Event("change"));
+    $fillStrict($("#iModel"), models, true);
   }
+  $("#iBrand").addEventListener("change", refreshAddModels);
+  refreshAddModels();
+
+  $("#iInAgenda").addEventListener("change", ()=>$("#agendaFields").classList.toggle("hidden", $("#iInAgenda").value!=="نعم"));
+  $("#iOnSite").addEventListener("change", ()=>$("#siteLinkField").classList.toggle("hidden", $("#iOnSite").value!=="نعم"));
+  $("#agendaFields").classList.toggle("hidden", $("#iInAgenda").value!=="نعم");
+  $("#siteLinkField").classList.toggle("hidden", $("#iOnSite").value!=="نعم");
 }
 
-/* ---------- جدول التحرير المحلي (عرض + تعديل محلي) ---------- */
-let LOCAL_ROWS = []; // سنملأه من Firestore
+/* ====== Render (Editor) ====== */
+function modelCell(key, val, brand, idx){
+  const models = MODELS_BY_BRAND[brand] || [];
+  const opts = val && !models.includes(val) ? [val, ...models] : models;
+  return `<select data-idx="${idx}" data-key="${key}" data-type="model">
+    ${opts.map(v=>`<option ${v===val?'selected':''} value="${v}">${v}</option>`).join("")}
+  </select>`;
+}
+function selectCell(key, arr, val, idx, dataType){
+  const options = arr.map(v=>`<option ${v===val?'selected':''} value="${v}">${v}</option>`).join("");
+  const dt = dataType?`data-type="${dataType}"`:"";
+  return `<select data-idx="${idx}" data-key="${key}" ${dt}>${options}</select>`;
+}
+function numberCell(key,val,idx){ return `<input type="number" data-idx="${idx}" data-key="${key}" value="${escapeHTML(val??'')}" style="width:110px"/>` }
+function textCell(key,val,idx){ return `<input data-idx="${idx}" data-key="${key}" value="${escapeHTML(val??'')}" />` }
+function dateCell(key,val,idx){ return `<input type="date" data-idx="${idx}" data-key="${key}" value="${val??''}" style="width:150px"/>` }
+function linkCell(key,val,idx,label){
+  const safe = val? escapeHTML(val):"";
+  return `<div style="display:flex;gap:6px;align-items:center">
+      <input data-idx="${idx}" data-key="${key}" value="${safe}" placeholder="https://..." style="min-width:220px"/>
+      ${val?`<a class="btn btn-ghost" href="${safe}" target="_blank" rel="noopener">فتح ${label}</a>`:""}
+    </div>`;
+}
 
-function escapeHTML(s){ return (s==null?"":String(s)).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;"); }
-function textCell(v){ return escapeHTML(v??""); }
-
-function renderEditorTable(){
+function renderEditor(){
   const tb = $("#tbody"); tb.innerHTML = "";
-  LOCAL_ROWS.forEach((r,idx)=>{
+  if(!ROWS.length){
+    tb.innerHTML = `<tr><td colspan="16" style="padding:14px">لا توجد سيارات بعد.</td></tr>`;
+    return;
+  }
+  ROWS.forEach((r,idx)=>{
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${textCell(r.brand)}</td>
-      <td>${textCell(r.model)}</td>
-      <td>${textCell(r.year)}</td>
-      <td>${textCell(r.trim)}</td>
-      <td>${textCell(r.color)}</td>
-      <td>${textCell(r.intColor)}</td>
-      <td>${textCell(r.shoot)}</td>
-      <td>${textCell(r.edit)}</td>
-      <td>${textCell(r.ctype)}</td>
-      <td>${textCell(r.shootDate)}</td>
-      <td>${textCell(r.inAgenda)}</td>
-      <td>${textCell(r.agendaDate)}</td>
-      <td>${textCell(r.onSite)}</td>
-      <td>${r.siteLink?`<a href="${escapeHTML(r.siteLink)}" target="_blank" rel="noopener">فتح</a>`:"—"}</td>
-      <td>${textCell(r.notes)}</td>
+      <td>${selectCell("brand", BRANDS, r.brand||"", idx, 'brand')}</td>
+      <td>${modelCell("model", r.model||"", r.brand||"", idx)}</td>
+      <td>${numberCell("year", r.year||2026, idx)}</td>
+      <td>${selectCell("trim", TRIMS, r.trim||"", idx)}</td>
+      <td>${textCell("color", r.color??"", idx)}</td>
+      <td>${textCell("intColor", r.intColor??"", idx)}</td>
+      <td>${selectCell("shoot", SHOOT_STATUS, r.shoot||SHOOT_STATUS[0], idx)}</td>
+      <td>${selectCell("edit", EDIT_STATUS, r.edit||EDIT_STATUS[0], idx)}</td>
+      <td>${selectCell("ctype", CONTENT_TYPES, r.ctype||CONTENT_TYPES[0], idx)}</td>
+      <td>${dateCell("shootDate", r.shootDate||"", idx)}</td>
+      <td>${selectCell("inAgenda", YESNO, r.inAgenda||"لا", idx)}</td>
+      <td>${textCell("agendaDate", r.agendaDate??"", idx)}</td>
+      <td>${selectCell("onSite", YESNO, r.onSite||"لا", idx)}</td>
+      <td>${linkCell("siteLink", r.siteLink||"", idx, "Page")}</td>
+      <td>${textCell("notes", r.notes??"", idx)}</td>
       <td>
-        <button class="btn btn-ghost" data-act="dup" data-idx="${idx}">نسخ</button>
-        <button class="btn btn-danger" data-act="del" data-idx="${idx}">حذف</button>
+        <button class="btn btn-ghost" data-action="dup" data-idx="${idx}">نسخ</button>
+        <button class="btn btn-danger" data-action="del" data-idx="${idx}">حذف</button>
       </td>
     `;
     tb.appendChild(tr);
   });
 }
 
-/* ---------- KPIs + جدول الفلاتر ---------- */
-let FILTERS = {brand:"", trim:"", shoot:"", edit:"", color:"", intColor:"", agenda:"", q:""};
-
-function badge(val, kind){
-  const cls = kind==="g"?"p-green":kind==="o"?"p-orange":"p-gray";
-  return `<span class="pill ${cls}">${escapeHTML(val)}</span>`;
+/* ====== Render (Readonly Filter) ====== */
+function initFilters(){
+  $fill($("#dBrand"), BRANDS, true, "الكل");
+  $fill($("#dTrim"), TRIMS, true, "الكل");
+  $fill($("#dShoot"), SHOOT_STATUS, true, "الكل");
+  $fill($("#dEdit"), EDIT_STATUS, true, "الكل");
+  $fill($("#dAgenda"), YESNO, true, "الكل");
 }
-function renderFiltered(){
-  const list = LOCAL_ROWS.filter(r=>{
+function currentListReadonly(){
+  return ROWS.filter(r=>{
     if(FILTERS.brand && r.brand!==FILTERS.brand) return false;
     if(FILTERS.trim && r.trim!==FILTERS.trim) return false;
     if(FILTERS.shoot && r.shoot!==FILTERS.shoot) return false;
@@ -334,23 +339,27 @@ function renderFiltered(){
     if(FILTERS.intColor && !(r.intColor||"").toLowerCase().includes(FILTERS.intColor.toLowerCase())) return false;
     if(FILTERS.agenda && r.inAgenda!==FILTERS.agenda) return false;
     if(FILTERS.q){
+      const q = FILTERS.q.trim().toLowerCase();
       const hay = `${r.brand} ${r.model} ${r.trim} ${r.color||""} ${r.intColor||""} ${r.notes||""}`.toLowerCase();
-      if(!hay.includes(FILTERS.q.toLowerCase())) return false;
+      if(!hay.includes(q)) return false;
     }
     return true;
   });
-
-  const tb = $("#filteredTBody"); tb.innerHTML="";
+}
+function renderFilteredTable(){
+  const list = currentListReadonly();
+  const tb = $("#filteredTBody");
+  tb.innerHTML = "";
   if(!list.length){
-    const tr=document.createElement("tr");
-    tr.innerHTML = `<td colspan="15" style="padding:14px">لا توجد نتائج مطابقة.</td>`;
-    tb.appendChild(tr);
-  }else{
+    tb.innerHTML = `<tr><td colspan="15" style="padding:14px">لا توجد نتائج مطابقة.</td></tr>`;
+  } else {
     list.forEach(r=>{
-      const shootP = r.shoot==="تم التصوير" ? badge(r.shoot,"g") : r.shoot==="بانتظار مراجعة" ? badge(r.shoot,"o") : badge(r.shoot,"x");
-      const editP  = r.edit==="تم الانتهاء" ? badge(r.edit,"g") : r.edit==="جاري" ? badge(r.edit,"o") : badge(r.edit,"x");
-      const agendaP= r.inAgenda==="نعم" ? badge("نعم","g") : badge("لا","x");
-      const siteP  = r.onSite==="نعم" ? badge("نعم","g") : badge("لا","x");
+      const shootP = r.shoot==="تم التصوير" ? badgePill(r.shoot,"green") :
+                     r.shoot==="بانتظار مراجعة" ? badgePill(r.shoot,"orange") : badgePill(r.shoot,"gray");
+      const editP  = r.edit==="تم الانتهاء" ? badgePill(r.edit,"green") :
+                     r.edit==="جاري" ? badgePill(r.edit,"orange") : badgePill(r.edit,"gray");
+      const agendaP= r.inAgenda==="نعم" ? badgePill("نعم","green") : badgePill("لا","gray");
+      const siteP  = r.onSite==="نعم" ? badgePill("نعم","green") : badgePill("لا","gray");
       const link   = (r.onSite==="نعم" && r.siteLink) ? `<a href="${escapeHTML(r.siteLink)}" target="_blank" rel="noopener">${escapeHTML(r.siteLink)}</a>` : "—";
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -373,81 +382,46 @@ function renderFiltered(){
       tb.appendChild(tr);
     });
   }
-
   $("#flatMeta").textContent = `${list.length} نتيجة — عرض فقط`;
-  $("#kTotal").textContent   = LOCAL_ROWS.length;
-  $("#kShot").textContent    = LOCAL_ROWS.filter(r=>r.shoot==="تم التصوير").length;
-  $("#kEditing").textContent = LOCAL_ROWS.filter(r=>r.edit==="جاري").length;
-  $("#kAgenda").textContent  = LOCAL_ROWS.filter(r=>r.inAgenda==="نعم").length;
 }
 
-/* ---------- Events ---------- */
-document.addEventListener("click",(e)=>{
-  const b = e.target.closest("button");
-  if(!b) return;
+/* ====== KPIs ====== */
+function updateKPIs(){
+  $("#kTotal").textContent   = ROWS.length;
+  $("#kShot").textContent    = ROWS.filter(r=>r.shoot==="تم التصوير").length;
+  $("#kEditing").textContent = ROWS.filter(r=>r.edit==="جاري").length;
+  $("#kAgenda").textContent  = ROWS.filter(r=>r.inAgenda==="نعم").length;
+}
 
-  if(b.id==="btnAdd") handleAdd();
-  if(b.id==="btnExportXLSX") exportXLSX();
-  if(b.id==="btnTemplate") downloadTemplate();
-  if(b.id==="btnReset"){ if(confirm("مسح البيانات المخزنة محليًا (لا يمس Firestore)؟")){ LOCAL_ROWS=[]; renderEditorTable(); renderFiltered(); } }
+/* ====== Firestore I/O ====== */
+let unsubCars=null;
+function listenCars(){
+  if(unsubCars){ unsubCars(); unsubCars=null; }
+  // أحدث أولاً
+  const qy = query(collection(db, CARS_COL), orderBy('createdAt','desc'));
+  unsubCars = onSnapshot(qy, (snap)=>{
+    ROWS = [];
+    snap.forEach(d=> ROWS.push({ id:d.id, ...(d.data()||{}) }));
+    updateKPIs(); renderEditor(); renderFilteredTable();
+  }, (err)=>{ console.error(err); alert('⚠️ فشل قراءة السيارات من Firestore'); });
+}
 
-  if(b.dataset.act==="del"){
-    const idx = +b.dataset.idx;
-    const item = LOCAL_ROWS[idx];
-    if(item?.__id){
-      if(confirm("حذف من Firestore؟")) deleteDoc(doc(db, CARS_COL, item.__id));
-    }
-  }
-  if(b.dataset.act==="dup"){
-    const idx = +b.dataset.idx;
-    const base = LOCAL_ROWS[idx];
-    if(base){
-      const copy = {...base}; delete copy.__id; copy.createdAt = serverTimestamp();
-      addDoc(collection(db, CARS_COL), copy);
-    }
-  }
-});
-
-$("#xlsxImport").addEventListener("change", onImportXLSX);
-
-document.addEventListener("change", (e)=>{
-  // فلاتر العرض فقط
-  if(e.target.matches("#dBrand,#dTrim,#dShoot,#dEdit,#dAgenda")){
-    FILTERS.brand = $("#dBrand").value;
-    FILTERS.trim  = $("#dTrim").value;
-    FILTERS.shoot = $("#dShoot").value;
-    FILTERS.edit  = $("#dEdit").value;
-    FILTERS.agenda= $("#dAgenda").value;
-    renderFiltered();
-  }
-});
-document.addEventListener("input", (e)=>{
-  if(e.target.id==="dSearch"){ FILTERS.q = e.target.value; renderFiltered(); }
-  if(e.target.id==="dColor"){ FILTERS.color = e.target.value; renderFiltered(); }
-  if(e.target.id==="dIntColor"){ FILTERS.intColor = e.target.value; renderFiltered(); }
-});
-
-/* ---------- إضافة سيارة ---------- */
-async function handleAdd(){
-  if(!IS_ADMIN){ alert("الإضافة للأدمِن فقط"); return; }
-  const brand = $("#iBrand").value || "";
-  const model = $("#iModel").value || "";
-  if(!brand){ alert("اختر العلامة"); return; }
-  if(!model){ alert("اختر الموديل"); return; }
-
-  const agendaDate  = ($("#iInAgenda").value==="نعم" && $("#iAgendaMonth").value && $("#iAgendaYear").value)
-    ? `${$("#iAgendaMonth").value} ${$("#iAgendaYear").value}` : "";
+async function addCarFS(){
+  // بناء التاريخ النصي للأجندة
+  const agendaMonth = $("#iAgendaMonth").value;
+  const agendaYear  = ($("#iAgendaYear").value||"").trim();
+  const agendaDate  = ($("#iInAgenda").value==="نعم" && agendaMonth && agendaYear) ? `${agendaMonth} ${agendaYear}` : "";
 
   const payload = {
-    brand,
-    model,
-    year: +($("#iYear").value || 2026),
-    trim: $("#iTrim").value || "",
-    color: ($("#iColor").value||"").trim(),
-    intColor: ($("#iIntColor").value||"").trim(),
-    shoot: $("#iShoot").value || "",
-    edit: $("#iEdit").value || "",
-    ctype: $("#iType").value || "",
+    brand: $("#iBrand").value || "",
+    model: $("#iModel").value || "",
+    year:  +($("#iYear").value || 2026),
+    trim:  $("#iTrim").value || "",
+    color: ($("#iColor").value || "").trim(),
+    intColor: ($("#iIntColor").value || "").trim(),
+    shoot: $("#iShoot").value || SHOOT_STATUS[0],
+    edit:  $("#iEdit").value || EDIT_STATUS[0],
+    ctype: $("#iType").value || CONTENT_TYPES[0],
     shootDate: $("#iShootDate").value || "",
     inAgenda: $("#iInAgenda").value || "لا",
     agendaDate,
@@ -460,39 +434,78 @@ async function handleAdd(){
 
   try{
     await addDoc(collection(db, CARS_COL), payload);
-    // تفريغ السريع:
+    // تفريغ بعض الحقول للاستخدام السريع
     ["iModel","iColor","iIntColor","iNotes","iShootDate","iSiteLink"].forEach(id=>$("#"+id).value="");
     $("#iInAgenda").value = "لا"; $("#agendaFields").classList.add("hidden");
     $("#iOnSite").value = "لا"; $("#siteLinkField").classList.add("hidden");
+    alert("✅ تم إضافة السيارة إلى Firestore");
   }catch(e){
+    console.error(e);
     alert("فشل الإضافة: " + (e?.message||e));
   }
 }
 
-/* ---------- Firestore Live ---------- */
-let unsub = null;
-function listenCars(){
-  if(unsub){ unsub(); unsub=null; }
-  const qy = query(collection(db, CARS_COL), orderBy("createdAt","desc"));
-  unsub = onSnapshot(qy, (snap)=>{
-    const arr=[];
-    snap.forEach(d=> arr.push({ __id:d.id, ...(d.data()||{}) }));
-    LOCAL_ROWS = arr;
-    renderEditorTable();
-    renderFiltered();
-  }, (err)=> alert("تعذر قراءة البيانات: "+(err?.message||err)));
+async function updateFieldFS(idx, key, val){
+  const row = ROWS[idx]; if(!row?.id) return;
+  const ref = doc(db, CARS_COL, row.id);
+  const patch = {};
+  patch[key] = (key==="year") ? (+val||2026) : val;
+  try{
+    await updateDoc(ref, patch);
+    if(key==="brand"){
+      const allowed = MODELS_BY_BRAND[val] || [];
+      if(!allowed.includes(row.model||"")){
+        await updateDoc(ref, { model: (allowed[0]||"") });
+      }
+    }
+  }catch(e){
+    console.error(e);
+    alert("فشل التعديل: " + (e?.message||e));
+  }
 }
 
-/* ---------- XLSX I/O ---------- */
-function xlsxHeaders(){ return ["brand","model","year","trim","color","intColor","shoot","edit","ctype","shootDate","inAgenda","agendaDate","onSite","siteLink","notes"]; }
+async function deleteRowFS(idx){
+  const row = ROWS[idx]; if(!row?.id) return;
+  if(!confirm("تأكيد حذف السيارة؟")) return;
+  try{
+    await deleteDoc(doc(db, CARS_COL, row.id));
+  }catch(e){
+    console.error(e);
+    alert("فشل الحذف: " + (e?.message||e));
+  }
+}
+
+async function duplicateRowFS(idx){
+  const src = ROWS[idx]; if(!src) return;
+  const copy = {...src}; delete copy.id; copy.createdAt = serverTimestamp(); copy.createdBy = CURRENT_USER?.uid||null;
+  try{
+    await addDoc(collection(db, CARS_COL), copy);
+  }catch(e){
+    console.error(e);
+    alert("فشل النسخ: " + (e?.message||e));
+  }
+}
+
+/* ====== XLSX I/O (Firestore) ====== */
+function xHeaders(){ return ["brand","model","year","trim","color","intColor","shoot","edit","ctype","shootDate","inAgenda","agendaDate","onSite","siteLink","notes"]; }
 function exportXLSX(){
-  const headers = xlsxHeaders();
-  const data = LOCAL_ROWS.map(r=>{
-    const o={}; headers.forEach(h=>o[h]=r[h]??""); return o;
-  });
+  const headers = xHeaders();
+  const data = ROWS.map(r=>{ const o={}; headers.forEach(h=>o[h]=r[h]??""); return o; });
   const ws = XLSX.utils.json_to_sheet(data, {header: headers});
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "MZJ Cars");
   XLSX.writeFile(wb, "mzj-production-tracker.xlsx");
+}
+function downloadTemplate(){
+  const headers = xHeaders();
+  const sample = [{
+    brand:"هيونداي", model:"سوناتا", year:2026, trim:"سمارت",
+    color:"أبيض لؤلؤي", intColor:"أسود", shoot:"تم التصوير", edit:"جاري",
+    ctype:"ريل", shootDate:"2025-10-12", inAgenda:"نعم", agendaDate:"أكتوبر 2025",
+    onSite:"لا", siteLink:"", notes:"مثال: ينتظر فويس"
+  }];
+  const ws = XLSX.utils.json_to_sheet(sample, {header: headers});
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Template");
+  XLSX.writeFile(wb, "mzj-quick-add-template.xlsx");
 }
 function onImportXLSX(e){
   const file = e.target.files[0]; if(!file) return;
@@ -504,78 +517,97 @@ function onImportXLSX(e){
       const ws = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(ws, {defval:""});
       if(!json.length){ alert("الملف فارغ."); return; }
-      const req = xlsxHeaders(); const cols = Object.keys(json[0]||{});
+      const req = xHeaders(); const cols = Object.keys(json[0]||{});
       const ok = req.every(h=>cols.includes(h));
       if(!ok){ alert("صيغة XLSX غير مطابقة. حمّل الـTemplate أعلاه."); return; }
-      // أضف الصفوف إلى Firestore
-      for(const row of json){
-        const o={}; req.forEach(h=>o[h]=row[h]??"");
-        o.year = +o.year || 2026;
-        o.createdAt = serverTimestamp();
-        o.createdBy = CURRENT_USER?.uid || null;
-        await addDoc(collection(db, CARS_COL), o);
+      const rows = json.map(row=>{ const o={}; req.forEach(h=>o[h]=row[h]??""); o.year=+o.year||2026; return o; });
+      // ارفع للفايرستور
+      for(const r of rows){
+        await addDoc(collection(db, CARS_COL), { ...r, createdAt: serverTimestamp(), createdBy: CURRENT_USER?.uid||null });
       }
-      alert(`تم الاستيراد بنجاح.`);
-      e.target.value="";
+      alert(`تم استيراد ${rows.length} سيارة (تم الإضافة إلى Firestore).`);
     }catch(err){
+      console.error(err);
       alert("فشل الاستيراد: "+(err?.message||err));
+    }finally{
+      e.target.value="";
     }
   };
   reader.readAsArrayBuffer(file);
 }
-function downloadTemplate(){
-  const headers = xlsxHeaders();
-  const sample = [{
-    brand:"هيونداي", model:"سوناتا", year:2026, trim:"سمارت",
-    color:"أبيض لؤلؤي", intColor:"أسود", shoot:"تم التصوير", edit:"جاري",
-    ctype:"ريل", shootDate:"2025-10-12", inAgenda:"نعم", agendaDate:"أكتوبر 2025",
-    onSite:"لا", siteLink:"", notes:"مثال: ينتظر فويس"
-  }];
-  const ws = XLSX.utils.json_to_sheet(sample, {header: headers});
-  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Template");
-  XLSX.writeFile(wb, "mzj-quick-add-template.xlsx");
+
+/* ====== Wipe Firestore (Admin Only) ====== */
+async function wipeFirestoreCars(){
+  if(!IS_ADMIN){ alert("الإجراء للأدمِن فقط"); return; }
+  if(!confirm("⚠️ سيتم حذف كل السيارات من Firestore.")) return;
+  if(!confirm("تأكيد نهائي: حذف جميع السيارات نهائيًا؟")) return;
+
+  try{
+    // نحذف على دفعات 200-200
+    let deleted = 0;
+    while(true){
+      const snap = await getDocs(query(collection(db,CARS_COL), limit(200)));
+      if(snap.empty) break;
+      const tasks = [];
+      snap.forEach(d=> tasks.push(deleteDoc(doc(db, CARS_COL, d.id))));
+      await Promise.allSettled(tasks);
+      deleted += tasks.length;
+      if(tasks.length < 200) break;
+    }
+    alert(`تم الحذف النهائي ✅ (عدد: ${deleted})`);
+  }catch(e){
+    console.error(e);
+    alert("تعذر التفريغ: "+(e?.message||e));
+  }
 }
 
-/* ---------- Auth Boot ---------- */
-onAuthStateChanged(auth, async (user)=>{
-  if(!user){
-    CURRENT_USER = null; IS_ADMIN = false;
-    banner.classList.remove("hidden");
-    banner.textContent = "أنت غير مسجل دخول — عرض فقط.";
-    editor.classList.add("hidden");
-    btnAdd.disabled = true;
-    // رغم ذلك نعرض البيانات العامة
-    listenCars();
+/* ====== Events ====== */
+document.addEventListener("change", async (e)=>{
+  const t = e.target;
+
+  // فلاتر العرض فقط
+  if(t.matches("#dBrand,#dTrim,#dShoot,#dEdit,#dAgenda")){
+    FILTERS.brand = $("#dBrand").value;
+    FILTERS.trim  = $("#dTrim").value;
+    FILTERS.shoot = $("#dShoot").value;
+    FILTERS.edit  = $("#dEdit").value;
+    FILTERS.agenda= $("#dAgenda").value;
+    renderFilteredTable();
     return;
   }
-  CURRENT_USER = user;
-  const role = await loadRole(user.uid);
-  IS_ADMIN = (role === "admin");
 
-  roleBanner.textContent = `UID: ${user.uid.slice(0,6)} • Role: ${role} • Collection: ${CARS_COL}`;
-  banner.classList.add("hidden");
-  editor.classList.toggle("hidden", !IS_ADMIN);
-  btnAdd.disabled = !IS_ADMIN;
-
-  initAddFields();
-  // فلاتر
-  fillSelect($("#dBrand"), BRANDS, true, "الكل");
-  fillSelect($("#dTrim"), TRIMS, true, "الكل");
-  fillSelect($("#dShoot"), SHOOT_STATUS, true, "الكل");
-  fillSelect($("#dEdit"), EDIT_STATUS, true, "الكل");
-  fillSelect($("#dAgenda"), YESNO, true, "الكل");
-
-  listenCars();
+  // تعديلات الجدول — تحديث Firestore
+  if(t.matches("select[data-idx], input[data-idx]") && !t.closest("#filteredTable")){
+    const idx = +t.dataset.idx; const key = t.dataset.key; const val = t.value;
+    if(Number.isInteger(idx) && ROWS[idx]){
+      await updateFieldFS(idx, key, val);
+    }
+  }
 });
+document.addEventListener("input", (e)=>{
+  const t = e.target;
+  if(t.id==="dSearch"){ FILTERS.q = t.value; renderFilteredTable(); }
+  if(t.id==="dColor"){ FILTERS.color = t.value; renderFilteredTable(); }
+  if(t.id==="dIntColor"){ FILTERS.intColor = t.value; renderFilteredTable(); }
+});
+document.addEventListener("click", async (e)=>{
+  const btn = e.target.closest("button"); if(!btn) return;
 
-/* ---------- أول تشغيل لغير المسجلين ---------- */
-if(!auth.currentUser){
-  // ملء الفلاتر الأساسية
-  fillSelect($("#dBrand"), BRANDS, true, "الكل");
-  fillSelect($("#dTrim"), TRIMS, true, "الكل");
-  fillSelect($("#dShoot"), SHOOT_STATUS, true, "الكل");
-  fillSelect($("#dEdit"), EDIT_STATUS, true, "الكل");
-  fillSelect($("#dAgenda"), YESNO, true, "الكل");
+  if(btn.id==="btnAdd"){ await addCarFS(); }
+  if(btn.id==="btnExportXLSX"){ exportXLSX(); }
+  if(btn.id==="btnTemplate"){ downloadTemplate(); }
+  if(btn.id==="btnWipeFS"){ await wipeFirestoreCars(); }
+
+  if(btn.dataset.action==="del"){ await deleteRowFS(+btn.dataset.idx); }
+  if(btn.dataset.action==="dup"){ await duplicateRowFS(+btn.dataset.idx); }
+});
+document.getElementById("xlsxImport").addEventListener("change", onImportXLSX);
+
+/* ====== Boot ====== */
+function boot(){
+  initAddControls();
+  initFilters();
+  listenCars();
 }
 </script>
 </body>

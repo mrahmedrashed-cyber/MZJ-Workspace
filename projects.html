@@ -19,9 +19,11 @@
     .nav a:hover{background:rgba(255,255,255,.14)}
 
     .page{padding:18px;display:grid;gap:16px}
+
     .panel{background:#fff;border-radius:var(--radius);box-shadow:0 12px 30px rgba(62,36,32,.12)}
     .panel .head{padding:12px 14px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
     .panel .body{padding:12px 14px}
+
     .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .select,.input{padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
     .btn{padding:10px 12px;border-radius:12px;border:0;background:var(--brown);color:#fff;cursor:pointer;font-weight:800}
@@ -79,6 +81,13 @@
     .desc-box{background:#fff;border:1px solid #eee;border-radius:12px;padding:10px;max-height:32vh;overflow:auto;white-space:pre-wrap;line-height:1.6;font-size:14px}
     .dropdown-menu{position:absolute;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);display:none;min-width:280px;max-height:260px;overflow:auto}
 
+    /* Spaces admin table */
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #eee;text-align:right}
+    th{color:#3e2420;background:#fff8ef}
+    tr:hover td{background:#fffaf5}
+    .empty{padding:14px;border:1px dashed #e5d5c8;border-radius:10px;color:#8f7f76;background:#fffaf1;text-align:center}
+
     @media (max-width: 600px){
       .sheet{max-height:92vh}
       .sheet .footer{position:sticky;bottom:0}
@@ -101,6 +110,7 @@
   </header>
 
   <main class="page">
+    <!-- لوحة لوحة المشاريع (كما هي) -->
     <section class="panel">
       <div class="head">
         <div class="controls">
@@ -115,6 +125,20 @@
       </div>
       <div class="body">
         <div class="board" id="board"></div>
+      </div>
+    </section>
+
+    <!-- لوحة إدارة الـSpaces (للأدمِن فقط) -->
+    <section class="panel" id="spacesAdminPanel" style="display:none">
+      <div class="head">
+        <strong>إدارة الـSpaces</strong>
+        <div class="controls">
+          <button class="btn" id="btnShowActive">Spaces الحالية</button>
+          <button class="btn secondary" id="btnShowArchived" title="عرض الأرشيف">الأرشيف</button>
+        </div>
+      </div>
+      <div class="body">
+        <div id="spacesList">—</div>
       </div>
     </section>
   </main>
@@ -170,7 +194,7 @@
     </div>
   </div>
 
-  <!-- تفاصيل تاسك (روابط فقط + إدارة الروابط للأدمِن أو المكلّف) -->
+  <!-- تفاصيل تاسك -->
   <div class="modal" id="detailModal">
     <div class="sheet">
       <div class="head"><strong id="dTitle">تفاصيل المهمة</strong></div>
@@ -200,7 +224,6 @@
           <div id="dLinks" class="chips"></div>
         </div>
 
-        <!-- إدخال رابط (أدمِن أو المكلّف فقط) -->
         <div id="dActions" style="margin-top:10px;display:block">
           <div>
             <label>إضافة / تعديل رابط</label>
@@ -208,7 +231,7 @@
             <input id="dLinkUrl" class="input" placeholder="https://…">
             <button class="btn secondary" id="btnAddLink" style="margin-top:8px">حفظ الرابط</button>
           </div>
-          <p class="hint">* من يملك الصلاحية: الأدمِن أو المسؤول عن المهمة.</p>
+          <p class="hint">* الصلاحية: الأدمِن أو المسؤول عن المهمة.</p>
         </div>
       </div>
       <div class="footer">
@@ -264,12 +287,17 @@
       });
       document.querySelectorAll('.col-actions').forEach(el=> el.style.display = IS_ADMIN? 'flex' : 'none');
 
-      // 🔒 إخفاء روابط غير الأدمِن في الـ Navbar
+      // إخفاء روابط غير الأدمِن في الـ Navbar
       if(!IS_ADMIN){
         document.getElementById('navDashboard').style.display='none';
         document.getElementById('navMembers').style.display='none';
         document.getElementById('navAdmin').style.display='none';
       }
+
+      // لوحة إدارة الـSpaces للأدمِن فقط
+      const spacesPanel = document.getElementById('spacesAdminPanel');
+      spacesPanel.style.display = IS_ADMIN? 'block' : 'none';
+      if(IS_ADMIN){ bootSpacesAdmin(); }
     });
 
     /* Helpers */
@@ -279,7 +307,7 @@
     const MIME_COLUMN = "application/x-mzj-column";
     const canManageLinks = (task)=> IS_ADMIN || (task?.assignee?.uid && task.assignee.uid === (CURRENT_USER?.uid||''));
 
-    /* Spaces */
+    /* Spaces (Board dropdown, tasks) */
     const spaceSelect     = document.getElementById('spaceSelect');
     const newGroupNameEl  = document.getElementById('newGroupName');
     const btnAddGroup     = document.getElementById('btnAddGroup');
@@ -328,6 +356,11 @@
         CURRENT_SPACE = items[0].id;
         SPACE_COLUMNS = items[0].columns?.length? items[0].columns : DEFAULT_COLUMNS;
         renderBoardSkeleton(); listenTasks(); fillGroupSelect(); ensureReviewColumn();
+      }else if(CURRENT_SPACE && !items.find(x=>x.id===CURRENT_SPACE) && items.length){
+        // لو الـSpace الحالي اتأرشف، حوّل لأحدث Space نشط
+        CURRENT_SPACE = items[0].id;
+        SPACE_COLUMNS = items[0].columns?.length? items[0].columns : DEFAULT_COLUMNS;
+        renderBoardSkeleton(); listenTasks(true); fillGroupSelect(); ensureReviewColumn();
       }
     });
 
@@ -349,7 +382,7 @@
       } else if(action.toLowerCase()==='archive'){
         if(!confirm('تأكيد أرشفة الـSpace؟')) return;
         await updateDoc(doc(db,'spaces', CURRENT_SPACE), { active:false, archivedAt:serverTimestamp() });
-        CURRENT_SPACE=null;
+        // سيعاد اختيار Space نشط تلقائياً من onSnapshot أعلاه
       }
     });
 
@@ -583,13 +616,11 @@
       document.getElementById('dDue').textContent=task.due||'—';
       document.getElementById('dStatus').textContent=task.status||'—';
 
-      // أزرار الإضافة/الإدارة حسب الصلاحية
       const showActions = canManageLinks(task);
       document.getElementById('dActions').style.display = showActions ? 'block' : 'none';
       document.getElementById('btnEditTask').style.display = IS_ADMIN ? '' : 'none';
       document.getElementById('btnDeleteTask').style.display = IS_ADMIN ? '' : 'none';
 
-      // عرض الروابط مع أزرار تعديل/حذف لمن يملك الصلاحية
       const linksEl=document.getElementById('dLinks'); linksEl.innerHTML='';
       (task.links||[]).forEach((l, idx)=>{
         const chip=document.createElement('span'); chip.className='chip'; chip.dataset.idx=idx;
@@ -610,7 +641,6 @@
     document.getElementById('btnCloseDetail').addEventListener('click', ()=> document.getElementById('detailModal').classList.remove('show'));
     document.getElementById('detailModal').addEventListener('click', (e)=>{ if(e.target.id==='detailModal') document.getElementById('detailModal').classList.remove('show'); });
 
-    // تم للمراجعة -> "تحت المراجعة"
     document.getElementById('btnMarkReviewed').addEventListener('click', async ()=>{
       if(!OPEN_TASK) return;
       await ensureReviewColumn();
@@ -618,7 +648,6 @@
       catch(e){ alert('⚠️ تعذر تحديث الحالة: '+e.message); }
     });
 
-    // تعديل/حذف المهمة (أدمِن)
     document.getElementById('btnEditTask').addEventListener('click', async ()=>{
       if(!IS_ADMIN || !OPEN_TASK) return;
       const newName=prompt('اسم المهمة:', OPEN_TASK.name||''); if(newName===null) return;
@@ -635,7 +664,6 @@
       catch(e){ alert('⚠️ فشل الحذف: '+e.message); }
     });
 
-    // حفظ/إضافة رابط — للأدمِن أو المكلّف
     document.getElementById('btnAddLink').addEventListener('click', async ()=>{
       if(!OPEN_TASK) return alert('افتح مهمة أولاً');
       if(!canManageLinks(OPEN_TASK)) return alert('إدارة الروابط مسموحة للأدمِن أو المسؤول عن المهمة فقط');
@@ -644,7 +672,6 @@
       if(!url || !/^https?:\/\//i.test(url)) return alert('اكتب رابط يبدأ بـ http(s)://');
 
       try{
-        // لو الرابط موجود بنفس العنوان والـURL هنضيف كمان واحد؛ التعديل يتم من أدوات التعديل
         await updateDoc(doc(db,'tasks', OPEN_TASK.id), {
           links: arrayUnion({ title, url, by: CURRENT_USER?.uid || null, at: Timestamp.now() })
         });
@@ -653,7 +680,6 @@
       }catch(e){ alert('⚠️ تعذر حفظ الرابط: '+e.message); }
     });
 
-    // تعديل/حذف رابط (تفويض أحداث)
     document.getElementById('dLinks').addEventListener('click', async (e)=>{
       if(!OPEN_TASK) return;
       if(!(e.target.matches('.link-edit') || e.target.matches('.link-del'))) return;
@@ -704,14 +730,12 @@
               ${ass?`<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>`:''}
               ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
             </div>`;
-
           card.setAttribute('draggable','true');
           card.addEventListener('dragstart', e=>{
             e.dataTransfer.effectAllowed='move';
             e.dataTransfer.setData(MIME_TASK, t.id);
             e.dataTransfer.setData('text/plain', t.id);
           });
-
           card.addEventListener('click', ()=>{ const fresh=TASKS.find(x=>x.id===t.id); if(fresh) openDetail(fresh); });
           zone?.appendChild(card);
         });
@@ -732,6 +756,106 @@
       },(err)=>{ console.error(err); alert('⚠️ فشل قراءة التاسكات. تأكد من القواعد.'); });
     }
 
+    /* ====== إدارة الـSpaces (عرض النشطة/الأرشيف + حذف) للأدمِن فقط ====== */
+    const spacesListDiv = document.getElementById('spacesList');
+    const btnShowActive = document.getElementById('btnShowActive');
+    const btnShowArchived = document.getElementById('btnShowArchived');
+    let showArchived=false, unsubSpacesPanel=null;
+
+    function bootSpacesAdmin(){
+      btnShowActive.onclick = ()=>{ showArchived=false; reloadSpacesPanel(); };
+      btnShowArchived.onclick = ()=>{ showArchived=true; reloadSpacesPanel(); };
+      reloadSpacesPanel();
+    }
+
+    function reloadSpacesPanel(){
+      if(unsubSpacesPanel){ unsubSpacesPanel(); unsubSpacesPanel=null; }
+      spacesListDiv.textContent='جار التحميل...';
+      const qy = query(collection(db,'spaces'), where('active','==', !showArchived));
+      unsubSpacesPanel = onSnapshot(qy, (snap)=>{
+        const arr=[]; snap.forEach(d=> arr.push({id:d.id, ...(d.data()||{})}));
+        renderSpacesPanel(arr);
+      }, ()=> spacesListDiv.innerHTML='<div class="empty">تعذر تحميل البيانات</div>');
+    }
+
+    function renderSpacesPanel(list){
+      if(!list.length){ spacesListDiv.innerHTML = `<div class="empty">لا توجد ${showArchived?'مساحات مؤرشفة':'مساحات نشطة'}.</div>`; return; }
+
+      const html = `
+        <table>
+          <thead>
+            <tr>
+              <th>الاسم</th>
+              <th>عدد الأعمدة</th>
+              <th>تاريخ الإنشاء</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(s=>{
+              const created = s.createdAt?.seconds ? new Date(s.createdAt.seconds*1000).toLocaleDateString('en-GB') : '—';
+              const cols = Array.isArray(s.columns)? s.columns.length : 0;
+              const isActive = s.active!==false;
+              return `
+                <tr>
+                  <td>${s.name||'-'}</td>
+                  <td>${cols}</td>
+                  <td>${created}</td>
+                  <td>${isActive?'نشط':'مؤرشف'}</td>
+                  <td>
+                    ${isActive
+                      ? `<button class="btn secondary" onclick="archiveSpace('${s.id}')">أرشفة</button>`
+                      : `<button class="btn" onclick="restoreSpace('${s.id}')">استعادة</button>`}
+                    <button class="btn danger" onclick="deleteSpace('${s.id}')">حذف</button>
+                  </td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+      spacesListDiv.innerHTML = html;
+    }
+
+    // أرشفة / استعادة / حذف (مع حذف مهام الـSpace عند الحذف النهائي)
+    window.archiveSpace = async(id)=>{
+      if(!IS_ADMIN) return;
+      if(!confirm('هل تريد أرشفة هذا الـSpace؟')) return;
+      await updateDoc(doc(db,'spaces',id),{active:false, archivedAt:serverTimestamp()});
+      // إن كان هو الحالي سيتم اختيار بديل من onSnapshot للـdropdown
+      alert('تمت الأرشفة ✅');
+    };
+
+    window.restoreSpace = async(id)=>{
+      if(!IS_ADMIN) return;
+      if(!confirm('هل تريد استعادة هذا الـSpace؟')) return;
+      await updateDoc(doc(db,'spaces',id),{active:true});
+      alert('تمت الاستعادة ✅');
+    };
+
+    window.deleteSpace = async(id)=>{
+      if(!IS_ADMIN) return;
+      const deep = confirm('⚠️ سيتم حذف الـSpace نهائيًا.\nهل تريد حذف كل المهام التابعة لهذا الـSpace أيضًا؟\nOK = حذف مع المهام / Cancel = إلغاء');
+      if(!deep) return;
+
+      try{
+        // حذف مهام الـSpace
+        const qy = query(collection(db,'tasks'), where('spaceId','==', id));
+        const snap = await getDocs(qy);
+        const deletes = [];
+        snap.forEach(d=> deletes.push(deleteDoc(doc(db,'tasks', d.id))));
+        await Promise.allSettled(deletes);
+
+        // حذف الـSpace
+        await deleteDoc(doc(db,'spaces', id));
+
+        // لو الـSpace المحذوف هو الحالي، سيتم تحويل الـdropdown عبر onSnapshot
+        alert('تم الحذف النهائي ✅');
+      }catch(e){
+        alert('تعذر الحذف: '+(e?.message||e));
+      }
+    };
+
     /* Boot */
     (async ()=>{
       if(!CURRENT_SPACE){
@@ -741,7 +865,6 @@
         renderBoardSkeleton(); listenTasks(); fillGroupSelect(); ensureReviewColumn();
       }
     })();
-
   </script>
 </body>
 </html>

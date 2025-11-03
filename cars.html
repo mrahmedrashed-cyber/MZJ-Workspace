@@ -36,18 +36,15 @@
   .row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
   @media (max-width:1100px){ .row{grid-template-columns:repeat(3,1fr)} }
   @media (max-width:640px){ .row{grid-template-columns:1fr} }
-
   .table-soft{overflow:auto;border-radius:16px;border:1px solid #f0e6df}
   table{width:100%;border-collapse:separate;border-spacing:0;min-width:1400px;background:#fff}
   thead th{position:sticky;top:0;background:#fbf6f1;color:var(--brown);padding:12px 10px;border-bottom:1px solid #f0e6df;font-size:13px;z-index:2;text-align:right}
   tbody td{padding:10px;border-bottom:1px solid #f7eee7;font-size:13px;vertical-align:middle}
   tbody tr:nth-child(even){background:#fffdfa}
-
   .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid #eaded6;font-weight:700;font-size:12px;background:#fff;white-space:nowrap}
   .p-green{background:#ecfdf5;border-color:#a7f3d0}
   .p-orange{background:#fff7ed;border-color:#fed7aa}
   .p-gray{background:#f3f4f6;border-color:#e5e7eb}
-
   .hidden{display:none}
 </style>
 </head>
@@ -113,7 +110,7 @@
         <div style="grid-column: span 2"><label>ملاحظات</label><input id="iNotes" placeholder="مثلاً: ينتظر مراجعة SEO / صور ناقصة"></div>
         <div><label>&nbsp;</label><button id="btnAdd" class="btn btn-primary" style="width:100%">إضافة</button></div>
       </div>
-      <div class="muted" style="margin-top:6px">* الحفظ سحابي مباشر عبر Firebase. الاستيراد XLSX يضيف على الموجود.</div>
+      <div class="muted" style="margin-top:6px">* القوائم تظهر فورًا — والحفظ سحابي عبر Firebase عند توفره.</div>
     </div>
 
     <div class="panel table-soft" style="padding:0">
@@ -175,37 +172,15 @@
     </div>
   </div>
 
-<!-- ===== App + Firebase (Module) ===== -->
+<!-- ===== App (Module) ===== -->
 <script type="module">
-/* ===================== Firebase Setup ===================== */
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import {
-  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, where, orderBy, serverTimestamp, getDocs
-} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
-  authDomain: "mzj-workspace.firebaseapp.com",
-  projectId: "mzj-workspace",
-  storageBucket: "mzj-workspace.firebasestorage.app",
-  appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
-};
-if (!getApps().length) initializeApp(firebaseConfig);
-const auth = getAuth();
-const db   = getFirestore();
-
-/* ===================== Constants & State ===================== */
-const WORKSPACE_ID = "production-tracker"; // ثابت عام للمساحة دي
-const COLL = collection(db, "prod_items"); // كل سيارة = مستند مستقل
-
+/* ========= ثابتات البيانات (تُحمَّل أولاً لتظهر القوائم فورًا) ========= */
 const BRANDS = ["هيونداي","شانجان","شيري","فورد","ام جي","نيسان"];
 const MODELS_BY_BRAND = {
-  "هيونداي": ["سوناتا","النترا","اكسنت","جراند i10","كريتا","جراند كريتا","ستار جيزر","فينيو","ازيرا","سنتافي","توسان","كونا","ستاريا","بالسييد"],
+  "هيونداي": ["سوناتا","النترا","اكسنت","جراند i10","كريتا","جراند كريتا","ستار جيزر","فينيو","ازيرا","سنتافي","توسان","كونا","ستاريا","باليسيد"],
   "شانجان": ["سي اس 75","سي اس 35","ايدو بلس","ال سيفن","يوني كي","يوني تي","يوني في","سي اس 95","يوني اس","هانتر اب"],
-  "شيري": ["تيجو 2 برو","اريزو 8","اريزو 6 برو","اريزو 5 برو","أكسييد ال اكس","تيجو 8 برة","تيجو 7","تيجو 4 برو"],
-  "فورد": ["رينجر","اكسبلور","تيريتوري","تورس"],
+  "شيري": ["تيجو 2 برو","اريزو 8","اريزو 6 برو","اريزو 5 برو","أكسييد ال اكس","تيجو 8 برو","تيجو 7","تيجو 4 برو"],
+  "فورد": ["رينجر","اكسبلورر","تيريتوري","تورس"],
   "ام جي": ["جي تي","ام جي 3","ام جي 7","ام جي 5","اتش أس","ار اكس 5","ون","زد أس","تي 60","ار أكس 9","وال","ار أكس 8"],
   "نيسان": ["اكس تريل","ماجنايت","كيكس","صني","اكس تيرا","التيما"]
 };
@@ -216,24 +191,20 @@ const CONTENT_TYPES = ["صور","فيديو","ريل","موشن","AI"];
 const YESNO = ["لا","نعم"];
 const MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 
-/* ===================== App State ===================== */
-let CURRENT_USER=null;
-let rows = [];        // { _id, brand, model, ... }
-let unsub = null;
-
-/* ===================== Helpers (DOM) ===================== */
 const $ = s=>document.querySelector(s);
 function $fill(el, arr, withBlank=false, blankLabel="الكل"){
+  if(!el) return;
   el.innerHTML = withBlank ? `<option value="">${blankLabel}</option>` : "";
   arr.forEach(v=>{ const o=document.createElement("option"); o.value=v;o.textContent=v; el.appendChild(o); });
 }
 function $fillStrict(el, arr, withBlank=false){
+  if(!el) return;
   el.innerHTML = withBlank ? `<option value="">— اختر —</option>` : "";
   arr.forEach(v=>{ const o=document.createElement("option"); o.value=v;o.textContent=v; el.appendChild(o); });
 }
 function escapeHTML(s){ return (s??"").toString().replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;"); }
 
-/* ===================== UI Boot (static fills) ===================== */
+/* ========= تعبئة القوائم فورًا (قبل أي اتصال سحابي) ========= */
 $fillStrict($("#iBrand"), BRANDS, true);
 $fillStrict($("#iTrim"), TRIMS);
 $fillStrict($("#iShoot"), SHOOT_STATUS);
@@ -242,29 +213,40 @@ $fillStrict($("#iType"), CONTENT_TYPES);
 $fillStrict($("#iInAgenda"), YESNO);
 $fillStrict($("#iOnSite"), YESNO);
 $fillStrict($("#iAgendaMonth"), MONTHS);
-$("#iAgendaYear").value = new Date().getFullYear();
+if ($("#iAgendaYear")) $("#iAgendaYear").value = new Date().getFullYear();
 
 function refreshAddModels(){
-  const b = $("#iBrand").value;
+  const b = $("#iBrand")?.value;
   const models = MODELS_BY_BRAND[b] || [];
-  $("#iModel").disabled = models.length===0;
-  $fillStrict($("#iModel"), models, true);
+  if ($("#iModel")){
+    $("#iModel").disabled = models.length===0;
+    $fillStrict($("#iModel"), models, true);
+  }
 }
-$("#iBrand").addEventListener("change", refreshAddModels);
+$("#iBrand")?.addEventListener("change", refreshAddModels);
 refreshAddModels();
 
+/* فلاتر العرض فقط */
 $fill($("#dBrand"), BRANDS, true, "الكل");
 $fill($("#dTrim"), TRIMS, true, "الكل");
 $fill($("#dShoot"), SHOOT_STATUS, true, "الكل");
 $fill($("#dEdit"), EDIT_STATUS, true, "الكل");
 $fill($("#dAgenda"), YESNO, true, "الكل");
 
-$("#iInAgenda").addEventListener("change", ()=>$("#agendaFields").classList.toggle("hidden", $("#iInAgenda").value!=="نعم"));
-$("#iOnSite").addEventListener("change", ()=>$("#siteLinkField").classList.toggle("hidden", $("#iOnSite").value!=="نعم"));
-$("#agendaFields").classList.toggle("hidden", $("#iInAgenda").value!=="نعم");
-$("#siteLinkField").classList.toggle("hidden", $("#iOnSite").value!=="نعم");
+/* حقول شرطية */
+$("#iInAgenda")?.addEventListener("change", ()=>$("#agendaFields")?.classList.toggle("hidden", $("#iInAgenda").value!=="نعم"));
+$("#iOnSite")?.addEventListener("change", ()=>$("#siteLinkField")?.classList.toggle("hidden", $("#iOnSite").value!=="نعم"));
+$("#agendaFields")?.classList.toggle("hidden", $("#iInAgenda")?.value!=="نعم");
+$("#siteLinkField")?.classList.toggle("hidden", $("#iOnSite")?.value!=="نعم");
 
-/* ===================== Render (Editor/ReadOnly/KPIs) ===================== */
+/* ========= حالة التطبيق ========= */
+let rows = [];   // تُملأ من Firestore أو من LocalStorage كـ fallback
+let filters = {brand:"", trim:"", shoot:"", edit:"", color:"", intColor:"", agenda:"", q:""};
+let FIRE_ON = false;       // هل الاتصال بـ Firebase ناجح؟
+let CURRENT_USER = null;   // المستخدم الحالي
+const LS_KEY = "mzj-cars-tracker-cache";
+
+/* ========= Render Functions ========= */
 function textCell(key,val,idx){ return `<input data-idx="${idx}" data-key="${key}" value="${escapeHTML(val??'')}" />` }
 function numberCell(key,val,idx){ return `<input type="number" data-idx="${idx}" data-key="${key}" value="${escapeHTML(val??'')}" style="width:110px"/>` }
 function dateCell(key,val,idx){ return `<input type="date" data-idx="${idx}" data-key="${key}" value="${val??''}" style="width:150px"/>` }
@@ -288,9 +270,9 @@ function modelCell(key, val, brand, idx){
     ${opts.map(v=>`<option ${v===val?'selected':''} value="${v}">${v}</option>`).join("")}
   </select>`;
 }
-
 function renderEditor(){
-  const tb = $("#tbody"); tb.innerHTML = "";
+  const tb = $("#tbody"); if(!tb) return;
+  tb.innerHTML = "";
   rows.forEach((r,idx)=>{
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -317,12 +299,10 @@ function renderEditor(){
     tb.appendChild(tr);
   });
 }
-
 function badgePill(val, kind){
   const cls = kind==="green"?"p-green":kind==="orange"?"p-orange":"p-gray";
   return `<span class="pill ${cls}">${escapeHTML(val)}</span>`;
 }
-let filters = {brand:"", trim:"", shoot:"", edit:"", color:"", intColor:"", agenda:"", q:""};
 function currentListReadonly(){
   return rows.filter(r=>{
     if(filters.brand && r.brand!==filters.brand) return false;
@@ -341,8 +321,8 @@ function currentListReadonly(){
   });
 }
 function renderFilteredTable(){
+  const tb = $("#filteredTBody"); if(!tb) return;
   const list = currentListReadonly();
-  const tb = $("#filteredTBody");
   tb.innerHTML = "";
   if(!list.length){
     const tr=document.createElement("tr");
@@ -378,175 +358,27 @@ function renderFilteredTable(){
       tb.appendChild(tr);
     });
   }
-  $("#flatMeta").textContent = `${list.length} نتيجة — عرض فقط (بدون تعديل)`;
+  const fm = $("#flatMeta"); if (fm) fm.textContent = `${list.length} نتيجة — عرض فقط (بدون تعديل)`;
 }
-
 function updateKPIs(){
-  $("#kTotal").textContent   = rows.length;
-  $("#kShot").textContent    = rows.filter(r=>r.shoot==="تم التصوير").length;
-  $("#kEditing").textContent = rows.filter(r=>r.edit==="جاري").length;
-  $("#kAgenda").textContent  = rows.filter(r=>r.inAgenda==="نعم").length;
+  $("#kTotal")&&( $("#kTotal").textContent   = rows.length );
+  $("#kShot") &&( $("#kShot").textContent    = rows.filter(r=>r.shoot==="تم التصوير").length );
+  $("#kEditing")&&( $("#kEditing").textContent = rows.filter(r=>r.edit==="جاري").length );
+  $("#kAgenda") &&( $("#kAgenda").textContent  = rows.filter(r=>r.inAgenda==="نعم").length );
 }
 
-/* ===================== Firestore Sync ===================== */
-function localSaveCache(){ localStorage.setItem("mzj-cars-tracker-cache", JSON.stringify(rows)); }
-function localLoadCache(){ try{ return JSON.parse(localStorage.getItem("mzj-cars-tracker-cache")||"null"); }catch{ return null; } }
+/* ========= Local fallback ========= */
+function cacheSave(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(rows)); }catch{} }
+function cacheLoad(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"null"); }catch{ return null; } }
 
-function startRealtime(){
-  if (unsub) { unsub(); unsub=null; }
-  const qy = query(COLL,
-    where("workspaceId","==", WORKSPACE_ID),
-    orderBy("createdAt","desc")
-  );
-  unsub = onSnapshot(qy, (snap)=>{
-    const arr = [];
-    snap.forEach(d=> arr.push({ _id:d.id, ...(d.data()||{}) }));
-    rows = arr;
-    localSaveCache();
-    renderEditor(); renderFilteredTable(); updateKPIs();
-  });
-}
-
-async function addRowFirestore(r){
-  await addDoc(COLL, {
-    ...r,
-    workspaceId: WORKSPACE_ID,
-    createdBy: CURRENT_USER?.uid || null,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  });
-}
-async function updateRowFirestore(idx, patch){
-  const id = rows[idx]?._id; if(!id) return;
-  await updateDoc(doc(db,"prod_items", id), { ...patch, updatedAt: serverTimestamp() });
-}
-async function deleteRowFirestore(idx){
-  const id = rows[idx]?._id; if(!id) return;
-  await deleteDoc(doc(db,"prod_items", id));
-}
-async function deleteAllFirestore(){
-  const qy = query(COLL, where("workspaceId","==", WORKSPACE_ID));
-  const snap = await getDocs(qy);
-  const jobs = [];
-  snap.forEach(d=> jobs.push(deleteDoc(doc(db,"prod_items", d.id))));
-  await Promise.allSettled(jobs);
-}
-
-/* ===================== Events (wire to Firestore) ===================== */
-// فلاتر
-document.addEventListener("change", e=>{
-  const t = e.target;
-
-  if(t.matches("#dBrand,#dTrim,#dShoot,#dEdit,#dAgenda")){
-    filters.brand = $("#dBrand").value;
-    filters.trim  = $("#dTrim").value;
-    filters.shoot = $("#dShoot").value;
-    filters.edit  = $("#dEdit").value;
-    filters.agenda= $("#dAgenda").value;
-    renderFilteredTable();
-    return;
-  }
-
-  // تغييرات جدول التحرير -> تحديث مستند واحد
-  if(t.matches("select[data-idx], input[data-idx]") && !t.closest("#filteredTable")){
-    const idx = +t.dataset.idx; const key = t.dataset.key; let val = t.value;
-
-    if(Number.isInteger(idx) && rows[idx]){
-      // قيود مرتبطة بالموديل/العلامة
-      if(key==="brand"){
-        const allowed = MODELS_BY_BRAND[val] || [];
-        if(!allowed.includes(rows[idx].model)){ await updateRowFirestore(idx, { model: allowed[0]||"" }); }
-      }
-      await updateRowFirestore(idx, { [key]: val });
-    }
-  }
-});
-document.addEventListener("input", e=>{
-  const t = e.target;
-  if(t.id==="dSearch"){ filters.q = t.value; renderFilteredTable(); }
-  if(t.id==="dColor"){ filters.color = t.value; renderFilteredTable(); }
-  if(t.id==="dIntColor"){ filters.intColor = t.value; renderFilteredTable(); }
-});
-
-// أزرار عليا + إجراءات الصف
-document.addEventListener("click", async (e)=>{
-  const btn = e.target.closest("button"); if(!btn) return;
-
-  if(btn.id==="btnAdd"){ await addQuick(); return; }
-  if(btn.id==="btnExportXLSX"){ exportXLSX(); return; }
-  if(btn.id==="btnTemplate"){ downloadTemplate(); return; }
-  if(btn.id==="btnReset"){
-    if(confirm("مسح كل البيانات من السحابة لهذه الصفحة؟")){ await deleteAllFirestore(); }
-    return;
-  }
-  if(btn.dataset.action==="del"){ await deleteRowFirestore(+btn.dataset.idx); return; }
-  if(btn.dataset.action==="dup"){
-    const src = rows[+btn.dataset.idx]; if(!src) return;
-    const clone = {...src}; delete clone._id; clone.createdAt=null; clone.updatedAt=null;
-    await addRowFirestore(clone); return;
-  }
-});
-
-$("#xlsxImport").addEventListener("change", onImportXLSX);
-
-async function addQuick(){
-  const agendaMonth = $("#iAgendaMonth").value; 
-  const agendaYear  = ($("#iAgendaYear").value||"").trim();
-  const agendaDate  = ($("#iInAgenda").value==="نعم" && agendaMonth && agendaYear) ? `${agendaMonth} ${agendaYear}` : "";
-
-  const r = {
-    brand: $("#iBrand").value || "",
-    model: $("#iModel").value || "",
-    year:  +($("#iYear").value || 2026),
-    trim:  $("#iTrim").value || TRIMS[0],
-    color: ($("#iColor").value || "").trim(),
-    intColor: ($("#iIntColor").value || "").trim(),
-    shoot: $("#iShoot").value || SHOOT_STATUS[0],
-    edit:  $("#iEdit").value || EDIT_STATUS[0],
-    ctype: $("#iType").value || CONTENT_TYPES[0],
-    shootDate: $("#iShootDate").value || "",
-    inAgenda: $("#iInAgenda").value || "لا",
-    agendaDate,
-    onSite: $("#iOnSite").value || "لا",
-    siteLink: ($("#iOnSite").value==="نعم" ? ($("#iSiteLink").value||"") : ""),
-    notes: $("#iNotes").value || ""
-  };
-  await addRowFirestore(r);
-
-  ["iModel","iColor","iIntColor","iNotes","iShootDate","iSiteLink"].forEach(id=>$("#"+id).value="");
-  $("#iInAgenda").value = "لا"; $("#agendaFields").classList.add("hidden");
-  $("#iOnSite").value = "لا"; $("#siteLinkField").classList.add("hidden");
-}
-
-/* ===================== XLSX I/O ===================== */
+/* ========= XLSX I/O ========= */
 function xlsxHeaders(){ return ["brand","model","year","trim","color","intColor","shoot","edit","ctype","shootDate","inAgenda","agendaDate","onSite","siteLink","notes"]; }
 function exportXLSX(){
   const headers = xlsxHeaders();
-  const data = rows.map(({_id,workspaceId,createdAt,updatedAt,createdBy, ...r})=>{
-    const o={}; headers.forEach(h=>o[h]=r[h]??""); return o;
-  });
+  const data = rows.map(r=>{ const o={}; headers.forEach(h=>o[h]=r[h]??""); return o; });
   const ws = XLSX.utils.json_to_sheet(data, {header: headers});
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "MZJ Cars");
   XLSX.writeFile(wb, "mzj-production-tracker.xlsx");
-}
-function onImportXLSX(e){
-  const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = async (evt)=>{
-    const data = new Uint8Array(evt.target.result);
-    const wb = XLSX.read(data, {type: "array"});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json(ws, {defval:""});
-    if(!json.length){ alert("الملف فارغ."); return; }
-    const req = xlsxHeaders(); const cols = Object.keys(json[0]||{});
-    const ok = req.every(h=>cols.includes(h));
-    if(!ok){ alert("صيغة XLSX غير مطابقة. حمّل الـTemplate أعلاه."); return; }
-    const imported = json.map(row=>{ const o={}; req.forEach(h=>o[h]=row[h]??""); o.year=+o.year||2026; return o; });
-    for (const item of imported){ await addRowFirestore(item); }
-    alert(`تم استيراد ${imported.length} سيارة (إضافة).`);
-    e.target.value = "";
-  };
-  reader.readAsArrayBuffer(file);
 }
 function downloadTemplate(){
   const headers = xlsxHeaders();
@@ -561,25 +393,220 @@ function downloadTemplate(){
   XLSX.writeFile(wb, "mzj-quick-add-template.xlsx");
 }
 
-/* ===================== Filters typing ===================== */
-document.getElementById("dSearch").addEventListener("input", e=>{ filters.q = e.target.value; renderFilteredTable(); });
-document.getElementById("dColor").addEventListener("input", e=>{ filters.color = e.target.value; renderFilteredTable(); });
-document.getElementById("dIntColor").addEventListener("input", e=>{ filters.intColor = e.target.value; renderFilteredTable(); });
+/* ========= Firebase (داخل try/catch) ========= */
+let addRow, updateRow, deleteRow, deleteAll, startRealtime, importFromXlsx, addQuick;
 
-/* ===================== Auth Guard + Boot ===================== */
-onAuthStateChanged(auth, (user)=>{
-  if(!user){ alert("سجّل الدخول أولاً"); location.href="login.html"; return; }
-  CURRENT_USER = user;
-  document.getElementById("who").textContent = (user.displayName||user.email||"مستخدم") + " — متصل";
-  // حمل كاش محلي مؤقت لحين وصول الـ snapshot
-  const cache = localLoadCache(); if (cache && cache.length) { rows = cache; renderEditor(); renderFilteredTable(); updateKPIs(); }
-  startRealtime();
+try {
+  const [{ initializeApp, getApps },
+         { getAuth, onAuthStateChanged, signOut },
+         { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs }
+        ] = await Promise.all([
+          import("https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js"),
+          import("https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js"),
+          import("https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js")
+        ]);
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
+    authDomain: "mzj-workspace.firebaseapp.com",
+    projectId: "mzj-workspace",
+    storageBucket: "mzj-workspace.firebasestorage.app",
+    appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
+  };
+  if (!getApps().length) initializeApp(firebaseConfig);
+  const auth = getAuth();
+  const db   = getFirestore();
+  const WORKSPACE_ID = "production-tracker";
+  const COLL = collection(db,"prod_items");
+
+  FIRE_ON = true;
+
+  startRealtime = ()=>{
+    const qy = query(COLL, where("workspaceId","==", WORKSPACE_ID), orderBy("createdAt","desc"));
+    onSnapshot(qy,(snap)=>{
+      const arr=[]; snap.forEach(d=> arr.push({ _id:d.id, ...(d.data()||{}) }));
+      rows = arr; cacheSave(); renderEditor(); renderFilteredTable(); updateKPIs();
+    });
+  };
+  addRow = async (r)=>{
+    await addDoc(COLL, { ...r, workspaceId:WORKSPACE_ID, createdAt:serverTimestamp(), updatedAt:serverTimestamp() });
+  };
+  updateRow = async (idx, patch)=>{
+    const id = rows[idx]?._id; if(!id) return;
+    await updateDoc(doc(db,"prod_items", id), { ...patch, updatedAt:serverTimestamp() });
+  };
+  deleteRow = async (idx)=>{
+    const id = rows[idx]?._id; if(!id) return;
+    await deleteDoc(doc(db,"prod_items", id));
+  };
+  deleteAll = async ()=>{
+    const qy = query(COLL, where("workspaceId","==", WORKSPACE_ID));
+    const snap = await getDocs(qy);
+    const jobs=[]; snap.forEach(d=> jobs.push(deleteDoc(doc(db,"prod_items", d.id))));
+    await Promise.allSettled(jobs);
+  };
+  importFromXlsx = async (items)=>{ for(const it of items) await addRow(it); };
+
+  addQuick = async ()=>{
+    const agendaMonth = $("#iAgendaMonth")?.value;
+    const agendaYear  = ($("#iAgendaYear")?.value||"").trim();
+    const agendaDate  = ($("#iInAgenda")?.value==="نعم" && agendaMonth && agendaYear) ? `${agendaMonth} ${agendaYear}` : "";
+    const r = {
+      brand: $("#iBrand")?.value||"", model: $("#iModel")?.value||"", year:+($("#iYear")?.value||2026),
+      trim: $("#iTrim")?.value||TRIMS[0], color: ($("#iColor")?.value||"").trim(), intColor: ($("#iIntColor")?.value||"").trim(),
+      shoot: $("#iShoot")?.value||SHOOT_STATUS[0], edit: $("#iEdit")?.value||EDIT_STATUS[0], ctype: $("#iType")?.value||CONTENT_TYPES[0],
+      shootDate: $("#iShootDate")?.value||"", inAgenda: $("#iInAgenda")?.value||"لا", agendaDate,
+      onSite: $("#iOnSite")?.value||"لا", siteLink: ($("#iOnSite")?.value==="نعم" ? ($("#iSiteLink")?.value||"") : ""), notes: $("#iNotes")?.value||""
+    };
+    await addRow(r);
+    ["iModel","iColor","iIntColor","iNotes","iShootDate","iSiteLink"].forEach(id=>{ const el=$("#"+id); if(el) el.value=""; });
+    if($("#iInAgenda")){ $("#iInAgenda").value="لا"; $("#agendaFields")?.classList.add("hidden"); }
+    if($("#iOnSite")){ $("#iOnSite").value="لا"; $("#siteLinkField")?.classList.add("hidden"); }
+  };
+
+  onAuthStateChanged(auth,(user)=>{
+    if(!user){ alert("سجّل الدخول أولاً"); location.href="login.html"; return; }
+    CURRENT_USER = user;
+    const who = $("#who"); if (who) who.textContent = (user.displayName||user.email||"مستخدم")+" — متصل";
+    const cache = cacheLoad(); if (cache && cache.length){ rows=cache; renderEditor(); renderFilteredTable(); updateKPIs(); }
+    startRealtime();
+  });
+
+} catch (err) {
+  console.warn("Firebase not available. Fallback to LocalStorage.", err);
+  FIRE_ON = false;
+
+  // Local-only ops
+  const seed = [
+    {brand:"هيونداي",model:"سوناتا",year:2026,trim:"سمارت",color:"أبيض لؤلؤي",intColor:"أسود",shoot:"تم التصوير",edit:"جاري",ctype:"ريل",shootDate:"2025-10-12",inAgenda:"نعم",agendaDate:"أكتوبر 2025",onSite:"لا",siteLink:"",notes:"بانتظار فويس سعودي"}
+  ];
+  rows = cacheLoad() || seed;
+  renderEditor(); renderFilteredTable(); updateKPIs();
+  const who = $("#who"); if (who) who.textContent = "وضع أوفلاين — LocalStorage";
+  window.addRow = (r)=>{ rows.unshift(r); cacheSave(); renderEditor(); renderFilteredTable(); updateKPIs(); };
+  window.updateRow = (idx, patch)=>{ Object.assign(rows[idx], patch); cacheSave(); renderEditor(); renderFilteredTable(); updateKPIs(); };
+  window.deleteRow = (idx)=>{ rows.splice(idx,1); cacheSave(); renderEditor(); renderFilteredTable(); updateKPIs(); };
+  window.deleteAll = ()=>{ rows=[]; cacheSave(); renderEditor(); renderFilteredTable(); updateKPIs(); };
+  window.importFromXlsx = (items)=>{ rows = rows.concat(items); cacheSave(); renderEditor(); renderFilteredTable(); updateKPIs(); };
+  window.addQuick = async ()=>{
+    const agendaMonth = $("#iAgendaMonth")?.value;
+    const agendaYear  = ($("#iAgendaYear")?.value||"").trim();
+    const agendaDate  = ($("#iInAgenda")?.value==="نعم" && agendaMonth && agendaYear) ? `${agendaMonth} ${agendaYear}` : "";
+    const r = {
+      brand: $("#iBrand")?.value||"", model: $("#iModel")?.value||"", year:+($("#iYear")?.value||2026),
+      trim: $("#iTrim")?.value||TRIMS[0], color: ($("#iColor")?.value||"").trim(), intColor: ($("#iIntColor")?.value||"").trim(),
+      shoot: $("#iShoot")?.value||SHOOT_STATUS[0], edit: $("#iEdit")?.value||EDIT_STATUS[0], ctype: $("#iType")?.value||CONTENT_TYPES[0],
+      shootDate: $("#iShootDate")?.value||"", inAgenda: $("#iInAgenda")?.value||"لا", agendaDate,
+      onSite: $("#iOnSite")?.value||"لا", siteLink: ($("#iOnSite")?.value==="نعم" ? ($("#iSiteLink")?.value||"") : ""), notes: $("#iNotes")?.value||""
+    };
+    window.addRow(r);
+    ["iModel","iColor","iIntColor","iNotes","iShootDate","iSiteLink"].forEach(id=>{ const el=$("#"+id); if(el) el.value=""; });
+    if($("#iInAgenda")){ $("#iInAgenda").value="لا"; $("#agendaFields")?.classList.add("hidden"); }
+    if($("#iOnSite")){ $("#iOnSite").value="لا"; $("#siteLinkField")?.classList.add("hidden"); }
+  };
+}
+
+/* ========= أحداث UI عامة ========= */
+document.addEventListener("change", async (e)=>{
+  const t = e.target;
+
+  // فلاتر العرض فقط
+  if(t.matches("#dBrand,#dTrim,#dShoot,#dEdit,#dAgenda")){
+    filters.brand = $("#dBrand")?.value||"";
+    filters.trim  = $("#dTrim")?.value||"";
+    filters.shoot = $("#dShoot")?.value||"";
+    filters.edit  = $("#dEdit")?.value||"";
+    filters.agenda= $("#dAgenda")?.value||"";
+    renderFilteredTable();
+    return;
+  }
+
+  // تغييرات الجدول التحريري
+  if(t.matches("select[data-idx], input[data-idx]") && !t.closest("#filteredTable")){
+    const idx = +t.dataset.idx; const key = t.dataset.key; const val = t.value;
+    if(Number.isInteger(idx) && rows[idx]){
+      // ارتباط الموديل بالعلامة
+      if(key==="brand"){
+        const models = MODELS_BY_BRAND[val] || [];
+        if(!models.includes(rows[idx].model)) {
+          if (typeof updateRow === "function") await updateRow(idx, { model: models[0]||"" });
+          else { rows[idx].model = models[0]||""; cacheSave(); }
+        }
+      }
+      if (typeof updateRow === "function") await updateRow(idx, { [key]: val });
+      else { rows[idx][key]=val; cacheSave(); }
+      renderEditor(); renderFilteredTable(); updateKPIs();
+    }
+  }
+});
+document.addEventListener("input",(e)=>{
+  const t=e.target;
+  if(t.id==="dSearch"){ filters.q = t.value; renderFilteredTable(); }
+  if(t.id==="dColor"){ filters.color = t.value; renderFilteredTable(); }
+  if(t.id==="dIntColor"){ filters.intColor = t.value; renderFilteredTable(); }
+});
+document.addEventListener("click", async (e)=>{
+  const btn = e.target.closest("button"); if(!btn) return;
+  if(btn.id==="btnExportXLSX"){ exportXLSX(); return; }
+  if(btn.id==="btnTemplate"){ downloadTemplate(); return; }
+  if(btn.id==="btnReset"){
+    if(confirm("مسح كل البيانات؟")){
+      if (typeof deleteAll === "function") await deleteAll();
+      else { rows=[]; cacheSave(); renderEditor(); renderFilteredTable(); updateKPIs(); }
+    }
+    return;
+  }
+  if(btn.id==="btnAdd"){ 
+    if (typeof addQuick === "function") await addQuick();
+    return;
+  }
+  if(btn.dataset.action==="del"){
+    const idx=+btn.dataset.idx;
+    if (typeof deleteRow === "function") await deleteRow(idx);
+    else { rows.splice(idx,1); cacheSave(); renderEditor(); renderFilteredTable(); updateKPIs(); }
+    return;
+  }
+  if(btn.dataset.action==="dup"){
+    const idx=+btn.dataset.idx; const src=rows[idx]; if(!src) return;
+    const clone={...src}; delete clone._id;
+    if (typeof addRow === "function") await addRow(clone);
+    else { rows.splice(idx,0, clone); cacheSave(); renderEditor(); renderFilteredTable(); updateKPIs(); }
+    return;
+  }
 });
 
-// (اختياري) خروج سريع عبر Ctrl+L
-document.addEventListener("keydown",(e)=>{
-  if(e.ctrlKey && (e.key.toLowerCase()==='l')){ e.preventDefault(); signOut(auth).then(()=>location.href="login.html"); }
+document.getElementById("xlsxImport")?.addEventListener("change",(e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (evt)=>{
+    const data = new Uint8Array(evt.target.result);
+    const wb = XLSX.read(data, {type:"array"});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(ws, {defval:""});
+    if(!json.length){ alert("الملف فارغ."); return; }
+    const req = xlsxHeaders(); const cols = Object.keys(json[0]||{});
+    const ok = req.every(h=>cols.includes(h));
+    if(!ok){ alert("صيغة XLSX غير مطابقة. حمّل الـTemplate."); return; }
+    const imported = json.map(row=>{ const o={}; req.forEach(h=>o[h]=row[h]??""); o.year=+o.year||2026; return o; });
+    if (typeof importFromXlsx === "function") await importFromXlsx(imported);
+    else { rows = rows.concat(imported); cacheSave(); renderEditor(); renderFilteredTable(); updateKPIs(); }
+    alert(`تم استيراد ${imported.length} سجلّ.`);
+    e.target.value="";
+  };
+  reader.readAsArrayBuffer(file);
 });
+
+/* Boot من الكاش مؤقتًا */
+const cache = cacheLoad();
+if (cache && cache.length){
+  rows = cache; renderEditor(); renderFilteredTable(); updateKPIs();
+} else {
+  // Seed بسيط أول مرة
+  rows = [
+    {brand:"هيونداي",model:"سوناتا",year:2026,trim:"سمارت",color:"أبيض لؤلؤي",intColor:"أسود",shoot:"تم التصوير",edit:"جاري",ctype:"ريل",shootDate:"2025-10-12",inAgenda:"نعم",agendaDate:"أكتوبر 2025",onSite:"لا",siteLink:"",notes:"بانتظار فويس"}
+  ];
+  cacheSave(); renderEditor(); renderFilteredTable(); updateKPIs();
+}
 </script>
 </body>
 </html>

@@ -4,46 +4,70 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>لوحة التحكم — MZJ Workspace</title>
+
+  <!-- Fonts + Charts + PDF -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
-    :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px }
+    :root{
+      --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px;
+      --ok:#16a34a; --warn:#f59e0b; --danger:#dc2626; --info:#1e90ff;
+    }
     *{box-sizing:border-box}
     body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal",system-ui,Arial}
     a{color:inherit;text-decoration:none}
 
-    .topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--brown);color:#fff;position:sticky;top:0;z-index:10;box-shadow:0 6px 20px rgba(62,36,32,.2)}
+    /* Topbar */
+    .topbar{
+      display:flex;justify-content:space-between;align-items:center;padding:14px 18px;
+      background:linear-gradient(180deg,var(--brown),#2f1c19);color:#fff;position:sticky;top:0;z-index:10;
+      box-shadow:0 6px 20px rgba(62,36,32,.25)
+    }
     .brand{display:flex;align-items:center;gap:10px}
     .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
-    .nav{display:flex;gap:10px;align-items:center}
+    .nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .nav a{padding:8px 12px;border-radius:10px;color:#fff}
     .nav a:hover{background:rgba(255,255,255,.14)}
-    .nav .select{border-radius:10px;border:0;padding:8px 10px}
+    .select{border-radius:10px;border:0;padding:8px 10px}
 
+    /* Layout */
     .page{padding:18px;display:grid;gap:16px}
     .grid{display:grid;gap:16px}
     @media(min-width:1100px){ .grid.two{grid-template-columns:2fr 1fr} }
     @media(min-width:900px){ .grid.three{grid-template-columns:repeat(3,1fr)} }
     @media(min-width:1100px){ .grid.four{grid-template-columns:repeat(4,1fr)} }
+    @media(min-width:1100px){ .grid.2-1{grid-template-columns:2fr 1fr} }
+    @media(min-width:1100px){ .grid.1-2{grid-template-columns:1fr 2fr} }
 
+    /* Panels */
     .panel{background:#fff;border-radius:var(--radius);box-shadow:0 12px 30px rgba(62,36,32,.12);overflow:hidden}
     .panel .head{padding:12px 14px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
     .panel .body{padding:12px 14px}
     .muted{color:var(--muted)}
-    .select,.input{padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
+    .btn{
+      padding:10px 12px;border:0;border-radius:12px;background:var(--brown);color:#fff;font-weight:800;cursor:pointer;
+      transition:.15s; box-shadow:0 8px 20px rgba(62,36,32,.22)
+    }
+    .btn:hover{filter:brightness(1.05); transform:translateY(-1px)}
 
     /* KPI tiles */
     .kpis{display:grid;gap:12px}
     @media(min-width:900px){ .kpis{grid-template-columns:repeat(5,1fr)} }
-    .kpi{background:#fff;border:1px solid #eee;border-radius:14px;padding:14px;display:grid;gap:6px}
-    .kpi .lbl{font-size:13px;color:var(--muted)}
+    .kpi{background:#fff;border:1px solid #eee;border-radius:14px;padding:14px;display:grid;gap:6px;position:relative;overflow:hidden}
+    .kpi:hover{box-shadow:0 12px 30px rgba(62,36,32,.18)}
+    .kpi .lbl{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
     .kpi .val{font-size:26px;font-weight:800;color:var(--brown)}
     .kpi .hint{font-size:12px;color:var(--muted)}
+    .kpi .ico{inline-size:26px;block-size:26px;display:inline-grid;place-items:center;border-radius:8px;background:#fff8ef;border:1px solid #edd7ca}
 
     /* Column counters */
     .cols{display:grid;gap:10px}
     @media(min-width:800px){ .cols{grid-template-columns:repeat(4,1fr)} }
-    .colbox{background:#fff8ef;border:1px solid #edd7ca;border-radius:14px;padding:12px}
-    .colbox .title{color:var(--brown);font-weight:800}
+    .colbox{background:#fff8ef;border:1px solid #edd7ca;border-radius:14px;padding:12px;transition:.15s;display:grid;gap:6px}
+    .colbox:hover{transform:translateY(-1px); box-shadow:0 10px 20px rgba(62,36,32,.15)}
+    .colbox .title{color:var(--brown);font-weight:800;display:flex;align-items:center;gap:8px}
     .colbox .num{font-size:22px;font-weight:800}
 
     /* Tables */
@@ -51,13 +75,30 @@
     th,td{padding:10px;border-bottom:1px solid #f0f0f0;text-align:right}
     th{color:var(--brown);font-weight:800;background:#fffaf5}
     tr:hover td{background:#fffdf9}
-
     .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);display:inline-flex;align-items:center;gap:6px}
-    .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
-
+    .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:var(--beige)}
     .empty{padding:14px;border:1px dashed #ead8cb;border-radius:12px;color:#8f7f76;background:#fffbf6}
 
+    /* Charts layout */
+    .charts{display:grid;gap:16px}
+    @media(min-width:1100px){ .charts{grid-template-columns:2fr 1fr} }
+
+    /* Heatmap */
+    .heatmap{display:grid;gap:6px}
+    .heatmap .legend{display:flex;gap:8px;align-items:center}
+    .hm-grid{display:grid;gap:4px}
+    @media(min-width:900px){ .hm-grid{grid-template-columns: 140px repeat(14, 1fr)} }
+    .hm-cell{padding:8px;border-radius:8px;text-align:center;font-size:12px;border:1px solid #f1e6de;background:#fff}
+    .hm-head{background:#fffaf5;color:var(--brown);font-weight:700}
+    .hm-name{background:#fff; text-align:right; font-weight:700}
+
     footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);margin-top:8px}
+
+    /* Optional print tuning */
+    @media print {
+      html, body { background: #fff8ef; }
+      #reportRoot { width: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -72,53 +113,143 @@
       <a id="navMembers"   href="members.html">الأعضاء</a>
       <a id="navAdmin"     href="admin.html">الإدارة</a>
       <select id="spaceSelect" class="select"></select>
+      <a href="javascript:void(0)" id="btnExportPdf" class="btn">حفظ PDF</a>
       <a href="javascript:void(0)" id="btnLogout">تسجيل الخروج</a>
     </nav>
   </header>
 
-  <main class="page">
+  <main class="page" id="reportRoot">
+    <!-- KPIs -->
     <section class="panel">
       <div class="head">
-        <div><strong>ملخص الـ Space الحالي</strong></div>
-        <div class="muted" id="who"></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <strong>ملخص الـ Space الحالي</strong>
+          <span class="chip" id="who">—</span>
+        </div>
+        <div class="muted" id="todayChip"></div>
       </div>
       <div class="body">
         <div class="kpis" id="kpis">
-          <div class="kpi"><div class="lbl">إجمالي المهام</div><div class="val" id="k_total">—</div><div class="hint">كل الأعمدة</div></div>
-          <div class="kpi"><div class="lbl">متأخرة</div><div class="val" id="k_overdue">—</div><div class="hint">تاريخ تسليم قبل اليوم</div></div>
-          <div class="kpi"><div class="lbl">تسليم اليوم</div><div class="val" id="k_today">—</div><div class="hint">تسليم خلال اليوم</div></div>
-          <div class="kpi"><div class="lbl">تحت المراجعة</div><div class="val" id="k_review">—</div><div class="hint">“تحت المراجعة”</div></div>
-          <div class="kpi"><div class="lbl">غير معيّنة</div><div class="val" id="k_unassigned">—</div><div class="hint">بدون مسؤول</div></div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" stroke="#bc8f74" stroke-width="1.5"/></svg>
+            </span>إجمالي المهام</div>
+            <div class="val" id="k_total">—</div>
+            <div class="hint">كل الأعمدة</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="#bc8f74" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#bc8f74" stroke-width="1.5"/></svg>
+            </span>متأخرة</div>
+            <div class="val" id="k_overdue">—</div>
+            <div class="hint">تاريخ قبل اليوم</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="#bc8f74" stroke-width="1.5"/><path d="M3 10h18" stroke="#bc8f74" stroke-width="1.5"/><path d="M8 3v4M16 3v4" stroke="#bc8f74" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </span>تسليم اليوم</div>
+            <div class="val" id="k_today">—</div>
+            <div class="hint">Due Today</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-5 5V6a2 2 0 0 1 2-2z" stroke="#bc8f74" stroke-width="1.5"/></svg>
+            </span>تحت المراجعة</div>
+            <div class="val" id="k_review">—</div>
+            <div class="hint">عمود “تحت المراجعة”</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12a5 5 0 1 0-5-5" stroke="#bc8f74" stroke-width="1.5"/><path d="M20 21a8 8 0 0 0-16 0" stroke="#bc8f74" stroke-width="1.5"/><path d="M4 4l16 16" stroke="#bc8f74" stroke-width="1.5"/></svg>
+            </span>غير معيّنة</div>
+            <div class="val" id="k_unassigned">—</div>
+            <div class="hint">بدون مسؤول</div>
+          </div>
         </div>
       </div>
     </section>
 
+    <!-- Columns counters -->
     <section class="panel">
       <div class="head">
-        <div><strong>عداد الأعمدة</strong></div>
-        <div class="muted" id="colsHint">ريل مواصفات / ريل قصير / تصميم صور / يوتيوب / …</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <strong>عداد الأعمدة</strong>
+          <span class="chip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="#3e2420" stroke-width="2" stroke-linecap="round"/></svg> ريل مواصفات / ريل قصير / تصميم صور / يوتيوب ...</span>
+        </div>
       </div>
-      <div class="body">
-        <div class="cols" id="cols"></div>
-      </div>
+      <div class="body"><div class="cols" id="cols"></div></div>
     </section>
 
+    <!-- Soon + Assignees -->
     <div class="grid two">
       <section class="panel">
-        <div class="head"><strong>أقرب تسليم (Top 10)</strong></div>
-        <div class="body">
-          <div id="soonWrap"></div>
-        </div>
+        <div class="head"><strong>أقرب تسليم (Top 10)</strong><span class="chip" id="todayInfo"></span></div>
+        <div class="body"><div id="soonWrap"></div></div>
       </section>
 
       <section class="panel">
         <div class="head"><strong>توزيع المهام على الأعضاء</strong></div>
-        <div class="body">
-          <div id="assigneesWrap"></div>
-        </div>
+        <div class="body"><div id="assigneesWrap"></div></div>
       </section>
     </div>
 
+    <!-- Per-member details -->
+    <section class="panel">
+      <div class="head"><strong>تفاصيل حسب العضو — تم الانتهاء / مراجعة / متبقّي</strong></div>
+      <div class="body"><div id="membersTableWrap"></div></div>
+    </section>
+
+    <!-- Charts base -->
+    <section class="panel">
+      <div class="head"><strong>رسوم بيانية أساسية</strong><span class="muted">Per Member + Status Mix</span></div>
+      <div class="body">
+        <div class="charts">
+          <div><canvas id="barPerUser" height="180"></canvas></div>
+          <div><canvas id="pieStatuses" height="180"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lead/Cycle + Throughput -->
+    <div class="grid 2-1">
+      <section class="panel">
+        <div class="head"><strong>Lead Time & Cycle Time (Days)</strong><span class="muted">Median per Week</span></div>
+        <div class="body"><canvas id="lineLeadCycle" height="200"></canvas></div>
+      </section>
+      <section class="panel">
+        <div class="head"><strong>Throughput Weekly</strong><span class="muted">Completed Tasks / Week</span></div>
+        <div class="body"><canvas id="barThroughput" height="200"></canvas></div>
+      </section>
+    </div>
+
+    <!-- SLA Breach + Completion by Column -->
+    <div class="grid 1-2">
+      <section class="panel">
+        <div class="head"><strong>SLA Breach</strong><span class="muted">Completed after Due Date</span></div>
+        <div class="body"><canvas id="gaugeSLA" height="220"></canvas></div>
+      </section>
+      <section class="panel">
+        <div class="head"><strong>Completion Rate by Column</strong><span class="muted">Done vs Remaining</span></div>
+        <div class="body"><canvas id="barByColumn" height="220"></canvas></div>
+      </section>
+    </div>
+
+    <!-- Workload Heatmap -->
+    <section class="panel">
+      <div class="head"><strong>Member Workload Heatmap</strong><span class="muted">Next 14 days by Due Date</span></div>
+      <div class="body">
+        <div class="heatmap">
+          <div class="legend">
+            <span class="chip">Intensity: 0</span>
+            <span class="chip warn">Medium</span>
+            <span class="chip danger">High</span>
+          </div>
+          <div id="hmWrap" class="hm-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Activity -->
     <section class="panel">
       <div class="head"><strong>نشاط حديث</strong><span class="muted">آخر 15 تحديث</span></div>
       <div class="body" id="activityWrap"></div>
@@ -127,16 +258,16 @@
 
   <footer>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</footer>
 
-  <!-- Firebase + App -->
+  <!-- Firebase + Logic -->
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
     import {
-      getFirestore, collection, doc, getDoc, getDocs, onSnapshot,
-      query, where, serverTimestamp
+      getFirestore, collection, doc, getDoc, onSnapshot,
+      query, where
     } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-    /* Config */
+    /* Firebase Config */
     const firebaseConfig = {
       apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
       authDomain: "mzj-workspace.firebaseapp.com",
@@ -151,7 +282,10 @@
     /* UI refs */
     const spaceSelect = document.getElementById('spaceSelect');
     const whoEl       = document.getElementById('who');
-    document.getElementById('btnLogout').onclick = async()=>{ await signOut(auth); location.href="login.html"; };
+    const btnLogout   = document.getElementById('btnLogout');
+    const btnExport   = document.getElementById('btnExportPdf');
+    const todayChip   = document.getElementById('todayChip');
+    const todayInfo   = document.getElementById('todayInfo');
 
     // KPI refs
     const kTotal=document.getElementById('k_total');
@@ -163,6 +297,17 @@
     const soonWrap = document.getElementById('soonWrap');
     const assigneesWrap = document.getElementById('assigneesWrap');
     const activityWrap  = document.getElementById('activityWrap');
+    const membersTableWrap = document.getElementById('membersTableWrap');
+
+    // Charts refs
+    const barUser = document.getElementById('barPerUser');
+    const pieStatus = document.getElementById('pieStatuses');
+    const lineLeadCycle = document.getElementById('lineLeadCycle');
+    const barThroughput = document.getElementById('barThroughput');
+    const gaugeSLA = document.getElementById('gaugeSLA');
+    const barByColumn = document.getElementById('barByColumn');
+
+    let cBarUser, cPieStatus, cLineLC, cBarTP, cGaugeSLA, cBarCol;
 
     /* State */
     let CURRENT_USER=null, IS_ADMIN=false;
@@ -170,38 +315,90 @@
     let unsubTasks=null;
     let TASKS=[];
 
-    function fmtDate(dstr){
-      if(!dstr) return '';
-      try{ const d=new Date(dstr+'T00:00:00'); return d.toLocaleDateString('ar-SA'); } catch{ return dstr; }
-    }
-    function todayYMD(){
-      const d=new Date(); const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0');
+    /* Utils */
+    const fmtDate = (ymd)=> {
+      if(!ymd) return '';
+      const [y,m,d] = ymd.split('-').map(Number);
+      const js = new Date(y, m-1, d);
+      return js.toLocaleDateString('en-GB'); // DD/MM/YYYY
+    };
+    const todayYMD = ()=>{
+      const d=new Date();
+      const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0');
       return `${y}-${m}-${da}`;
+    };
+    const toMillis = (v)=>{
+      if(!v) return null;
+      if(typeof v === 'string') return new Date(v).getTime();
+      if(v.seconds) return v.seconds*1000;
+      if(v.toDate) try{ return v.toDate().getTime(); }catch{}
+      if(v instanceof Date) return v.getTime();
+      return null;
+    };
+    // "تم الانتهاء" فقط (مع دعم done/completed)
+    const isDone = (t)=>{
+      const s=(t.status||'').trim().toLowerCase();
+      return s==="تم الانتهاء" || s==="done" || s==="completed";
+    };
+    const isReview = (t)=> (t.status==="تحت المراجعة");
+
+    // Count-up animation
+    function countUp(el, to){
+      const target = Number(to)||0;
+      const dur = 600; const start=performance.now();
+      const from = Number(el.dataset.from||0);
+      function step(ts){
+        const p = Math.min(1,(ts-start)/dur);
+        el.textContent = Math.round(from + (target-from)*p);
+        if(p<1) requestAnimationFrame(step); else el.dataset.from = target;
+      }
+      requestAnimationFrame(step);
     }
 
-    // Auth gate: admin only, otherwise redirect to projects
+    // ====== Export PDF (LANDSCAPE) ======
+    btnLogout.onclick = async()=>{ await signOut(auth); location.href="login.html"; };
+    btnExport.onclick = ()=> {
+      const node = document.getElementById('reportRoot');
+      const opt = {
+        margin: [6,6,6,6],
+        filename: `dashboard_${new Date().toISOString().slice(0,10)}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          backgroundColor: '#fff8ef',
+          windowWidth: document.body.scrollWidth   // يضمن عرض الصفحة كله
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } // ← بالعرض
+      };
+      // @ts-ignore
+      html2pdf().from(node).set(opt).save();
+    };
+
+    // Auth gate
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.href="login.html"; return; }
       CURRENT_USER=user;
       const u = await getDoc(doc(db,'users', user.uid));
-      const name = u.exists()? (u.data().name||user.email) : (user.email||'مستخدم');
+      const name = u.exists()? (u.data().name||user.email) : (user.email||'User');
       const role = u.exists()? (u.data().role||'member') : 'member';
       IS_ADMIN = role === 'admin';
       whoEl.textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
 
+      todayChip.innerHTML = `<span class="chip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="#1e90ff" stroke-width="1.5"/><path d="M3 10h18" stroke="#1e90ff" stroke-width="1.5"/><path d="M8 3v4M16 3v4" stroke="#1e90ff" stroke-width="1.5" stroke-linecap="round"/></svg>
+        ${new Date().toLocaleDateString('en-GB')}
+      </span>`;
+
       if(!IS_ADMIN){
-        // إخفاء الروابط غير المسموحة ثم تحويل للمشاريع
         document.getElementById('navMembers').style.display='none';
         document.getElementById('navAdmin').style.display='none';
-        // المستخدم العضو ليس له صلاحية الدخول للوحة التحكم
         location.href="projects.html";
         return;
       }
-
       bootSpaces();
     });
 
-    // Spaces dropdown + pick latest
+    // Spaces list
     async function bootSpaces(){
       onSnapshot(collection(db,'spaces'), (snap)=>{
         const items=[];
@@ -218,7 +415,6 @@
           spaceSelect.appendChild(opt);
         });
 
-        // select current
         if(!CURRENT_SPACE && items.length){
           CURRENT_SPACE = items[0].id;
           SPACE_COLUMNS = (items[0].columns && items[0].columns.length)? items[0].columns.slice() : SPACE_COLUMNS;
@@ -240,10 +436,9 @@
       });
     }
 
-    function listenTasks(reset=false){
+    function listenTasks(){
       if(unsubTasks){ unsubTasks(); unsubTasks=null; }
       if(!CURRENT_SPACE) return;
-
       const qy = query(collection(db,'tasks'), where('spaceId','==', CURRENT_SPACE));
       unsubTasks = onSnapshot(qy, (snap)=>{
         TASKS=[]; snap.forEach(d=> TASKS.push({ id:d.id, ...(d.data()||{}) }));
@@ -252,19 +447,20 @@
     }
 
     function renderAll(){
-      // KPIs
       const today = todayYMD();
       const total = TASKS.length;
       const overdue = TASKS.filter(t=> t.due && t.due < today).length;
       const dueToday= TASKS.filter(t=> t.due && t.due === today).length;
-      const review  = TASKS.filter(t=> t.status==='تحت المراجعة').length;
+      const review  = TASKS.filter(isReview).length;
       const unas    = TASKS.filter(t=> !t.assignee || !t.assignee.uid).length;
 
-      kTotal.textContent = total;
-      kOver.textContent  = overdue;
-      kToday.textContent = dueToday;
-      kRev.textContent   = review;
-      kUnas.textContent  = unas;
+      countUp(kTotal, total);
+      countUp(kOver, overdue);
+      countUp(kToday, dueToday);
+      countUp(kRev, review);
+      countUp(kUnas, unas);
+
+      todayInfo.textContent = `Today: ${new Date().toLocaleDateString('en-GB')}`;
 
       // Column counters
       colsBox.innerHTML='';
@@ -272,15 +468,20 @@
         const n = TASKS.filter(t=> t.status===c).length;
         const box=document.createElement('div');
         box.className='colbox';
-        box.innerHTML=`<div class="title">${c}</div><div class="num">${n}</div>`;
+        box.innerHTML=`
+          <div class="title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 5h16M4 12h16M4 19h16" stroke="#3e2420" stroke-width="2" stroke-linecap="round"/></svg>
+            ${c}
+          </div>
+          <div class="num">${n}</div>`;
         colsBox.appendChild(box);
       });
 
-      // Soon due (top 10 by due asc, valid due only)
+      // Soon due (top 10)
       const soon = TASKS.filter(t=> t.due).slice().sort((a,b)=> (a.due>b.due?1:-1)).slice(0,10);
       soonWrap.innerHTML = soon.length? `
         <table>
-          <thead><tr><th>المهمة</th><th>المسؤول</th><th>التاريخ</th><th>الحالة</th></tr></thead>
+          <thead><tr><th>المهمة</th><th>المسؤول</th><th>Due</th><th>الحالة</th></tr></thead>
           <tbody>
             ${soon.map(t=>`
               <tr>
@@ -310,15 +511,217 @@
         </table>
       ` : `<div class="empty">لا مهام مسندة بعد.</div>`;
 
-      // Recent activity (approx): آخر 15 حسب createdAt أو edited
-      const sorted = TASKS.slice().sort((a,b)=> (b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)).slice(0,15);
+      // ======= Per-member details =======
+      const perMember = new Map();     // name -> {total, done, review, remaining}
+      const perStatus = { todo:0, review:0, done:0 }; // لإجمالي الدونات
+
+      TASKS.forEach(t=>{
+        const name = t.assignee?.name || 'غير معيّن';
+        if(!perMember.has(name)) perMember.set(name,{ total:0, done:0, review:0, remaining:0 });
+        const m = perMember.get(name);
+        m.total += 1;
+        if(isDone(t)){ m.done += 1; perStatus.done += 1; }
+        else if(isReview(t)){ m.review += 1; perStatus.review += 1; }
+        else { m.remaining += 1; perStatus.todo += 1; }
+      });
+
+      const ordered = Array.from(perMember.entries()).sort((a,b)=> b[1].total - a[1].total);
+      membersTableWrap.innerHTML = ordered.length ? `
+        <table>
+          <thead>
+            <tr>
+              <th>العضو</th>
+              <th>إجمالي</th>
+              <th>تم الانتهاء</th>
+              <th>تحت المراجعة</th>
+              <th>متبقّي</th>
+              <th>نسبة الإنهاء</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ordered.map(([n,v])=>{
+              const pct = v.total? Math.round(v.done/v.total*100):0;
+              return `
+                <tr>
+                  <td><strong>${n}</strong></td>
+                  <td>${v.total}</td>
+                  <td style="color:var(--ok);font-weight:700">${v.done}</td>
+                  <td style="color:var(--warn);font-weight:700">${v.review}</td>
+                  <td style="color:var(--danger);font-weight:700">${v.remaining}</td>
+                  <td>${pct}%</td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : `<div class="empty">لا توجد بيانات أعضاء لعرضها.</div>`;
+
+      // ======= Charts: Per member / Status mix =======
+      const labelsUser = ordered.map(([n])=>n);
+      const doneArr = ordered.map(([,v])=>v.done);
+      const remArr  = ordered.map(([,v])=>v.remaining);
+
+      if(cBarUser) cBarUser.destroy();
+      cBarUser = new Chart(barUser, {
+        type:'bar',
+        data:{
+          labels: labelsUser,
+          datasets:[
+            { label:'تم الانتهاء', data:doneArr, backgroundColor:'#16a34a' },
+            { label:'متبقّي',      data:remArr,  backgroundColor:'#dc2626' }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          scales:{ x:{stacked:true}, y:{stacked:true,ticks:{precision:0}} },
+          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true} },
+          animation:{ duration:500 }
+        }
+      });
+
+      if(cPieStatus) cPieStatus.destroy();
+      cPieStatus = new Chart(pieStatus, {
+        type:'doughnut',
+        data:{
+          labels:['غير منجز','تحت المراجعة','تم الانتهاء'],
+          datasets:[{ data:[perStatus.todo, perStatus.review, perStatus.done], backgroundColor:['#64748b','#f59e0b','#16a34a'] }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false, cutout:'58%',
+          plugins:{ legend:{ position:'bottom', labels:{ font:{family:'Tajawal'} } }, tooltip:{ rtl:true } },
+          animation:{ duration:500 }
+        }
+      });
+
+      // ======= Lead Time & Cycle Time (Median per week) =======
+      // lead = completedAt - createdAt
+      // cycle = completedAt - (startedAt || createdAt)
+      const weeks = {}; // key 'YYYY-WW' -> {lead:[], cycle:[]}
+      TASKS.forEach(t=>{
+        if(!isDone(t)) return;
+        const cAt = toMillis(t.createdAt);
+        const sAt = toMillis(t.startedAt) || cAt;
+        const dAt = toMillis(t.completedAt);
+        if(!dAt || !cAt) return;
+        const leadDays = (dAt - cAt) / (1000*60*60*24);
+        const cycDays  = (dAt - sAt) / (1000*60*60*24);
+        const d = new Date(dAt);
+        const key = weekKey(d);
+        if(!weeks[key]) weeks[key]={lead:[],cycle:[]};
+        weeks[key].lead.push(leadDays);
+        weeks[key].cycle.push(cycDays);
+      });
+      const weekLabels = Object.keys(weeks).sort();
+      const medLead = weekLabels.map(k=> median(weeks[k].lead));
+      const medCycle= weekLabels.map(k=> median(weeks[k].cycle));
+
+      if(cLineLC) cLineLC.destroy();
+      cLineLC = new Chart(lineLeadCycle, {
+        type:'line',
+        data:{
+          labels: weekLabels,
+          datasets:[
+            { label:'Lead (days)', data: medLead, borderColor:'#1e90ff', tension:.2 },
+            { label:'Cycle (days)', data: medCycle, borderColor:'#bc8f74', tension:.2 }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true} },
+          scales:{ y:{ ticks:{ precision:0 } } }
+        }
+      });
+
+      // ======= Throughput Weekly (completed per week) =======
+      const throughput = {};
+      TASKS.forEach(t=>{
+        if(!isDone(t)) return;
+        const dAt = toMillis(t.completedAt);
+        if(!dAt) return;
+        const key = weekKey(new Date(dAt));
+        throughput[key] = (throughput[key]||0) + 1;
+      });
+      const tpLabels = Object.keys(throughput).sort();
+      const tpVals   = tpLabels.map(k=> throughput[k]);
+
+      if(cBarTP) cBarTP.destroy();
+      cBarTP = new Chart(barThroughput, {
+        type:'bar',
+        data:{ labels: tpLabels, datasets:[{ label:'Completed / Week', data: tpVals, backgroundColor:'#16a34a' }] },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true} },
+          scales:{ y:{ ticks:{ precision:0 } } }
+        }
+      });
+
+      // ======= SLA Breach Gauge (completed after due date) =======
+      let totalCompleted=0, breaches=0;
+      TASKS.forEach(t=>{
+        if(!isDone(t)) return;
+        const dAt = toMillis(t.completedAt);
+        if(!dAt) return;
+        totalCompleted++;
+        const dueYMD = t.due;
+        if(dueYMD){
+          const [y,m,da]= dueYMD.split('-').map(Number);
+          const dueMs = new Date(y, m-1, da, 23,59,59).getTime();
+          if(dAt > dueMs) breaches++;
+        }
+      });
+      const breachPct = totalCompleted? Math.round(breaches/totalCompleted*100) : 0;
+      if(cGaugeSLA) cGaugeSLA.destroy();
+      cGaugeSLA = new Chart(gaugeSLA, {
+        type:'doughnut',
+        data:{
+          labels:['Breach','On time'],
+          datasets:[{ data:[breachPct, 100-breachPct], backgroundColor:['#dc2626','#16a34a'] }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false, circumference:180, rotation:270, cutout:'65%',
+          plugins:{ legend:{ display:false }, tooltip:{ rtl:true } }
+        }
+      });
+
+      // ======= Completion by Column (Done vs Remaining) =======
+      const colDone=[], colRem=[], colLabels=[];
+      SPACE_COLUMNS.forEach(c=>{
+        colLabels.push(c);
+        let d=0, r=0;
+        TASKS.forEach(t=>{
+          if(t.status!==c) return;
+          if(isDone(t)) d++; else if(!isReview(t)) r++; // المراجعة لها لونها في الرسم الآخر
+        });
+        colDone.push(d); colRem.push(r);
+      });
+      if(cBarCol) cBarCol.destroy();
+      cBarCol = new Chart(barByColumn, {
+        type:'bar',
+        data:{
+          labels: colLabels,
+          datasets:[
+            { label:'تم الانتهاء', data: colDone, backgroundColor:'#16a34a' },
+            { label:'غير منجز',    data: colRem,  backgroundColor:'#64748b' }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          scales:{ x:{ stacked:true }, y:{ stacked:true, ticks:{precision:0} } },
+          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true} }
+        }
+      });
+
+      // ======= Heatmap: Next 14 days by Due & Member (Top 8) =======
+      renderHeatmap();
+
+      // ======= Recent activity =======
+      const sorted = TASKS.slice().sort((a,b)=> (toMillis(b.createdAt)||0)-(toMillis(a.createdAt)||0)).slice(0,15);
       activityWrap.innerHTML = sorted.length? `
         <table>
-          <thead><tr><th>المهمة</th><th>المسؤول</th><th>الحالة</th><th>إنشاء</th><th>روابط</th></tr></thead>
+          <thead><tr><th>المهمة</th><th>المسؤول</th><th>الحالة</th><th>Created</th><th>روابط</th></tr></thead>
           <tbody>
             ${sorted.map(t=>{
               const linksCount = Array.isArray(t.links)? t.links.length : 0;
-              const created = t.createdAt?.seconds ? new Date(t.createdAt.seconds*1000).toLocaleDateString('ar-SA') : '—';
+              const created = toMillis(t.createdAt)? new Date(toMillis(t.createdAt)).toLocaleDateString('en-GB') : '—';
               return `
                 <tr>
                   <td>${t.name||'-'}</td>
@@ -331,6 +734,77 @@
           </tbody>
         </table>
       ` : `<div class="empty">لا نشاط حديث.</div>`;
+    }
+
+    // Helpers: week key + median + heatmap render
+    function weekKey(d){
+      // ISO week
+      const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const dayNum = date.getUTCDay() || 7;
+      date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+      const weekNo = Math.ceil((((date - yearStart)/86400000)+1)/7);
+      return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
+    }
+    function median(arr){
+      const a = arr.slice().filter(x=>isFinite(x)).sort((x,y)=>x-y);
+      const n=a.length; if(!n) return 0;
+      const mid = Math.floor(n/2);
+      return n%2? a[mid] : (a[mid-1]+a[mid])/2;
+    }
+
+    function renderHeatmap(){
+      const hm = document.getElementById('hmWrap');
+      hm.innerHTML='';
+      const horizonDays = 14;
+      const today = new Date(); today.setHours(0,0,0,0);
+      const days = [];
+      for(let i=0;i<horizonDays;i++){
+        const d = new Date(today.getTime()+i*86400000);
+        days.push(d);
+      }
+      // members count by due per day
+      const memberMap = new Map(); // name -> counts array per day
+      TASKS.forEach(t=>{
+        const name = t.assignee?.name || 'غير معيّن';
+        const due = t.due;
+        if(!due) return;
+        const [y,m,da]= due.split('-').map(Number);
+        const dueDate = new Date(y, m-1, da); dueDate.setHours(0,0,0,0);
+        const idx = Math.round((dueDate - today)/86400000);
+        if(idx<0 || idx>=horizonDays) return;
+        if(!memberMap.has(name)) memberMap.set(name, Array(horizonDays).fill(0));
+        memberMap.get(name)[idx] += 1;
+      });
+      // pick top 8 members by total workload
+      const ranked = Array.from(memberMap.entries())
+        .map(([n,arr])=> [n, arr, arr.reduce((a,b)=>a+b,0)])
+        .sort((a,b)=> b[2]-a[2])
+        .slice(0,8);
+
+      // header row
+      hm.appendChild(cell('Member / Date','hm-head'));
+      days.forEach(d=> hm.appendChild(cell(d.toLocaleDateString('en-GB'), 'hm-head')));
+
+      // rows
+      ranked.forEach(([name,arr])=>{
+        hm.appendChild(cell(name,'hm-name'));
+        arr.forEach(v=>{
+          const c = document.createElement('div');
+          c.className = 'hm-cell';
+          if(v>=3){ c.style.background='#fef2f2'; c.style.borderColor='#fee2e2'; } // high
+          else if(v>=1){ c.style.background='#fff7ed'; c.style.borderColor='#ffedd5'; } // medium
+          c.textContent = v? v : '';
+          hm.appendChild(c);
+        });
+      });
+
+      function cell(text, cls){
+        const d=document.createElement('div');
+        d.className = 'hm-cell ' + (cls||'');
+        d.textContent = text;
+        return d;
+      }
     }
   </script>
 </body>

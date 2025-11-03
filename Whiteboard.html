@@ -1,405 +1,613 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Whiteboard — MZJ Workspace</title>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --muted:#6b7280; --radius:14px }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;background:var(--cream);font-family:"Tajawal",system-ui,Arial;color:#1f2937;overflow:hidden}
-    a{color:inherit;text-decoration:none}
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>لوح عمل — Whiteboard + Template Gallery</title>
+<style>
+  :root{
+    --bg:#0b0f14; --grid1:#17202b; --grid2:#0c121a;
+    --panel:#0f1520; --panel2:#111a27; --text:#e8eef7;
+    --muted:#9db4d1; --accent:#35b8ff;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Tajawal,system-ui,Segoe UI,Roboto,Arial}
 
-    .topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--brown);color:#fff;box-shadow:0 6px 20px rgba(62,36,32,.2);position:relative;z-index:5}
-    .brand{display:flex;gap:10px;align-items:center}
-    .badge{inline-size:26px;block-size:26px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
-    .nav{display:flex;gap:10px;align-items:center}
-    .nav a{color:#fff;padding:8px 12px;border-radius:10px}
-    .nav a:hover{background:rgba(255,255,255,.14)}
-    .select{padding:8px 10px;border-radius:10px;border:0}
+  .app{display:grid;grid-template-rows:auto 1fr;min-height:100%}
 
-    #wrap{position:relative;height:calc(100% - 58px);background:#fff}
-    #cwrap{position:absolute;inset:0}
-    canvas{background:#fff}
+  .bar{
+    display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+    padding:10px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border-bottom:1px solid #1f2a3b;position:sticky;top:0;z-index:5
+  }
+  .btn{
+    cursor:pointer;padding:8px 10px;border:1px solid #2b3b52;border-radius:8px;
+    background:#0c1420;color:var(--text)
+  }
+  .btn.small{padding:6px 8px;font-size:13px}
+  .btn[aria-pressed="true"]{outline:2px solid var(--accent)}
+  .sp{flex:1}
+  .hint{color:var(--muted);font-size:12px}
+  label.switch{display:flex;align-items:center;gap:6px;font-size:13px;color:#cfe3ff}
 
-    /* ============= Bottom toolbar (dock) ============= */
-    .dock{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;background:rgba(33,33,33,.92);color:#fff;border-radius:14px;padding:6px 8px;display:flex;gap:6px;align-items:center;z-index:6;backdrop-filter:blur(8px)}
-    .tool{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:700;position:relative}
-    .tool.active{background:#222}
-    .tool:hover{background:#2b2b2b}
-    .sep{width:1px;height:22px;background:#444;margin:0 4px}
-    .tool input[type="file"]{display:none}
+  .board{
+    position:relative;overflow:auto;
+    background:
+      radial-gradient(circle at 0 0, var(--grid1) 1px, transparent 1px) 0 0/18px 18px,
+      radial-gradient(circle at 9px 9px, var(--grid2) 1px, transparent 1px) 0 0/18px 18px,
+      var(--bg);
+  }
+  .board.nogrid{background:var(--bg)}
 
-    /* ===== Custom tooltips (like screenshots) ===== */
-    .tool[data-tip]::after,
-    .tool[data-tip]::before{
-      position:absolute; left:50%; transform:translateX(-50%);
-      opacity:0; pointer-events:none; transition:.15s ease; z-index:20;
-    }
-    .tool[data-tip]::after{
-      content:attr(data-tip);
-      bottom:42px; /* فوق الزر */
-      background:rgba(17,17,17,.95); color:#fff;
-      padding:6px 10px; border-radius:8px; font-size:12px; white-space:nowrap;
-      box-shadow:0 8px 20px rgba(0,0,0,.35)
-    }
-    .tool[data-tip]::before{
-      content:""; bottom:36px;
-      width:0; height:0; border:6px solid transparent; border-top-color:rgba(17,17,17,.95)
-    }
-    .tool:hover[data-tip]::after,
-    .tool:hover[data-tip]::before{ opacity:1 }
+  svg#stage{display:block;margin:0 auto;width:2400px;height:1600px;touch-action:none}
+  .sel{outline:2px dashed var(--accent);outline-offset:2px}
 
-    /* Board picker */
-    .boardbar{position:absolute;top:72px;right:12px;z-index:7;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 12px 30px rgba(62,36,32,.12);padding:8px;display:flex;gap:6px;align-items:center}
-    .btn{padding:8px 10px;border-radius:10px;border:1px solid var(--brown);background:#fff;color:var(--brown);font-weight:800;cursor:pointer}
-    .btn.primary{background:var(--brown);color:#fff}
-    .btn.danger{background:#b91c1c;border-color:#b91c1c;color:#fff}
-    .muted{color:var(--muted);font-size:12px}
-  </style>
+  .fab{
+    position:fixed;right:14px;bottom:14px;padding:10px 14px;border-radius:999px;
+    background:#0f1522;border:1px solid #233047;color:#cfe3ff;cursor:pointer;z-index:6;
+    box-shadow:0 8px 22px rgba(0,0,0,.4)
+  }
+  .zoomHud{position:fixed;left:14px;bottom:14px;display:flex;gap:6px;z-index:6}
+
+  .modal{position:fixed;inset:0;background:rgba(7,12,18,.65);display:none;align-items:center;justify-content:center;z-index:10}
+  .modal.open{display:flex}
+  .sheet{
+    width:min(1180px,96vw);max-height:90vh;overflow:auto;background:#0d1421;
+    border:1px solid #26324a;border-radius:14px;padding:14px
+  }
+  .row{display:flex;gap:8px;align-items:center}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:10px}
+  .card{background:#0b121c;border:1px solid #233047;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+  .pv{height:150px;background:#0a1018}
+  .pv svg{width:100%;height:100%}
+  .meta{padding:10px}.meta b{display:block;margin-bottom:6px}
+  .ghost{border:1px dashed #364b6d;background:#0a111a;border-radius:8px;padding:6px 8px;color:#9db4d1}
+
+  .sw{width:24px;height:24px;border:1px solid #33445f;border-radius:6px;cursor:pointer}
+</style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="badge"></span>
-      <strong>MZJ Workspace — Whiteboard</strong>
-    </div>
-    <nav class="nav">
-      <a id="navDashboard" href="dashboard.html">لوحة التحكم</a>
-      <a id="navProjects"  href="projects.html">المشاريع</a>
-      <a id="navMembers"   href="members.html">الأعضاء</a>
-      <a id="navAdmin"     href="admin.html">الإدارة</a>
-      <a href="javascript:void(0)" id="btnLogout">تسجيل الخروج</a>
-    </nav>
-  </header>
+<div class="app">
+  <!-- Toolbar -->
+  <div class="bar">
+    <button class="btn small" id="t-select" aria-pressed="true">السهم (V)</button>
+    <button class="btn small" id="t-hand">تحريك اللوح (H)</button>
+    <button class="btn small" id="t-rect">مستطيل (R)</button>
+    <button class="btn small" id="t-arrow">سهم (A)</button>
+    <button class="btn small" id="t-text">نص (T)</button>
+    <button class="btn small" id="t-sticky">Sticky</button>
 
-  <div id="wrap">
-    <!-- اختيار/إنشاء بورد -->
-    <div class="boardbar">
-      <select id="boardSelect" class="select"></select>
-      <button class="btn" id="btnNewBoard">بورد جديد</button>
-      <span class="muted" id="saveState">—</span>
+    <div class="sp"></div>
+    <label class="switch"><input type="checkbox" id="snapChk" checked> Snap to grid</label>
+    <label class="switch"><input type="checkbox" id="gridChk" checked> Grid</label>
+
+    <div class="row" style="gap:6px;margin-inline-start:8px">
+      <span class="hint">سرعة الماوس</span>
+      <input type="range" id="speed" min="0.2" max="1.2" step="0.05" value="0.6" style="accent-color:#35b8ff">
     </div>
 
-    <!-- كانفس -->
-    <div id="cwrap"><canvas id="board"></canvas></div>
+    <div class="sp"></div>
+    <button class="btn small" id="undoBtn">تراجع</button>
+    <button class="btn small" id="redoBtn">إعادة</button>
+    <div class="sp"></div>
 
-    <!-- أدوات مع Tooltips -->
-    <div class="dock" id="dock">
-      <div class="tool" data-tool="select" data-tip="Select item   V">V</div>
-      <div class="tool" data-tool="hand"   data-tip="Hand   H">🖐️</div>
-      <div class="tool" data-tool="draw"   data-tip="Draw   D">✏️</div>
-      <div class="tool" data-tool="rect"   data-tip="Shapes   R">▭</div>
-      <div class="tool" data-tool="arrow"  data-tip="Arrow   A">↗︎</div>
-      <div class="tool" data-tool="note"   data-tip="Sticky Note   N">🗒️</div>
-      <div class="tool" data-tool="text"   data-tip="Text   T">T</div>
-      <label class="tool" data-tip="Image   Ctrl + U" title="">
-        🖼️
-        <input type="file" id="imgInput" accept="image/*">
-      </label>
-      <div class="sep"></div>
-      <div class="tool" data-act="undo" data-tip="Undo   Ctrl + Z">↶</div>
-      <div class="tool" data-act="redo" data-tip="Redo   Ctrl + Y">↷</div>
-      <div class="sep"></div>
-      <div class="tool" data-act="save"   data-tip="Save   S">💾</div>
-      <div class="tool" data-act="export" data-tip="Export PNG">⬇️ PNG</div>
-      <div class="tool" data-act="clear"  data-tip="Clear (Admin)">🗑️</div>
-    </div>
+    <button class="btn small" id="bgBtn">لون الخلفية</button>
+    <button class="btn small" id="exportPng">حفظ PNG</button>
+    <button class="btn small" id="exportPdf">حفظ PDF</button>
+    <button class="btn small" id="deleteBtn">حذف (Del)</button>
   </div>
 
-  <!-- Fabric.js -->
-  <script src="https://cdn.jsdelivr.net/npm/fabric@6.0.0/dist/fabric.min.js"></script>
+  <!-- Board -->
+  <div class="board" id="board">
+    <svg id="stage" viewBox="0 0 2400 1600" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="10" refY="3" orient="auto">
+          <path d="M0,0 L10,3 L0,6 z" fill="#cfe3ff"/>
+        </marker>
+      </defs>
+      <g id="content"></g>
+    </svg>
+  </div>
 
-  <!-- Firebase + App -->
-  <script type="module">
-    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-    import {
-      getFirestore, collection, doc, getDoc, onSnapshot, updateDoc, setDoc, addDoc,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+  <button class="fab" id="openGallery">Template Gallery</button>
+  <div class="zoomHud">
+    <button class="btn small" id="zoomIn">+</button>
+    <button class="btn small" id="zoomOut">−</button>
+    <button class="btn small" id="zoomCenter">Center</button>
+  </div>
+</div>
 
-    /* Firebase */
-    const firebaseConfig = {
-      apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
-      authDomain: "mzj-workspace.firebaseapp.com",
-      projectId: "mzj-workspace",
-      storageBucket: "mzj-workspace.firebasestorage.app",
-      appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
+<!-- Gallery Modal -->
+<div class="modal" id="mGallery">
+  <div class="sheet">
+    <div class="row">
+      <h3 style="margin:0">Template Gallery</h3>
+      <div class="sp"></div>
+      <button class="btn small" id="closeGallery">إغلاق</button>
+    </div>
+    <div class="grid" id="cards"></div>
+  </div>
+</div>
+
+<!-- Background Color Modal -->
+<div class="modal" id="mColor">
+  <div class="sheet" style="width:min(520px,94vw)">
+    <div class="row">
+      <h3 style="margin:0">تغيير لون الخلفية</h3>
+      <div class="sp"></div>
+      <button class="btn small" id="closeColor">إغلاق</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <input type="color" id="colorPicker" value="#0b0f14" style="width:120px;height:38px;border:1px solid #2b3a52;background:#0a111a;border-radius:8px"/>
+      <div class="ghost">المعاينة فورية — اضغط “تطبيق” للحفظ</div>
+    </div>
+    <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap" id="swWrap"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="applyBg">تطبيق</button></div>
+  </div>
+</div>
+
+<script>
+/* ===================== Helpers / State ===================== */
+const $ = s => document.querySelector(s);
+const stage = $('#stage'), view = stage.viewBox.baseVal, gRoot = $('#content');
+const board = $('#board');
+const GRID = 18;
+
+const state = {
+  tool: 'select',
+  sel: null,
+  pan: false,
+  pan0: null,
+  hist: [],
+  redo: [],
+  zoom: 1,
+  sens: 0.6,
+  snap: true
+};
+
+function setTool(t){
+  state.tool=t;
+  ['t-select','t-hand','t-rect','t-arrow','t-text','t-sticky'].forEach(id=>$('#'+id).removeAttribute('aria-pressed'));
+  ({select:'t-select',hand:'t-hand',rect:'t-rect',arrow:'t-arrow',text:'t-text',sticky:'t-sticky'})[t] && $('#'+({select:'t-select',hand:'t-hand',rect:'t-rect',arrow:'t-arrow',text:'t-text',sticky:'t-sticky'})[t]).setAttribute('aria-pressed','true');
+}
+$('#t-select').onclick=()=>setTool('select');
+$('#t-hand').onclick=()=>setTool('hand');
+$('#t-rect').onclick=()=>setTool('rect');
+$('#t-arrow').onclick=()=>setTool('arrow');
+$('#t-text').onclick=()=>setTool('text');
+$('#t-sticky').onclick=()=>setTool('sticky');
+
+$('#snapChk').onchange=e=>state.snap=e.target.checked;
+$('#gridChk').onchange=e=>board.classList.toggle('nogrid',!e.target.checked);
+$('#speed').oninput=e=>state.sens=+e.target.value;
+
+function snap(v){ return state.snap ? Math.round(v/GRID)*GRID : v; }
+function select(el){ if(state.sel) state.sel.classList.remove('sel'); state.sel=el; if(el) el.classList.add('sel'); }
+
+function svgEl(tag, attrs={}, parent=gRoot){ const e=document.createElementNS('http://www.w3.org/2000/svg',tag); Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v)); e.classList.add('draggable'); parent.appendChild(e); return e; }
+function createRect(x,y,w,h,stroke='#2a3a52',fill='#0e131a',rx=8,parent=gRoot){ return svgEl('rect',{x,y,width:w,height:h,rx,fill,stroke,'stroke-width':2},parent); }
+function createArrow(x1,y1,x2,y2,stroke='#cfe3ff',parent=gRoot){ return svgEl('line',{x1,y1,x2,y2,stroke,'stroke-width':2.5,'marker-end':'url(#arrowHead)'},parent); }
+function createFO(x,y,w,h,html,editable=true,parent=gRoot){
+  const f=document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
+  f.setAttribute('x',x); f.setAttribute('y',y); f.setAttribute('width',w); f.setAttribute('height',h);
+  f.classList.add('draggable');
+  f.innerHTML=`<div xmlns="http://www.w3.org/1999/xhtml" ${editable?'contenteditable="true"':''}
+     style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#e8eef7;font-weight:800;font-size:18px;outline:none">${html}</div>`;
+  parent.appendChild(f); return f;
+}
+function createText(x,y,txt,w=220,h=32,align='center',parent=gRoot){
+  const f=createFO(x,y,w,h,txt,true,parent); const div=f.firstChild;
+  div.style.justifyContent=align==='start'?'flex-start':align==='end'?'flex-end':'center';
+  return f;
+}
+function createSticky(x,y,w=220,h=140,parent=gRoot){
+  const r=createRect(x,y,w,h,'#2b7a9a','#13202b',8,parent);
+  const t=createText(x+10,y+10,'اكتب ملاحظة...',w-20,h-20,'start',parent);
+  return [r,t];
+}
+function newGroup(){ const g=document.createElementNS('http://www.w3.org/2000/svg','g'); gRoot.appendChild(g); return g; }
+
+/* ======= حساب منتصف الجزء الظاهر فعليًا ======= */
+function visibleCenter(){
+  const rect = board.getBoundingClientRect();
+  const pt = stage.createSVGPoint();
+  pt.x = rect.left + rect.width/2;
+  pt.y = rect.top  + rect.height/2;
+  const svgPt = pt.matrixTransform(stage.getScreenCTM().inverse());
+  return { x: svgPt.x, y: svgPt.y };
+}
+function centerGroup(grp){
+  // نطبع العنصر مكانه الحالي ثم نضيف ترانسليت للفارق
+  const bb = grp.getBBox();
+  const curCx = bb.x + bb.width/2;
+  const curCy = bb.y + bb.height/2;
+  const vis = visibleCenter();
+  const dx = vis.x - curCx;
+  const dy = vis.y - curCy;
+  const prev = grp.getAttribute('transform') || '';
+  grp.setAttribute('transform', `${prev} translate(${dx},${dy})`.trim());
+}
+
+/* ===================== Drawing & Interaction ===================== */
+stage.addEventListener('pointerdown',(e)=>{
+  const p = svgPoint(e);
+
+  if(state.tool==='hand'){ state.pan=true; state.pan0={x:e.clientX,y:e.clientY}; return; }
+
+  if(state.tool==='rect'){ select(createRect(snap(p.x-80),snap(p.y-60),200,140)); pushHistory(); setTool('select'); return; }
+  if(state.tool==='text'){ select(createText(snap(p.x-110),snap(p.y-20),'نص')); pushHistory(); setTool('select'); return; }
+  if(state.tool==='sticky'){ select(createSticky(snap(p.x-110),snap(p.y-70))[0]); pushHistory(); setTool('select'); return; }
+  if(state.tool==='arrow'){ select(createArrow(snap(p.x),snap(p.y),snap(p.x+120),snap(p.y))); pushHistory(); setTool('select'); return; }
+
+  const target = e.target.closest('.draggable');
+  if(target){
+    select(target);
+    const isLine = target.tagName==='line';
+    let last = svgPoint(e);
+    const move = (ev)=>{
+      const m = svgPoint(ev);
+      const dx=(m.x-last.x)*state.sens, dy=(m.y-last.y)*state.sens;
+      last={x:last.x+dx,y:last.y+dy};
+      if(isLine){
+        target.setAttribute('x1', snap(+target.getAttribute('x1')+dx));
+        target.setAttribute('y1', snap(+target.getAttribute('y1')+dy));
+        target.setAttribute('x2', snap(+target.getAttribute('x2')+dx));
+        target.setAttribute('y2', snap(+target.getAttribute('y2')+dy));
+      }else{
+        target.setAttribute('x', snap(+target.getAttribute('x')+dx));
+        target.setAttribute('y', snap(+target.getAttribute('y')+dy));
+      }
     };
-    if(!getApps().length) initializeApp(firebaseConfig);
-    const auth = getAuth();
-    const db   = getFirestore();
+    const up=()=>{ stage.removeEventListener('pointermove',move); stage.removeEventListener('pointerup',up); pushHistory(); };
+    stage.addEventListener('pointermove',move); stage.addEventListener('pointerup',up);
+  }else{
+    select(null);
+  }
+});
+stage.addEventListener('pointermove',(e)=>{
+  if(state.pan){
+    const dx=(e.clientX-state.pan0.x)*state.sens, dy=(e.clientY-state.pan0.y)*state.sens;
+    state.pan0={x:e.clientX,y:e.clientY}; view.x -= dx; view.y -= dy;
+  }
+});
+window.addEventListener('pointerup',()=>state.pan=false);
 
-    /* Auth & navbar visibility */
-    let CURRENT_USER=null, IS_ADMIN=false;
-    document.getElementById('btnLogout').onclick = async()=>{ await signOut(auth); location.href="login.html"; };
+$('#deleteBtn').onclick=()=>{ if(state.sel){ state.sel.remove(); select(null); pushHistory(); } };
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='Delete'&&state.sel){ state.sel.remove(); select(null); pushHistory(); }
+  const k=e.key.toLowerCase();
+  if(k==='v') setTool('select');
+  if(k==='h') setTool('hand');
+  if(k==='r') setTool('rect');
+  if(k==='a') setTool('arrow');
+  if(k==='t') setTool('text');
+});
 
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user){ location.href="login.html"; return; }
-      CURRENT_USER=user;
-      const u = await getDoc(doc(db,"users", user.uid));
-      const role = u.exists()? (u.data().role||'member') : 'member';
-      IS_ADMIN = role==='admin';
-      if(!IS_ADMIN){
-        document.getElementById('navDashboard').style.display='none';
-        document.getElementById('navMembers').style.display='none';
-        document.getElementById('navAdmin').style.display='none';
-      }
-      bootBoards();
+function svgPoint(ev){ const p=stage.createSVGPoint(); p.x=ev.clientX; p.y=ev.clientY; return p.matrixTransform(stage.getScreenCTM().inverse()); }
+
+/* ===================== History ===================== */
+function snapshot(){ return gRoot.innerHTML; }
+function restore(s){ gRoot.innerHTML=s; }
+function pushHistory(){ state.hist.push(snapshot()); if(state.hist.length>100) state.hist.shift(); state.redo.length=0; }
+$('#undoBtn').onclick=()=>{ if(!state.hist.length) return; const cur=snapshot(); const prev=state.hist.pop(); state.redo.push(cur); restore(prev); select(null); };
+$('#redoBtn').onclick=()=>{ const s=state.redo.pop(); if(!s) return; state.hist.push(snapshot()); restore(s); select(null); };
+
+/* ===================== Zoom ===================== */
+function setZoom(z,center=true){
+  state.zoom=Math.min(2.5,Math.max(0.4,z));
+  const w=2400/state.zoom, h=1600/state.zoom;
+  if(center){
+    const cx=view.x+view.width/2, cy=view.y+view.height/2;
+    view.width=w; view.height=h; view.x=cx-w/2; view.y=cy-h/2;
+  }else{
+    view.width=w; view.height=h;
+  }
+}
+$('#zoomIn').onclick=()=>setZoom(state.zoom+0.2);
+$('#zoomOut').onclick=()=>setZoom(state.zoom-0.2);
+$('#zoomCenter').onclick=()=>{ view.x=0; view.y=0; setZoom(1,false); };
+board.addEventListener('wheel',(e)=>{ if(e.ctrlKey){ e.preventDefault(); setZoom(state.zoom+(e.deltaY<0?0.15:-0.15)); } },{passive:false});
+
+/* ===================== Templates Catalog ===================== */
+const templates = [
+  {id:'storyboard_ar', name:'ستوريبورد — الطريق إليك', tag:'Video/Storyboard'},
+  {id:'eisenhower',    name:'Eisenhower Matrix',      tag:'Prioritization'},
+  {id:'risk5',         name:'Risk Matrix 5×5',         tag:'Operations'},
+  {id:'cjm',           name:'Customer Journey Map',     tag:'UX/Marketing'},
+  {id:'benchmark',     name:'Benchmark Analysis',       tag:'Marketing'},
+  {id:'brandguide',    name:'Brand Guidelines',         tag:'Brand'},
+  {id:'brainstorm',    name:'Campaign Launch Brainstorm',tag:'Ideation'},
+  {id:'presenceQuad',  name:'Market Presence vs Satisfaction', tag:'Competitive'},
+  {id:'approval',      name:'Approval Matrix',          tag:'Ops'},
+  {id:'ideaRisk',      name:'Idea — Certainty vs Risk', tag:'Roadmap'},
+  {id:'fishbone',      name:'Cause & Effect (Fishbone)',tag:'Problem Solving'},
+  {id:'commPlan',      name:'Communication Plan',       tag:'Internal'},
+  {id:'concept',       name:'Concept Map',              tag:'Mapping'},
+  {id:'decision',      name:'Decision Tree',            tag:'Decision'}
+];
+
+const mGallery=$('#mGallery');
+$('#openGallery').onclick=()=>{ buildCards(); mGallery.classList.add('open'); };
+$('#closeGallery').onclick=()=>mGallery.classList.remove('open');
+
+/* ==== Previews (SVG مصغّر) ==== */
+function pRect(s,x,y,w,h,st='#2a3a52',fill='#0e131a',rx=4){ const r=document.createElementNS(s,'rect'); r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',w);r.setAttribute('height',h);r.setAttribute('rx',rx);r.setAttribute('fill',fill);r.setAttribute('stroke',st);r.setAttribute('stroke-width','2'); return r;}
+function pText(s,txt,x,y,fs=10,fw=700){ const t=document.createElementNS(s,'text'); t.setAttribute('x',x);t.setAttribute('y',y);t.setAttribute('fill','#cfe3ff');t.setAttribute('font-size',fs);t.setAttribute('font-weight',fw); t.textContent=txt; return t; }
+function previewSVG(id){
+  const ns='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(ns,'svg'); svg.setAttribute('viewBox','0 0 200 150');
+  const R=(x,y,w,h,st,fill,rx)=>svg.appendChild(pRect(ns,x,y,w,h,st,fill,rx));
+  const T=(t,x,y,f)=>svg.appendChild(pText(ns,t,x,y,f));
+
+  if(id==='eisenhower'){T('Eisenhower',8,14,10); R(10,18,80,56,'#34d399','#0f171f'); R(100,18,80,56,'#f59e0b','#0f171f'); R(10,80,80,56,'#60a5fa','#0f171f'); R(100,80,80,56,'#ef4444','#0f171f'); return svg;}
+  if(id==='risk5'){T('Risk 5×5',8,14,10); let x=10,y=20,sz=28; const cols=['#1e293b','#0f172a','#0b1220']; for(let r=0;r<5;r++)for(let c=0;c<5;c++) R(x+c*sz,y+r*sz,sz-2,sz-2,'#2c3a52',cols[(r+c)%3]); return svg;}
+  if(id==='cjm'){T('Customer Journey',8,14,10); const st=['#ef4444','#8b5cf6','#60a5fa','#34d399']; for(let i=0;i<4;i++) R(12+i*46,28,44,96,st[i],'#121922'); return svg;}
+  if(id==='benchmark'){T('Benchmark',8,14,10); for(let i=0;i<4;i++){R(16,22+i*30,44,18,'#34d399','#111722'); R(70,22+i*30,44,18,'#60a5fa','#111722'); R(124,22+i*30,44,18,'#f59e0b','#111722');} return svg;}
+  if(id==='brandguide'){T('Brand Guide',8,14,10); R(12,22,176,28,'#8b5cf6','#121722'); R(12,54,80,40,'#34d399','#101722'); R(108,54,80,40,'#60a5fa','#101722'); R(12,98,176,40,'#f59e0b','#101722'); return svg;}
+  if(id==='brainstorm'){T('Brainstorm',8,14,10); R(10,22,76,52,'#60a5fa','#101722'); R(94,22,96,52,'#8b5cf6','#101722'); R(10,80,180,56,'#34d399','#0e1724'); return svg;}
+  if(id==='presenceQuad'){T('Presence vs Satisfaction',8,14,9); R(12,22,80,56,'#34d399','#101722'); R(108,22,80,56,'#f59e0b','#101722'); R(12,84,80,56,'#60a5fa','#101722'); R(108,84,80,56,'#ef4444','#101722'); return svg;}
+  if(id==='approval'){T('Approval Matrix',8,14,10); for(let r=0;r<4;r++)for(let c=0;c<4;c++) R(14+c*44,22+r*26,40,22,['#ef4444','#34d399','#60a5fa','#8b5cf6'][c],'#101722'); return svg;}
+  if(id==='ideaRisk'){T('Certainty vs Risk',8,14,10); R(12,22,80,56,'#34d399','#101722'); R(108,22,80,56,'#ef4444','#101722'); R(12,84,80,56,'#60a5fa','#101722'); R(108,84,80,56,'#f59e0b','#101722'); return svg;}
+  if(id==='fishbone'){T('Fishbone',8,14,10); R(20,70,160,2,'#cfe3ff','#cfe3ff',0); R(156,54,26,32,'#ef4444','#101722'); return svg;}
+  if(id==='commPlan'){T('Communication Plan',8,14,9); for(let i=0;i<4;i++) R(10+i*44,26,40,100,['#60a5fa','#34d399','#f59e0b','#8b5cf6'][i],'#0f171f'); return svg;}
+  if(id==='concept'){T('Concept Map',8,14,10); R(18,40,48,24,'#60a5fa','#101722',12); R(88,40,48,24,'#f59e0b','#101722',12); R(58,84,48,24,'#34d399','#101722',12); return svg;}
+  if(id==='decision'){T('Decision Tree',8,14,10); R(20,30,60,20,'#8b5cf6','#101722',6); R(20,70,60,20,'#34d399','#101722',6); R(120,70,60,20,'#ef4444','#101722',6); return svg;}
+  if(id==='storyboard_ar'){T('Storyboard — الطريق إليك',8,14,10); const colors=['#ef4444','#8b5cf6','#f59e0b','#60a5fa','#34d399','#fb923c']; const w=28,h=102,g=4,y=24,x0=8; for(let i=0;i<6;i++){ const x=x0+i*(w+g), c=colors[i%colors.length]; R(x,y,w,h,c,'#111821'); R(x+3,y+4,w-6,10,c,'#0c1118',3); R(x+4,y+18,w-8,46,c,'#0a0f15',3); R(x+4,y+66,w-8,10,c,'#000',3); R(x+4,y+80,10,10,c,'#000',3); R(x+w-14,y+80,10,10,c,'#000',3); R(x+8,y+94,12,10,c,'#000',3);} return svg;}
+  return svg;
+}
+function buildCards(){
+  const wrap=$('#cards'); wrap.innerHTML='';
+  templates.forEach(t=>{
+    const card=document.createElement('div'); card.className='card';
+    const pv=document.createElement('div'); pv.className='pv'; pv.appendChild(previewSVG(t.id));
+    const meta=document.createElement('div'); meta.className='meta';
+    meta.innerHTML=`<b>${t.name}</b>
+      <div class="row"><button class="btn small" data-add="${t.id}">Insert</button>
+      <span class="ghost">${t.tag}</span></div>`;
+    card.appendChild(pv); card.appendChild(meta); wrap.appendChild(card);
+  });
+  wrap.querySelectorAll('[data-add]').forEach(b=>b.onclick=e=>{ addTemplate(e.target.dataset.add); mGallery.classList.remove('open'); });
+}
+
+/* ==== إدراج القوالب ==== */
+function addTemplate(id){
+  const C = visibleCenter(); // مركز الجزء الظاهر
+  const grp = newGroup();
+
+  if(id==='eisenhower'){
+    createFO(C.x-220,C.y-280,260,36,'<div style="font-size:22px;font-weight:900">Eisenhower Matrix</div>',true,grp);
+    const w=360,h=220,gp=24,x0=C.x-(w*2+gp)/2,y0=C.y-(h*2+gp)/2;
+    const st=['#34d399','#f59e0b','#60a5fa','#ef4444']; let k=0;
+    for(let r=0;r<2;r++) for(let c=0;c<2;c++) createRect(x0+c*(w+gp),y0+r*(h+gp),w,h,st[k++],'#101722',8,grp);
+    centerGroup(grp); pushHistory(); return;
+  }
+
+  if(id==='risk5'){
+    createFO(C.x-200,C.y-300,260,36,'<div style="font-size:22px;font-weight:900">Risk Matrix 5×5</div>',true,grp);
+    const s=64, rows=5, cols=5, x0=C.x-(cols*s)/2, y0=C.y-(rows*s)/2;
+    const colors=['#0f172a','#111b2b','#0c121f'];
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) createRect(x0+c*s,y0+r*s,s-8,s-8,'#2d3a52',colors[(r+c)%3],4,grp);
+    centerGroup(grp); pushHistory(); return;
+  }
+
+  if(id==='cjm'){
+    createFO(C.x-250,C.y-320,320,40,'<div style="font-size:26px;font-weight:900">Customer Journey Map</div>',true,grp);
+    const cols = ['#ef4444','#8b5cf6','#60a5fa','#34d399'];
+    const w=300,h=520,g=28, x0=C.x-(cols.length*w+(cols.length-1)*g)/2, y0=C.y-220;
+    ['AWARENESS','CONSIDERATIONS','CONVERSION','RETENTION'].forEach((t,i)=>{
+      const x=x0+i*(w+g);
+      createRect(x,y0,w,h,cols[i],'#171d24',8,grp).setAttribute('stroke-width','3');
+      createRect(x+16,y0+16,w-32,42,cols[i],'#101722',8,grp);
+      createFO(x+22,y0+18,w-44,38,`<div style="font-size:18px">${t}</div>`,true,grp);
+      // 3 مربعات محتوى + سطرين تقييم + أسفل نقاط
+      for(let r=0;r<3;r++) createRect(x+22,y0+76+r*70,w-44,54,'#364152','#0b0f14',8,grp);
+      createRect(x+22,y0+292,w-44,54,'#364152','#0b0f14',8,grp);
+      // نجوم/أفاتار بديل بسيط
+      createRect(x+w/2-30,y0+362,60,60,cols[i],'#0b0f14',30,grp);
+      createRect(x+22,y0+440,w-44,60,cols[i],'#0b0f14',8,grp);
+      createRect(x+22,y0+508,w-44,60,cols[i],'#0b0f14',8,grp);
     });
+    centerGroup(grp); pushHistory(); return;
+  }
 
-    /* Fabric canvas setup */
-    const canvas = new fabric.Canvas('board', { backgroundColor:'#fff', selection:true, preserveObjectStacking:true });
-    const cwrap  = document.getElementById('cwrap');
-    function resize(){
-      const r = cwrap.getBoundingClientRect();
-      canvas.setWidth(r.width); canvas.setHeight(r.height); canvas.requestRenderAll();
+  if(id==='benchmark'){
+    createFO(C.x-200,C.y-320,300,40,'<div style="font-size:26px;font-weight:900">Benchmark Analysis</div>',true,grp);
+    const x0=C.x-520,y0=C.y-250,w=200,h=42,g=14;
+    for(let r=0;r<5;r++){
+      createRect(x0,y0+r*(h+g),w,h,'#8b5cf6','#0f141b',8,grp);
+      createRect(x0+220,y0+r*(h+g),w,h,'#34d399','#0f141b',8,grp);
+      createRect(x0+440,y0+r*(h+g),w,h,'#60a5fa','#0f141b',8,grp);
     }
-    addEventListener('resize', resize); resize();
+    // لوحة مقارنة كبيرة
+    const B=C.y+40;
+    createRect(C.x-540,B,1080,420,'#2d3a52','#0b0f14',8,grp);
+    const cols=['#34d399','#60a5fa','#f59e0b','#8b5cf6'];
+    for(let r=0;r<3;r++) for(let c=0;c<4;c++) createRect(C.x-520+c*260,B+20+r*130,240,100,cols[c],'#111722',8,grp);
+    centerGroup(grp); pushHistory(); return;
+  }
 
-    /* Tools */
-    let MODE='select'; // select | hand | draw | rect | arrow | note | text
-    let drawingArrow=null, isPanning=false;
+  if(id==='brandguide'){
+    createRect(C.x-560,C.y-300,1120,500,'#2d3a52','#0c121a',12,grp);
+    createRect(C.x-540,C.y-280,1080,90,'#8b5cf6','#141a24',10,grp);
+    createFO(C.x-200,C.y-255,400,44,'<div style="font-size:32px;font-weight:900">Brand Guidelines</div>',true,grp);
+    const box=(x,y,w,h,s)=>{ createRect(x,y,w,h,s,'#0d131b',10,grp); };
+    box(C.x-540,C.y-170,480,160,'#34d399'); box(C.x+60,C.y-170,480,160,'#60a5fa');
+    box(C.x-540,C.y+10,480,160,'#f59e0b');  box(C.x+60,C.y+10,480,160,'#8b5cf6');
+    centerGroup(grp); pushHistory(); return;
+  }
 
-    const dock = document.getElementById('dock');
-    function setMode(m){
-      MODE=m;
-      isPanning=false;
-      canvas.isDrawingMode = (m==='draw');
-      canvas.selection = (m!=='hand');
-      document.querySelectorAll('.tool').forEach(t=> t.classList.toggle('active', t.dataset.tool===m));
+  if(id==='brainstorm'){
+    createFO(C.x-220,C.y-320,320,40,'<div style="font-size:26px;font-weight:900">CAMPAIGN LAUNCH BRAINSTORM</div>',true,grp);
+    const cols=[{t:'IDEA AVENUE',w:520,h:260,c:'#60a5fa'},{t:'PARK ALL GOOD IDEAS HERE',w:260,h:260,c:'#34d399'},{t:'PARK ALL GREAT IDEAS HERE',w:260,h:260,c:'#8b5cf6'},{t:'PARK ALL STOP IDEAS HERE',w:260,h:260,c:'#ef4444'}];
+    const positions=[[-560,-120],[20,-120],[320,-120],[20,170]];
+    cols.forEach((b,i)=>{ const x=C.x+positions[i][0], y=C.y+positions[i][1]; createRect(x,y,b.w,b.h,b.c,'#121922',10,grp); createFO(x+8,y+8,b.w-16,28,b.t,true,grp); });
+    centerGroup(grp); pushHistory(); return;
+  }
+
+  if(id==='presenceQuad'){
+    createFO(C.x-240,C.y-320,400,40,'<div style="font-size:26px;font-weight:900">Market Presence vs Satisfaction</div>',true,grp);
+    const s=360,g=24,x0=C.x-(2*s+g)/2,y0=C.y-(2*s+g)/2; const st=['#34d399','#f59e0b','#60a5fa','#ef4444']; let k=0;
+    for(let r=0;r<2;r++) for(let c=0;c<2;c++) createRect(x0+c*(s+g),y0+r*(s+g),s,s,st[k++],'#0f171f',10,grp);
+    centerGroup(grp); pushHistory(); return;
+  }
+
+  if(id==='approval'){
+    createFO(C.x-180,C.y-330,300,40,'<div style="font-size:26px;font-weight:900">APPROVAL MATRIX</div>',true,grp);
+    // عمود الأنشطة
+    createRect(C.x-520,C.y-270,160,520,'#2d3a52','#101722',10,grp);
+    const roles=['Manager','#34d399','VP','#60a5fa','CEO','#8b5cf6'];
+    // 4 أنشطة × 4 أعمدة موافقات
+    const colX=[C.x-340,C.x-80,C.x+180,C.x+440];
+    for(let r=0;r<4;r++){
+      createRect(C.x-520,C.y-250+r*126,160,110,'#f59e0b','#0f141b',10,grp);
+      for(let c=0;c<4;c++) createRect(colX[c],C.y-250+r*126,220,110,['#ef4444','#34d399','#60a5fa','#8b5cf6'][c],'#0f141b',10,grp);
     }
-    setMode('select');
+    centerGroup(grp); pushHistory(); return;
+  }
 
-    dock.addEventListener('click', (e)=>{
-      const t = e.target.closest('.tool');
-      if(!t) return;
-      if (t.dataset.tool) setMode(t.dataset.tool);
-      if (t.dataset.act==='undo') undo();
-      if (t.dataset.act==='redo') redo();
-      if (t.dataset.act==='save') saveBoard();
-      if (t.dataset.act==='export') exportPNG();
-      if (t.dataset.act==='clear'){
-        if(!IS_ADMIN) return alert('المسح الكامل للأدمِن فقط');
-        if(confirm('مسح كل محتوى البورد؟')){ canvas.clear(); canvas.setBackgroundColor('#fff', canvas.renderAll.bind(canvas)); pushHistory(); scheduleSave(); }
-      }
-    });
+  if(id==='ideaRisk'){
+    createFO(C.x-220,C.y-320,340,40,'<div style="font-size:26px;font-weight:900">Certainty × Risk Matrix</div>',true,grp);
+    const s=380,g=26,x0=C.x-(2*s+g)/2,y0=C.y-(2*s+g)/2;
+    createRect(x0,y0,s,s,'#34d399','#101722',10,grp);
+    createRect(x0+s+g,y0,s,s,'#ef4444','#101722',10,grp);
+    createRect(x0,y0+s+g,s,s,'#60a5fa','#101722',10,grp);
+    createRect(x0+s+g,y0+s+g,s,s,'#f59e0b','#101722',10,grp);
+    centerGroup(grp); pushHistory(); return;
+  }
 
-    // Image upload + shortcut
-    const imgInput = document.getElementById('imgInput');
-    imgInput.addEventListener('change', (e)=>{
-      const file=e.target.files[0]; if(!file) return;
-      const reader=new FileReader();
-      reader.onload=()=>{
-        fabric.Image.fromURL(reader.result, (img)=>{
-          img.set({ left:100, top:100, scaleX:0.6, scaleY:0.6, cornerStyle:'circle' });
-          canvas.add(img); pushHistory(); scheduleSave();
-        }, { crossOrigin:'anonymous' });
-      };
-      reader.readAsDataURL(file);
-      e.target.value='';
-    });
-    addEventListener('keydown', (e)=>{
-      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='u'){
-        e.preventDefault(); imgInput.click();
-      }
-    });
+  if(id==='fishbone'){
+    createFO(C.x-220,C.y-320,320,40,'<div style="font-size:26px;font-weight:900">Cause & Effect Diagram</div>',true,grp);
+    // العمود الفقري
+    createArrow(C.x-520,C.y,C.x+520,C.y,'#cfe3ff',grp);
+    // فقاعات أسباب
+    const addNode=(x,y,c)=>{ createRect(x-120,y-40,240,80,c,'#101722',40,grp); createArrow(x-130,y-40,C.x-40,y-4,c,grp); };
+    addNode(C.x-340,C.y-140,'#f59e0b');
+    addNode(C.x-140,C.y-220,'#8b5cf6');
+    addNode(C.x+140,C.y-140,'#34d399');
+    addNode(C.x-320,C.y+140,'#60a5fa');
+    addNode(C.x-20,C.y+200,'#ef4444');
+    addNode(C.x+260,C.y+120,'#8b5cf6');
+    // المشكلة الرئيسية
+    createRect(C.x-160,C.y-70,320,140,'#ef4444','#0f141b',70,grp);
+    centerGroup(grp); pushHistory(); return;
+  }
 
-    // Shapes
-    let rectStart=null, rectObj=null;
-    canvas.on('mouse:down', (opt)=>{
-      const p=canvas.getPointer(opt.e);
-      if(MODE==='hand'){ isPanning=true; return; }
-      if(MODE==='rect'){
-        rectStart=p;
-        rectObj = new fabric.Rect({
-          left:p.x, top:p.y, width:1, height:1,
-          fill:'rgba(188,143,116,.22)', stroke:'#bc8f74', strokeWidth:2, rx:8, ry:8
-        });
-        canvas.add(rectObj);
-      }
-      if(MODE==='arrow'){
-        drawingArrow = new fabric.Line([p.x,p.y,p.x,p.y], { stroke:'#3e2420', strokeWidth:3, selectable:true });
-        const head = new fabric.Triangle({ width:14, height:16, fill:'#3e2420', left:p.x, top:p.y, originX:'center', originY:'center' });
-        const group = new fabric.Group([drawingArrow, head], { selectable:true });
-        group._isArrow=true;
-        canvas.add(group);
-      }
-      if(MODE==='note'){
-        const note = new fabric.Rect({ left:p.x, top:p.y, width:180, height:140, rx:12, ry:12, fill:'#fff8ef', stroke:'#e8d8cc' });
-        const fold = new fabric.Triangle({ left:p.x+160, top:p.y, width:20, height:18, fill:'#f0e1d6', angle:90, originX:'left', originY:'top' });
-        const text = new fabric.Textbox('اكتب ملاحظة…',{ left:p.x+12, top:p.y+12, width:156, fontFamily:'Tajawal', fontSize:16, fill:'#3e2420' });
-        const g = new fabric.Group([note, fold, text], { hasRotatingPoint:true, cornerStyle:'circle' });
-        g._isNote=true; canvas.add(g); pushHistory(); scheduleSave();
-      }
-      if(MODE==='text'){
-        const t = new fabric.Textbox('نص جديد',{ left:p.x, top:p.y, fontFamily:'Tajawal', fontSize:22, fill:'#3e2420' });
-        canvas.add(t); pushHistory(); scheduleSave();
-      }
-    });
-    canvas.on('mouse:move', (opt)=>{
-      const p=canvas.getPointer(opt.e);
-      if(isPanning){
-        const v=canvas.viewportTransform;
-        v[4] += opt.e.movementX;
-        v[5] += opt.e.movementY;
-        canvas.requestRenderAll();
-      }
-      if(MODE==='rect' && rectObj && rectStart){
-        rectObj.set({ width: p.x-rectStart.x, height:p.y-rectStart.y }); canvas.requestRenderAll();
-      }
-      if(MODE==='arrow' && drawingArrow){
-        const g = canvas.getObjects().slice(-1)[0]; if(!g || !g._isArrow) return;
-        const line=g.item(0), head=g.item(1);
-        line.set({ x2:p.x, y2:p.y });
-        const angle = Math.atan2(p.y-line.y1, p.x-line.x1)*180/Math.PI;
-        head.set({ left:p.x, top:p.y, angle:angle+90 });
-        canvas.requestRenderAll();
-      }
-    });
-    canvas.on('mouse:up', ()=>{
-      if(MODE==='rect' && rectObj){ rectObj.setCoords(); rectObj=null; rectStart=null; pushHistory(); scheduleSave(); }
-      if(MODE==='arrow' && drawingArrow){ drawingArrow=null; pushHistory(); scheduleSave(); }
-      isPanning=false;
-    });
-
-    // Zoom
-    canvas.on('mouse:wheel', (opt)=>{
-      const delta = opt.e.deltaY;
-      let zoom = canvas.getZoom();
-      zoom *= 0.999 ** delta;
-      zoom = Math.min(Math.max(zoom, 0.2), 4);
-      canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-      opt.e.preventDefault(); opt.e.stopPropagation();
-    });
-
-    // Keyboard shortcuts
-    addEventListener('keydown', (e)=>{
-      if(e.key==='Delete' || e.key==='Backspace'){
-        const active = canvas.getActiveObjects();
-        if(active.length){ active.forEach(o=> canvas.remove(o)); canvas.discardActiveObject(); canvas.requestRenderAll(); pushHistory(); scheduleSave(); }
-      }
-      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); }
-      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); }
-      const map={ 'v':'select','h':'hand','d':'draw','r':'rect','a':'arrow','n':'note','t':'text' };
-      const m = map[e.key?.toLowerCase()]; if(m){ setMode(m); }
-    });
-
-    /* Undo / Redo */
-    let HISTORY=[], FUTURE=[];
-    function pushHistory(){
-      FUTURE=[]; // clear redo
-      HISTORY.push(JSON.stringify(canvas.toJSON(['_isArrow','_isNote'])));
-      if(HISTORY.length>50) HISTORY.shift();
+  if(id==='commPlan'){
+    createFO(C.x-220,C.y-320,320,40,'<div style="font-size:26px;font-weight:900">COMMUNICATION PLAN</div>',true,grp);
+    const titles=['Target Audience / Stakeholders','Objectives / Actions Desired','Message Content / Positioning','Delivery Methods','Frequency'];
+    const st=['#8b5cf6','#34d399','#ef4444','#f59e0b','#60a5fa'];
+    const W=280,H=520,G=20, x0=C.x-((5*W)+(4*G))/2, y0=C.y-240;
+    for(let i=0;i<5;i++){
+      const x=x0+i*(W+G);
+      createRect(x,y0,W,H,st[i],'#0f171f',10,grp);
+      createRect(x+14,y0+14,W-28,38,st[i],'#121922',8,grp);
+      createFO(x+18,y0+16,W-36,34,`<div style="font-size:14px">${titles[i]}</div>`,true,grp);
+      for(let k=0;k<3;k++) createRect(x+18,y0+70+k*120,W-36,100,'#2d3a52','#0b0f14',8,grp);
     }
-    function loadFromJSON(json){
-      canvas.loadFromJSON(json, ()=> canvas.renderAll());
-    }
-    function undo(){
-      if(HISTORY.length<=1) return;
-      const cur = HISTORY.pop();
-      FUTURE.push(cur);
-      const prev = HISTORY[HISTORY.length-1];
-      loadFromJSON(prev);
-      scheduleSave();
-    }
-    function redo(){
-      if(!FUTURE.length) return;
-      const next = FUTURE.pop();
-      HISTORY.push(next);
-      loadFromJSON(next);
-      scheduleSave();
-    }
-    // أول حالة
-    pushHistory();
+    centerGroup(grp); pushHistory(); return;
+  }
 
-    /* Export */
-    function exportPNG(){
-      const url = canvas.toDataURL({ format:'png', quality:1 });
-      const a=document.createElement('a'); a.href=url; a.download='whiteboard.png'; a.click();
+  if(id==='concept'){
+    const bubble=(x,y,w,h,c)=>{ createRect(x,y,w,h,c,'#101722',h/2,grp); };
+    createFO(C.x-160,C.y-320,260,40,'<div style="font-size:26px;font-weight:900">Concept Map</div>',true,grp);
+    bubble(C.x-420,C.y-60,220,90,'#60a5fa'); bubble(C.x-90,C.y-60,220,90,'#f59e0b'); bubble(C.x-260,C.y+120,220,90,'#34d399');
+    createArrow(C.x-200,C.y-15,C.x-90,C.y-15,'#cfe3ff',grp);
+    createArrow(C.x-200,C.y+75,C.x-150,C.y+120,'#cfe3ff',grp);
+    createArrow(C.x-200,C.y+75,C.x+20,C.y+120,'#cfe3ff',grp);
+    centerGroup(grp); pushHistory(); return;
+  }
+
+  if(id==='decision'){
+    createFO(C.x-200,C.y-330,320,40,'<div style="font-size:26px;font-weight:900">Decision Tree</div>',true,grp);
+    const box=(x,y,w,h,c)=>createRect(x,y,w,h,c,'#101722',10,grp);
+    box(C.x-520,C.y-120,220,70,'#8b5cf6'); // السؤال
+    // فرع نعم
+    createArrow(C.x-300,C.y-85,C.x-140,C.y-170,'#cfe3ff',grp);
+    box(C.x-140,C.y-200,220,70,'#34d399'); // Do project
+    box(C.x+120,C.y-210,300,60,'#34d399'); // Positive outcomes
+    createArrow(C.x+80,C.y-170,C.x+120,C.y-180,'#cfe3ff',grp);
+    // فرع لا
+    createArrow(C.x-300,C.y-85,C.x-140,C.y+10,'#cfe3ff',grp);
+    box(C.x-140,C.y-20,220,70,'#f59e0b');  // Don't do project
+    box(C.x+120,C.y-10,300,60,'#ef4444');  // Consequences
+    createArrow(C.x+80,C.y+20,C.x+120,C.y+20,'#cfe3ff',grp);
+    centerGroup(grp); pushHistory(); return;
+  }
+
+  if(id==='storyboard_ar'){
+    createFO(C.x-180, C.y-270, 360, 52, '<div style="font-size:30px;text-align:center;font-weight:900">الطريق إليك</div>', true, grp);
+    const cols=6, colW=220, colH=420, gap=40;
+    const x0 = C.x - ((cols*colW)+((cols-1)*gap))/2;
+    const y0 = C.y - 200;
+    const stages = ['المشهد 1','SCENE 2','SCENE 3','SCENE 4','SCENE 5','SCENE 6'];
+    const bars   = ['Exposition','Conflict','Climax','Falling Action','Resolution','Exposition'];
+    const st=['#ef4444','#8b5cf6','#f59e0b','#60a5fa','#34d399','#fb923c'];
+    const lineY = y0 + 230; createArrow(x0, lineY, x0 + (cols-1)*(colW+gap) + colW, lineY, '#cfe3ff', grp);
+    for(let i=0;i<cols;i++){
+      const x = x0 + i*(colW+gap), stroke = st[i%st.length];
+      createRect(x,y0,colW,colH,stroke,'#1a1f26',8,grp).setAttribute('stroke-width','3');
+      createRect(x+14,y0+14,colW-28,34,stroke,'#0f1318',8,grp);
+      createFO(x+20,y0+17,colW-40,28,`<div style="text-align:center">${stages[i]}</div>`,true,grp);
+      createRect(x+16,y0+60,colW-32,180,'#374151','#0b0f14',8,grp);
+      createRect(x+16,y0+250,colW-32,34,'#374151','#000',8,grp);
+      createFO(x+20,y0+252,colW-40,30,`<div style="text-align:center">${bars[i]}</div>`,true,grp);
+      createRect(x+24,y0+300,84,70,stroke,'#000',8,grp); createFO(x+26,y0+304,80,24,'ACTION',true,grp);
+      createRect(x+colW-24-84,y0+300,84,70,stroke,'#000',8,grp); createFO(x+colW-24-82,y0+304,80,24,'DIALOGUE',true,grp);
+      createRect(x+(colW/2)-48,y0+378,96,60,stroke,'#000',8,grp); createFO(x+(colW/2)-44,y0+382,88,28,'AUDIO + FX',true,grp);
     }
+    centerGroup(grp); pushHistory(); return;
+  }
+}
 
-    /* Firestore: boards */
-    const boardSelect=document.getElementById('boardSelect');
-    const btnNewBoard=document.getElementById('btnNewBoard');
-    const saveState=document.getElementById('saveState');
-    let CURRENT_BOARD=null, unsubBoard=null, saveTimer=null;
+/* ===================== Background Color ===================== */
+const mColor=$('#mColor'); $('#bgBtn').onclick=()=>mColor.classList.add('open'); $('#closeColor').onclick=()=>mColor.classList.remove('open');
+const picker=$('#colorPicker');
+picker.addEventListener('input',e=>document.documentElement.style.setProperty('--bg',e.target.value));
+$('#applyBg').onclick=()=>{ pushHistory(); mColor.classList.remove('open'); };
+const presets=['#0b0f14','#0b1117','#0a0f16','#0c131b','#101826','#161b25','#1c2430','#0a1118'];
+const swWrap=$('#swWrap'); presets.forEach(c=>{ const d=document.createElement('div'); d.className='sw'; d.style.background=c; d.onclick=()=>{ picker.value=c; picker.dispatchEvent(new Event('input')); }; swWrap.appendChild(d); });
 
-    async function bootBoards(){
-      // تحميل قائمة البوردات
-      onSnapshot(collection(db,'whiteboards'), (snap)=>{
-        const items=[]; snap.forEach(d=> items.push({ id:d.id, ...(d.data()||{}) }));
-        items.sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
-        boardSelect.innerHTML='';
-        items.forEach(b=>{
-          const opt=document.createElement('option');
-          opt.value=b.id; opt.textContent=b.name || ('Board '+b.id.slice(-4));
-          boardSelect.appendChild(opt);
-        });
-        if(!CURRENT_BOARD && items.length){
-          CURRENT_BOARD = items[0].id;
-          boardSelect.value = CURRENT_BOARD;
-          subscribeBoard();
-        }
-      });
+/* ===================== Export ===================== */
+function download(filename, href){ const a=document.createElement('a'); a.href=href; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); }
+function exportPNG(){
+  const svgNode=stage.cloneNode(true);
+  svgNode.querySelectorAll('.sel').forEach(el=>el.classList.remove('sel'));
+  const xml=new XMLSerializer().serializeToString(svgNode);
+  const img=new Image();
+  img.onload=()=>{
+    const canvas=document.createElement('canvas'); canvas.width=2400; canvas.height=1600;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#0b0f14';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0);
+    download('whiteboard.png',canvas.toDataURL('image/png'));
+  };
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(xml);
+}
+$('#exportPng').onclick=exportPNG;
 
-      boardSelect.addEventListener('change', ()=>{
-        CURRENT_BOARD = boardSelect.value;
-        subscribeBoard();
-      });
+$('#exportPdf').onclick=()=>{
+  const svgNode=stage.cloneNode(true);
+  const xml=new XMLSerializer().serializeToString(svgNode);
+  const img=new Image();
+  img.onload=()=>{
+    const canvas=document.createElement('canvas'); canvas.width=2400; canvas.height=1600;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#0b0f14';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0);
+    const data=canvas.toDataURL('image/png');
+    const w=window.open('','print','width=1200,height=900');
+    w.document.write(`<html><head><title>Export PDF</title><style>@page{size:A4 landscape;margin:12mm} body{margin:0;display:flex;align-items:center;justify-content:center;background:#111}</style></head><body><img src="${data}" style="width:100%;height:auto"/></body></html>`);
+    w.document.close(); w.focus(); w.print();
+  };
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(xml);
+};
 
-      btnNewBoard.addEventListener('click', async ()=>{
-        const name = prompt('اسم البورد:', 'Whiteboard ' + new Date().toLocaleDateString('ar-SA')); if(!name) return;
-        const ref = await addDoc(collection(db,'whiteboards'), {
-          name, data: JSON.stringify(canvas.toJSON(['_isArrow','_isNote'])),
-          createdBy: CURRENT_USER?.uid||null, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
-        });
-        CURRENT_BOARD = ref.id; boardSelect.value = CURRENT_BOARD; subscribeBoard();
-      });
-    }
-
-    function subscribeBoard(){
-      if(unsubBoard){ unsubBoard(); unsubBoard=null; }
-      if(!CURRENT_BOARD) return;
-      const ref = doc(db,'whiteboards', CURRENT_BOARD);
-      unsubBoard = onSnapshot(ref, (snap)=>{
-        const data = snap.data()||{};
-        const j = data.data;
-        if(j){
-          // تحميل بدون كسر الـ undo (نضيف لقائمة التاريخ حالة واحدة)
-          loadFromJSON(j);
-          HISTORY=[j]; FUTURE=[];
-        }
-      });
-    }
-
-    function scheduleSave(){
-      saveState.textContent='جاري الحفظ…';
-      if(saveTimer) clearTimeout(saveTimer);
-      saveTimer=setTimeout(saveBoard, 800);
-    }
-    async function saveBoard(){
-      if(!CURRENT_BOARD) return;
-      try{
-        const ref = doc(db,'whiteboards', CURRENT_BOARD);
-        await updateDoc(ref, { data: JSON.stringify(canvas.toJSON(['_isArrow','_isNote'])), updatedAt: serverTimestamp() });
-        saveState.textContent='تم الحفظ ✅';
-        setTimeout(()=> saveState.textContent='—', 1200);
-      }catch(e){
-        // لو الوثيقة لسه ما اتعملتش
-        const ref = doc(db,'whiteboards', CURRENT_BOARD);
-        await setDoc(ref, { data: JSON.stringify(canvas.toJSON(['_isArrow','_isNote'])), updatedAt: serverTimestamp() }, { merge:true });
-        saveState.textContent='تم الحفظ ✅';
-      }
-    }
-
-    // احفظ عند أي تغيير
-    canvas.on('object:added', scheduleSave);
-    canvas.on('object:modified', scheduleSave);
-    canvas.on('object:removed', scheduleSave);
-  </script>
+/* ===================== Init ===================== */
+function init(){ pushHistory(); setTool('select'); setZoom(1,false); }
+init();
+</script>
 </body>
 </html>

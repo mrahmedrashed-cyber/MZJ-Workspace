@@ -49,6 +49,21 @@
   .p-gray{background:#f3f4f6;border-color:#e5e7eb}
 
   .hidden{display:none}
+
+  /* ===== Navbar ===== */
+  .nav{
+    margin:12px 0 0 0;
+    background:#fff;border:1px solid #f0e6df;border-radius:12px;box-shadow:var(--shadow);
+    padding:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center
+  }
+  .nav a{
+    display:inline-block;padding:10px 12px;border-radius:10px;
+    text-decoration:none;font-weight:700;font-size:14px;
+    color:var(--brown);border:1px solid #eaded6;background:#fff
+  }
+  .nav a:hover{background:#fff8f2}
+  .nav a.active{background:rgba(62,36,32,.06);border-color:#e1d2c8}
+  .nav a.logout{color:#fff;background:var(--danger);border-color:var(--danger)}
 </style>
 </head>
 <body>
@@ -69,6 +84,16 @@
         <button id="btnTemplate" class="btn btn-ghost">تحميل Template XLSX</button>
       </div>
     </div>
+
+    <!-- ===== Navbar inserted here ===== -->
+    <nav class="nav">
+      <a href="dashboard.html">لوحة التحكم</a>
+      <a href="projects.html">المشاريع</a>
+      <a href="members.html">الأعضاء</a>
+      <a href="admin.html">الحملات</a>
+      <a href="whiteboard.html">وايت بورد</a>
+      <a href="javascript:void(0)" id="btnLogout" class="logout">تسجيل الخروج</a>
+    </nav>
 
     <div class="grid grid-4 panel" style="margin-top:14px">
       <div class="card metric"><h3>إجمالي السيارات</h3><strong id="kTotal">0</strong></div>
@@ -192,11 +217,29 @@ onAuthStateChanged(auth, async (user)=>{
   IS_ADMIN = CURRENT_ROLE==='admin';
   document.getElementById('who').textContent = `${u.exists()? (u.data().name||user.email): (user.email||'User')} — ${IS_ADMIN?'مدير':'عضو'}`;
 
-  // زر تفريغ Firestore يظهر للمدير فقط
+  // إظهار/إخفاء الأزرار الإدارية
   document.getElementById('btnWipeFS').style.display = IS_ADMIN? '' : 'none';
 
-  boot(); // بعد تحديد الدور
+  boot();
 });
+
+/* ===== Navbar: Logout + active state ===== */
+document.addEventListener('click',(e)=>{
+  const a = e.target.closest('#btnLogout');
+  if(a){
+    e.preventDefault();
+    signOut(auth).then(()=>location.href='login.html')
+                 .catch(err=>alert('فشل تسجيل الخروج: '+(err?.message||err)));
+  }
+});
+// وسم الرابط النشط (اختياري)
+(function markActive(){
+  const path = location.pathname.split('/').pop();
+  document.querySelectorAll('.nav a[href]').forEach(a=>{
+    const href = a.getAttribute('href');
+    if(href && href === path){ a.classList.add('active'); }
+  });
+})();
 
 /* ====== Constants & Master Data ====== */
 const CARS_COL = "cars_production";
@@ -397,7 +440,6 @@ function updateKPIs(){
 let unsubCars=null;
 function listenCars(){
   if(unsubCars){ unsubCars(); unsubCars=null; }
-  // أحدث أولاً
   const qy = query(collection(db, CARS_COL), orderBy('createdAt','desc'));
   unsubCars = onSnapshot(qy, (snap)=>{
     ROWS = [];
@@ -407,7 +449,6 @@ function listenCars(){
 }
 
 async function addCarFS(){
-  // بناء التاريخ النصي للأجندة
   const agendaMonth = $("#iAgendaMonth").value;
   const agendaYear  = ($("#iAgendaYear").value||"").trim();
   const agendaDate  = ($("#iInAgenda").value==="نعم" && agendaMonth && agendaYear) ? `${agendaMonth} ${agendaYear}` : "";
@@ -434,7 +475,6 @@ async function addCarFS(){
 
   try{
     await addDoc(collection(db, CARS_COL), payload);
-    // تفريغ بعض الحقول للاستخدام السريع
     ["iModel","iColor","iIntColor","iNotes","iShootDate","iSiteLink"].forEach(id=>$("#"+id).value="");
     $("#iInAgenda").value = "لا"; $("#agendaFields").classList.add("hidden");
     $("#iOnSite").value = "لا"; $("#siteLinkField").classList.add("hidden");
@@ -521,7 +561,6 @@ function onImportXLSX(e){
       const ok = req.every(h=>cols.includes(h));
       if(!ok){ alert("صيغة XLSX غير مطابقة. حمّل الـTemplate أعلاه."); return; }
       const rows = json.map(row=>{ const o={}; req.forEach(h=>o[h]=row[h]??""); o.year=+o.year||2026; return o; });
-      // ارفع للفايرستور
       for(const r of rows){
         await addDoc(collection(db, CARS_COL), { ...r, createdAt: serverTimestamp(), createdBy: CURRENT_USER?.uid||null });
       }
@@ -543,7 +582,6 @@ async function wipeFirestoreCars(){
   if(!confirm("تأكيد نهائي: حذف جميع السيارات نهائيًا؟")) return;
 
   try{
-    // نحذف على دفعات 200-200
     let deleted = 0;
     while(true){
       const snap = await getDocs(query(collection(db,CARS_COL), limit(200)));

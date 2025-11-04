@@ -37,19 +37,6 @@
   @media (max-width:1100px){ .row{grid-template-columns:repeat(3,1fr)} }
   @media (max-width:640px){ .row{grid-template-columns:1fr} }
 
-  .table-soft{overflow:auto;border-radius:16px;border:1px solid #f0e6df}
-  table{width:100%;border-collapse:separate;border-spacing:0;min-width:1400px;background:#fff}
-  thead th{position:sticky;top:0;background:#fbf6f1;color:var(--brown);padding:12px 10px;border-bottom:1px solid #f0e6df;font-size:13px;z-index:2;text-align:right}
-  tbody td{padding:10px;border-bottom:1px solid #f7eee7;font-size:13px;vertical-align:middle}
-  tbody tr:nth-child(even){background:#fffdfa}
-
-  .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid #eaded6;font-weight:700;font-size:12px;background:#fff;white-space:nowrap}
-  .p-green{background:#ecfdf5;border-color:#a7f3d0}
-  .p-orange{background:#fff7ed;border-color:#fed7aa}
-  .p-gray{background:#f3f4f6;border-color:#e5e7eb}
-
-  .hidden{display:none}
-
   /* ===== Navbar ===== */
   .nav{
     margin:12px 0 0 0;
@@ -64,6 +51,25 @@
   .nav a:hover{background:#fff8f2}
   .nav a.active{background:rgba(62,36,32,.06);border-color:#e1d2c8}
   .nav a.logout{color:#fff;background:var(--danger);border-color:var(--danger)}
+
+  /* ===== Tables ===== */
+  .table-soft{overflow:auto;border-radius:16px;border:1px solid #f0e6df}
+  table{width:100%;border-collapse:separate;border-spacing:0;min-width:1400px;background:#fff}
+  thead th{position:sticky;top:0;background:#fbf6f1;color:#3a2a25;padding:12px 10px;border-bottom:1px solid #ecdccd;font-size:13px;z-index:2;text-align:right;letter-spacing:.2px}
+  tbody td{padding:9px 10px;border-bottom:1px solid #f7eee7;font-size:13px;vertical-align:middle}
+  tbody tr:nth-child(even){background:#fffdfa}
+  tbody tr:hover{background:#fff5ec}
+  td a{word-break:break-all}
+  td input, td select{min-width:120px}
+  td input[type="number"]{width:110px}
+  .nowrap{white-space:nowrap}
+
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid #eaded6;font-weight:700;font-size:12px;background:#fff;white-space:nowrap}
+  .p-green{background:#ecfdf5;border-color:#a7f3d0}
+  .p-orange{background:#fff7ed;border-color:#fed7aa}
+  .p-gray{background:#f3f4f6;border-color:#e5e7eb}
+
+  .hidden{display:none}
 </style>
 </head>
 <body>
@@ -85,16 +91,17 @@
       </div>
     </div>
 
-    <!-- ===== Navbar inserted here ===== -->
+    <!-- ===== Navbar ===== -->
     <nav class="nav">
       <a href="dashboard.html">لوحة التحكم</a>
       <a href="projects.html">المشاريع</a>
       <a href="members.html">الأعضاء</a>
       <a href="admin.html">الحملات</a>
-      <a href="Whiteboard.html">وايت بورد</a>
+      <a href="whiteboard.html">وايت بورد</a>
       <a href="javascript:void(0)" id="btnLogout" class="logout">تسجيل الخروج</a>
     </nav>
 
+    <!-- ===== KPIs ===== -->
     <div class="grid grid-4 panel" style="margin-top:14px">
       <div class="card metric"><h3>إجمالي السيارات</h3><strong id="kTotal">0</strong></div>
       <div class="card metric"><h3>تم التصوير</h3><strong id="kShot">0</strong></div>
@@ -102,13 +109,47 @@
       <div class="card metric"><h3>داخل الأجندة</h3><strong id="kAgenda">0</strong></div>
     </div>
 
+    <!-- ===== (1) الفلاتر + نتيجة الفلتر ===== -->
+    <div class="panel">
+      <h2 style="margin:0 0 10px 0;color:var(--brown);font-size:18px">نتيجة الفلتر (عرض فقط)</h2>
+      <div class="row">
+        <div><label>العلامة</label><select id="dBrand"><option value="">الكل</option></select></div>
+        <div><label>الفئة</label><input id="dTrim" placeholder="اكتب جزء من الفئة (مثال: سمارت)"></div>
+        <div><label>تصوير</label><select id="dShoot"><option value="">الكل</option></select></div>
+        <div><label>مونتاج</label><select id="dEdit"><option value="">الكل</option></select></div>
+        <div><label>اللون الخارجي</label><input id="dColor" placeholder="مثال: أبيض"></div>
+        <div><label>اللون الداخلي</label><input id="dIntColor" placeholder="مثال: بيج"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div><label>داخل الأجندة؟</label><select id="dAgenda"><option value="">الكل</option></select></div>
+        <div style="grid-column: span 5"><label>بحث نصّي</label><input id="dSearch" placeholder="ابحث في الموديل/الملاحظات/الألوان"></div>
+      </div>
+    </div>
+
+    <div class="panel table-soft" style="padding:0;margin-top:8px">
+      <table id="filteredTable">
+        <thead>
+          <tr>
+            <th class="nowrap">العلامة</th><th class="nowrap">الموديل</th><th class="nowrap">السنة</th><th class="nowrap">الفئة</th>
+            <th>اللون الخارجي</th><th>اللون الداخلي</th>
+            <th class="nowrap">تصوير</th><th class="nowrap">مونتاج</th><th class="nowrap">نوع المحتوى</th>
+            <th class="nowrap">تاريخ التصوير</th><th class="nowrap">داخل الأجندة؟</th><th class="nowrap">تاريخ الأجندة</th>
+            <th class="nowrap">مرفوع على الموقع؟</th><th>رابط الصفحة</th><th>ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody id="filteredTBody"></tbody>
+      </table>
+      <div class="muted" id="flatMeta" style="padding:10px"></div>
+    </div>
+
+    <!-- ===== (2) إضافة سريعة ===== -->
     <div class="panel">
       <h2 style="margin:0 0 10px 0;color:var(--brown);font-size:18px">إضافة سيارة سريعة</h2>
       <div class="row">
         <div><label>العلامة</label><select id="iBrand"></select></div>
         <div><label>الموديل</label><select id="iModel" disabled></select></div>
         <div><label>السنة</label><input id="iYear" type="number" min="2015" max="2035" value="2026"></div>
-        <div><label>الفئة</label><select id="iTrim"></select></div>
+        <div><label>الفئة</label><input id="iTrim" placeholder="مثال: سمارت بلس"></div>
         <div><label>اللون الخارجي</label><input id="iColor" placeholder="مثال: أبيض لؤلؤي"></div>
         <div><label>اللون الداخلي</label><input id="iIntColor" placeholder="مثال: جلد بيج"></div>
       </div>
@@ -138,51 +179,20 @@
       <div class="muted" style="margin-top:6px">* الحفظ الآن يتم على Firestore مباشرة. الاستيراد XLSX يضيف على الموجود.</div>
     </div>
 
+    <!-- ===== (3) جدول التحرير ===== -->
     <div class="panel table-soft" style="padding:0">
       <table id="carsTable">
         <thead>
           <tr>
-            <th>العلامة</th><th>الموديل</th><th>السنة</th><th>الفئة</th>
+            <th class="nowrap">العلامة</th><th class="nowrap">الموديل</th><th class="nowrap">السنة</th><th class="nowrap">الفئة</th>
             <th>اللون الخارجي</th><th>اللون الداخلي</th>
-            <th>تصوير</th><th>مونتاج</th><th>نوع المحتوى</th>
-            <th>تاريخ التصوير</th><th>داخل الأجندة؟</th><th>تاريخ الأجندة</th>
-            <th>مرفوع على الموقع؟</th><th>رابط الصفحة</th><th>ملاحظات</th><th>إجراءات</th>
+            <th class="nowrap">تصوير</th><th class="nowrap">مونتاج</th><th class="nowrap">نوع المحتوى</th>
+            <th class="nowrap">تاريخ التصوير</th><th class="nowrap">داخل الأجندة؟</th><th class="nowrap">تاريخ الأجندة</th>
+            <th class="nowrap">مرفوع على الموقع؟</th><th>رابط الصفحة</th><th>ملاحظات</th><th class="nowrap">إجراءات</th>
           </tr>
         </thead>
         <tbody id="tbody"><tr><td colspan="16" style="padding:14px">جار التحميل…</td></tr></tbody>
       </table>
-    </div>
-
-    <div class="panel">
-      <h2 style="margin:0 0 10px 0;color:var(--brown);font-size:18px">نتيجة الفلتر (عرض فقط)</h2>
-      <div class="row">
-        <div><label>العلامة</label><select id="dBrand"><option value="">الكل</option></select></div>
-        <div><label>الفئة</label><select id="dTrim"><option value="">الكل</option></select></div>
-        <div><label>تصوير</label><select id="dShoot"><option value="">الكل</option></select></div>
-        <div><label>مونتاج</label><select id="dEdit"><option value="">الكل</option></select></div>
-        <div><label>اللون الخارجي</label><input id="dColor" placeholder="مثال: أبيض"></div>
-        <div><label>اللون الداخلي</label><input id="dIntColor" placeholder="مثال: بيج"></div>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <div><label>داخل الأجندة؟</label><select id="dAgenda"><option value="">الكل</option></select></div>
-        <div style="grid-column: span 5"><label>بحث نصّي</label><input id="dSearch" placeholder="ابحث في الموديل/الملاحظات/الألوان"></div>
-      </div>
-    </div>
-
-    <div class="panel table-soft" style="padding:0;margin-top:8px">
-      <table id="filteredTable">
-        <thead>
-          <tr>
-            <th>العلامة</th><th>الموديل</th><th>السنة</th><th>الفئة</th>
-            <th>اللون الخارجي</th><th>اللون الداخلي</th>
-            <th>تصوير</th><th>مونتاج</th><th>نوع المحتوى</th>
-            <th>تاريخ التصوير</th><th>داخل الأجندة؟</th><th>تاريخ الأجندة</th>
-            <th>مرفوع على الموقع؟</th><th>رابط الصفحة</th><th>ملاحظات</th>
-          </tr>
-        </thead>
-        <tbody id="filteredTBody"></tbody>
-      </table>
-      <div class="muted" id="flatMeta" style="padding:10px"></div>
     </div>
   </div>
 
@@ -216,10 +226,7 @@ onAuthStateChanged(auth, async (user)=>{
   CURRENT_ROLE = u.exists()? (u.data().role||'member') : 'member';
   IS_ADMIN = CURRENT_ROLE==='admin';
   document.getElementById('who').textContent = `${u.exists()? (u.data().name||user.email): (user.email||'User')} — ${IS_ADMIN?'مدير':'عضو'}`;
-
-  // إظهار/إخفاء الأزرار الإدارية
   document.getElementById('btnWipeFS').style.display = IS_ADMIN? '' : 'none';
-
   boot();
 });
 
@@ -232,7 +239,6 @@ document.addEventListener('click',(e)=>{
                  .catch(err=>alert('فشل تسجيل الخروج: '+(err?.message||err)));
   }
 });
-// وسم الرابط النشط (اختياري)
 (function markActive(){
   const path = location.pathname.split('/').pop();
   document.querySelectorAll('.nav a[href]').forEach(a=>{
@@ -253,7 +259,6 @@ const MODELS_BY_BRAND = {
   "ام جي": ["جي تي","ام جي 3","ام جي 7","ام جي 5","اتش أس","ار اكس 5","ون","زد أس","تي 60","ار أكس 9","وال","ار أكس 8"],
   "نيسان": ["اكس تريل","ماجنايت","كيكس","صني","اكس تيرا","التيما"]
 };
-const TRIMS  = ["ستاندر","سمارت","سمارت بلس","كومفورت","فل كامل","ترند","امبيانتي","رويـال"];
 const SHOOT_STATUS = ["لم يُصوّر","تم التصوير","بانتظار مراجعة"];
 const EDIT_STATUS  = ["لم يبدأ","جاري","تم الانتهاء"];
 const CONTENT_TYPES = ["صور","فيديو","ريل","موشن","AI"];
@@ -283,7 +288,7 @@ function badgePill(val, kind){
 /* ====== Populate Add Controls ====== */
 function initAddControls(){
   $fillStrict($("#iBrand"), BRANDS, true);
-  $fillStrict($("#iTrim"), TRIMS, true);
+  // تم إلغاء القائمة المنسدلة للفئة — أصبحت كتابة يدوية
   $fillStrict($("#iShoot"), SHOOT_STATUS, true);
   $fillStrict($("#iEdit"), EDIT_STATUS, true);
   $fillStrict($("#iType"), CONTENT_TYPES, true);
@@ -343,7 +348,7 @@ function renderEditor(){
       <td>${selectCell("brand", BRANDS, r.brand||"", idx, 'brand')}</td>
       <td>${modelCell("model", r.model||"", r.brand||"", idx)}</td>
       <td>${numberCell("year", r.year||2026, idx)}</td>
-      <td>${selectCell("trim", TRIMS, r.trim||"", idx)}</td>
+      <td>${textCell("trim", r.trim??"", idx)}</td>
       <td>${textCell("color", r.color??"", idx)}</td>
       <td>${textCell("intColor", r.intColor??"", idx)}</td>
       <td>${selectCell("shoot", SHOOT_STATUS, r.shoot||SHOOT_STATUS[0], idx)}</td>
@@ -355,7 +360,7 @@ function renderEditor(){
       <td>${selectCell("onSite", YESNO, r.onSite||"لا", idx)}</td>
       <td>${linkCell("siteLink", r.siteLink||"", idx, "Page")}</td>
       <td>${textCell("notes", r.notes??"", idx)}</td>
-      <td>
+      <td class="nowrap">
         <button class="btn btn-ghost" data-action="dup" data-idx="${idx}">نسخ</button>
         <button class="btn btn-danger" data-action="del" data-idx="${idx}">حذف</button>
       </td>
@@ -367,7 +372,7 @@ function renderEditor(){
 /* ====== Render (Readonly Filter) ====== */
 function initFilters(){
   $fill($("#dBrand"), BRANDS, true, "الكل");
-  $fill($("#dTrim"), TRIMS, true, "الكل");
+  // ألغينا ملء dTrim لأنه أصبح input نصّي
   $fill($("#dShoot"), SHOOT_STATUS, true, "الكل");
   $fill($("#dEdit"), EDIT_STATUS, true, "الكل");
   $fill($("#dAgenda"), YESNO, true, "الكل");
@@ -375,7 +380,8 @@ function initFilters(){
 function currentListReadonly(){
   return ROWS.filter(r=>{
     if(FILTERS.brand && r.brand!==FILTERS.brand) return false;
-    if(FILTERS.trim && r.trim!==FILTERS.trim) return false;
+    // الفئة أصبحت فلترة تحتوي (case-insensitive)
+    if(FILTERS.trim && !((r.trim||"").toLowerCase().includes(FILTERS.trim.toLowerCase()))) return false;
     if(FILTERS.shoot && r.shoot!==FILTERS.shoot) return false;
     if(FILTERS.edit && r.edit!==FILTERS.edit) return false;
     if(FILTERS.color && !(r.color||"").toLowerCase().includes(FILTERS.color.toLowerCase())) return false;
@@ -406,19 +412,19 @@ function renderFilteredTable(){
       const link   = (r.onSite==="نعم" && r.siteLink) ? `<a href="${escapeHTML(r.siteLink)}" target="_blank" rel="noopener">${escapeHTML(r.siteLink)}</a>` : "—";
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${escapeHTML(r.brand||"—")}</td>
-        <td>${escapeHTML(r.model||"—")}</td>
-        <td>${escapeHTML(r.year||"—")}</td>
-        <td>${escapeHTML(r.trim||"—")}</td>
+        <td class="nowrap">${escapeHTML(r.brand||"—")}</td>
+        <td class="nowrap">${escapeHTML(r.model||"—")}</td>
+        <td class="nowrap">${escapeHTML(r.year||"—")}</td>
+        <td class="nowrap">${escapeHTML(r.trim||"—")}</td>
         <td>${escapeHTML(r.color||"—")}</td>
         <td>${escapeHTML(r.intColor||"—")}</td>
         <td>${shootP}</td>
         <td>${editP}</td>
-        <td>${escapeHTML(r.ctype||"—")}</td>
-        <td>${escapeHTML(r.shootDate||"—")}</td>
-        <td>${agendaP}</td>
-        <td>${escapeHTML(r.agendaDate||"—")}</td>
-        <td>${siteP}</td>
+        <td class="nowrap">${escapeHTML(r.ctype||"—")}</td>
+        <td class="nowrap">${escapeHTML(r.shootDate||"—")}</td>
+        <td class="nowrap">${agendaP}</td>
+        <td class="nowrap">${escapeHTML(r.agendaDate||"—")}</td>
+        <td class="nowrap">${siteP}</td>
         <td>${link}</td>
         <td>${escapeHTML(r.notes||"—")}</td>
       `;
@@ -457,7 +463,7 @@ async function addCarFS(){
     brand: $("#iBrand").value || "",
     model: $("#iModel").value || "",
     year:  +($("#iYear").value || 2026),
-    trim:  $("#iTrim").value || "",
+    trim:  ($("#iTrim").value || "").trim(),
     color: ($("#iColor").value || "").trim(),
     intColor: ($("#iIntColor").value || "").trim(),
     shoot: $("#iShoot").value || SHOOT_STATUS[0],
@@ -475,7 +481,7 @@ async function addCarFS(){
 
   try{
     await addDoc(collection(db, CARS_COL), payload);
-    ["iModel","iColor","iIntColor","iNotes","iShootDate","iSiteLink"].forEach(id=>$("#"+id).value="");
+    ["iModel","iTrim","iColor","iIntColor","iNotes","iShootDate","iSiteLink"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
     $("#iInAgenda").value = "لا"; $("#agendaFields").classList.add("hidden");
     $("#iOnSite").value = "لا"; $("#siteLinkField").classList.add("hidden");
     alert("✅ تم إضافة السيارة إلى Firestore");
@@ -489,7 +495,7 @@ async function updateFieldFS(idx, key, val){
   const row = ROWS[idx]; if(!row?.id) return;
   const ref = doc(db, CARS_COL, row.id);
   const patch = {};
-  patch[key] = (key==="year") ? (+val||2026) : val;
+  patch[key] = (key==="year") ? (+val||2026) : (val ?? "");
   try{
     await updateDoc(ref, patch);
     if(key==="brand"){
@@ -530,7 +536,7 @@ async function duplicateRowFS(idx){
 function xHeaders(){ return ["brand","model","year","trim","color","intColor","shoot","edit","ctype","shootDate","inAgenda","agendaDate","onSite","siteLink","notes"]; }
 function exportXLSX(){
   const headers = xHeaders();
-  const data = ROWS.map(r=>{ const o={}; headers.forEach(h=>o[h]=r[h]??""); return o; });
+  const data = ROWS.map(r=>{ const o={}; headers.forEach(h=>o[h]=r[h]??"" ); return o; });
   const ws = XLSX.utils.json_to_sheet(data, {header: headers});
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "MZJ Cars");
   XLSX.writeFile(wb, "mzj-production-tracker.xlsx");
@@ -603,10 +609,9 @@ async function wipeFirestoreCars(){
 document.addEventListener("change", async (e)=>{
   const t = e.target;
 
-  // فلاتر العرض فقط
-  if(t.matches("#dBrand,#dTrim,#dShoot,#dEdit,#dAgenda")){
+  // فلاتر العرض فقط (عناصر select)
+  if(t.matches("#dBrand,#dShoot,#dEdit,#dAgenda")){
     FILTERS.brand = $("#dBrand").value;
-    FILTERS.trim  = $("#dTrim").value;
     FILTERS.shoot = $("#dShoot").value;
     FILTERS.edit  = $("#dEdit").value;
     FILTERS.agenda= $("#dAgenda").value;
@@ -615,18 +620,29 @@ document.addEventListener("change", async (e)=>{
   }
 
   // تعديلات الجدول — تحديث Firestore
-  if(t.matches("select[data-idx], input[data-idx]") && !t.closest("#filteredTable")){
+  if(t.matches("select[data-idx], input[type='date'][data-idx], input[type='number'][data-idx]") && !t.closest("#filteredTable")){
     const idx = +t.dataset.idx; const key = t.dataset.key; const val = t.value;
     if(Number.isInteger(idx) && ROWS[idx]){
       await updateFieldFS(idx, key, val);
     }
   }
 });
-document.addEventListener("input", (e)=>{
+document.addEventListener("input", async (e)=>{
   const t = e.target;
+
+  // فلترة نصّية
   if(t.id==="dSearch"){ FILTERS.q = t.value; renderFilteredTable(); }
   if(t.id==="dColor"){ FILTERS.color = t.value; renderFilteredTable(); }
   if(t.id==="dIntColor"){ FILTERS.intColor = t.value; renderFilteredTable(); }
+  if(t.id==="dTrim"){ FILTERS.trim = t.value; renderFilteredTable(); }
+
+  // تعديلات الجدول — حقول نصّية (تشمل trim النصي)
+  if(t.matches("input[data-idx]") && !t.closest("#filteredTable")){
+    const idx = +t.dataset.idx; const key = t.dataset.key; const val = t.value;
+    if(Number.isInteger(idx) && ROWS[idx]){
+      await updateFieldFS(idx, key, val);
+    }
+  }
 });
 document.addEventListener("click", async (e)=>{
   const btn = e.target.closest("button"); if(!btn) return;

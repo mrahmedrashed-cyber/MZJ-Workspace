@@ -92,6 +92,9 @@
       .sheet .footer{position:sticky;bottom:0}
     }
   </style>
+
+  <!-- SheetJS (للتصدير إلى Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -127,6 +130,8 @@
           <button class="btn secondary" id="btnNewSpace" style="display:none">Space جديد</button>
           <button class="btn" id="btnNewTask" style="display:none">تاسك جديد</button>
           <button class="btn secondary" id="btnSpaceManage" style="display:none">⚙️ إدارة الـSpace</button>
+          <!-- زر التصدير الجديد -->
+          <button class="btn secondary" id="btnExportSpace">📤 تصدير Excel</button>
         </div>
         <div class="muted" id="who"></div>
       </div>
@@ -151,19 +156,41 @@
     </section>
   </main>
 
-  <!-- Modal عام للتاسك (يُستخدم في التبويبين) -->
+  <!-- نافذة إنشاء التاسك (نفسها من نسختك الأخيرة مع اختيار السيارة) -->
   <div class="modal" id="taskModal">
     <div class="sheet">
       <div class="head"><strong id="taskModalTitle">تاسك جديد</strong></div>
       <div class="body">
+
         <div class="grid2">
+          <div>
+            <label>الماركة</label>
+            <select id="carBrand"></select>
+          </div>
+          <div>
+            <label>الموديل</label>
+            <select id="carModel"></select>
+          </div>
+        </div>
+        <div class="grid2">
+          <div>
+            <label>الفئة (الترم)</label>
+            <input id="carTrim" placeholder="مثال: سمارت / فل كامل">
+          </div>
+          <div>
+            <label>المحرك</label>
+            <input id="carEngine" placeholder="مثال: 2000 سي سي / 1.5 تربو">
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-top:4px">
           <div>
             <label>اسم التاسك</label>
             <input id="tName" placeholder="مثال: ريل مواصفات إلنترا 30 ثانية">
           </div>
           <div>
             <label>تاريخ التسليم</label>
-            <input id="tDue" type="date">
+            <input id="tDue" type="date" placeholder="dd-mm-yyyy">
           </div>
         </div>
 
@@ -211,18 +238,9 @@
         <div id="dDesc" class="desc-box"></div>
 
         <div class="info" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-          <div>
-            <div class="small muted">المسؤول</div>
-            <div id="dAssignee"></div>
-          </div>
-          <div>
-            <div class="small muted">تاريخ التسليم</div>
-            <div id="dDue"></div>
-          </div>
-          <div>
-            <div class="small muted">الحالة/العمود</div>
-            <div id="dStatus"></div>
-          </div>
+          <div><div class="small muted">المسؤول</div><div id="dAssignee"></div></div>
+          <div><div class="small muted">تاريخ التسليم</div><div id="dDue"></div></div>
+          <div><div class="small muted">الحالة/العمود</div><div id="dStatus"></div></div>
         </div>
 
         <hr/>
@@ -308,14 +326,12 @@
       document.getElementById('who').textContent  = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
       document.getElementById('who2').textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
 
-      // أدوات الأدمِن فقط
       ['btnNewSpace','btnAddGroup','newGroupName','btnNewTask','btnSpaceManage','btnNewCampaignTask'].forEach(id=>{
         const el=document.getElementById(id);
         if(el) el.style.display = IS_ADMIN? '' : 'none';
       });
       document.querySelectorAll('.col-actions').forEach(el=> el.style.display = IS_ADMIN? 'flex' : 'none');
 
-      // إخفاء روابط غير الأدمِن في الـ Navbar
       if(!IS_ADMIN){
         document.getElementById('navDashboard').style.display='none';
         document.getElementById('navMembers').style.display='none';
@@ -323,10 +339,7 @@
       }
 
       await loadUsers();
-
-      // Boot Spaces (افتراضي يبدأ على تبويب Spaces)
       bootSpaces();
-      // Boot Campaigns (يتحمّل أول حملة تلقائيًا لو موجودة)
       bootCampaigns();
     });
 
@@ -352,9 +365,11 @@
     const btnAddGroup     = document.getElementById('btnAddGroup');
     const btnSpaceManage  = document.getElementById('btnSpaceManage');
     const boardSpaces     = document.getElementById('boardSpaces');
+    const btnExportSpace  = document.getElementById('btnExportSpace');
 
     let CURRENT_SPACE=null; let SPACE_COLUMNS=DEFAULT_COLUMNS.slice();
     let TASKS_SPACES=[]; let unsubTasksSpaces=null; let OPEN_TASK=null;
+    let SPACES_CACHE = new Map(); // id -> name
 
     function canManageLinks(task){ return IS_ADMIN || (task?.assignee?.uid && task.assignee.uid === (CURRENT_USER?.uid||'')); }
 
@@ -375,9 +390,14 @@
       if (snap.empty){
         const label = new Date().toLocaleDateString('ar-SA',{ year:'numeric', month:'long' });
         const ref = await addDoc(collection(db,'spaces'), { name:label, columns:DEFAULT_COLUMNS, createdAt:serverTimestamp(), active:true });
+        SPACES_CACHE.set(ref.id, label);
         return ref.id;
       } else {
-        let id=null, ts=0; snap.forEach(d=>{ const s=d.data()?.createdAt?.seconds||0; if(s>=ts){ts=s; id=d.id;} });
+        let id=null, ts=0; snap.forEach(d=>{
+          const s=d.data()?.createdAt?.seconds||0;
+          SPACES_CACHE.set(d.id, d.data()?.name||d.id);
+          if(s>=ts){ts=s; id=d.id;}
+        });
         return id;
       }
     }
@@ -385,17 +405,20 @@
     function fillSpaceDropdown(list, selectedId){
       spaceSelect.innerHTML='';
       list.forEach(s=>{
-        // نستبعد الحملات هنا
         if(s.type==='campaign') return;
-        const opt=document.createElement('option'); opt.value=s.id; opt.textContent=s.name; spaceSelect.appendChild(opt);
+        const opt=document.createElement('option'); opt.value=s.id; opt.textContent=s.name;
+        spaceSelect.appendChild(opt);
+        SPACES_CACHE.set(s.id, s.name||s.id);
       });
       if(selectedId) spaceSelect.value=selectedId;
     }
 
     onSnapshot(collection(db,'spaces'), snap=>{
       const items=[];
-      snap.forEach(d=>{ const data=d.data()||{}; if(data.active!==false) items.push({id:d.id, ...data}); });
-      // Spaces فقط
+      snap.forEach(d=>{
+        const data=d.data()||{};
+        if(data.active!==false) items.push({id:d.id, ...data});
+      });
       const onlySpaces = items.filter(s=> !s.type);
       onlySpaces.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
       fillSpaceDropdown(onlySpaces, CURRENT_SPACE);
@@ -414,6 +437,7 @@
       if(!IS_ADMIN) return;
       const name = prompt('اسم الـSpace (مثال: نوفمبر 2025):'); if(!name) return;
       const ref = await addDoc(collection(db,'spaces'), { name, columns:DEFAULT_COLUMNS, createdAt:serverTimestamp(), active:true });
+      SPACES_CACHE.set(ref.id, name);
       CURRENT_SPACE = ref.id; SPACE_COLUMNS = DEFAULT_COLUMNS.slice();
       renderBoardSkeletonSpaces(); listenTasksSpaces(true); fillGroupSelect(); ensureReviewColumn();
     });
@@ -425,6 +449,7 @@
       if(action.toLowerCase()==='rename'){
         const nm = prompt('الاسم الجديد للـSpace:'); if(!nm) return;
         await updateDoc(doc(db,'spaces', CURRENT_SPACE), { name:nm });
+        SPACES_CACHE.set(CURRENT_SPACE, nm);
       } else if(action.toLowerCase()==='archive'){
         if(!confirm('تأكيد أرشفة الـSpace؟')) return;
         await updateDoc(doc(db,'spaces', CURRENT_SPACE), { active:false, archivedAt:serverTimestamp() });
@@ -434,6 +459,7 @@
     spaceSelect.addEventListener('change', async (e)=>{
       CURRENT_SPACE = e.target.value;
       const d = await getDoc(doc(db,'spaces', CURRENT_SPACE));
+      SPACES_CACHE.set(CURRENT_SPACE, d.data()?.name||CURRENT_SPACE);
       SPACE_COLUMNS = d.exists()? (d.data().columns?.length? d.data().columns : DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
       renderBoardSkeletonSpaces(); listenTasksSpaces(true); fillGroupSelect(); ensureReviewColumn();
     });
@@ -449,7 +475,66 @@
       SPACE_COLUMNS = cols; newGroupNameEl.value=''; renderBoardSkeletonSpaces(); renderTasksSpaces(); fillGroupSelect();
     });
 
-    /* Users on Spaces modal */
+    /* === EXPORT: Space to XLSX === */
+    btnExportSpace?.addEventListener('click', ()=>{
+      if(!CURRENT_SPACE){ alert('اختر Space أولاً'); return; }
+      try{
+        const data = TASKS_SPACES.map(t=>{
+          const createdAt = t.createdAt?.seconds ? new Date(t.createdAt.seconds*1000) : null;
+          const links = Array.isArray(t.links) ? t.links.map(l=> (l.title||l.url)+': '+l.url).join(' | ') : '';
+          return {
+            "Space": SPACES_CACHE.get(t.spaceId)||t.spaceId,
+            "العمود/الحالة": t.status||'',
+            "اسم التاسك": t.name||'',
+            "تاريخ التسليم": t.due||'',
+            "الوصف": t.description||'',
+            "العضو": t.assignee?.name||'',
+            "لون العضو": t.assignee?.color||'',
+            "UID العضو": t.assignee?.uid||'',
+            "ماركة": t.car?.brand||'',
+            "الموديل": t.car?.model||'',
+            "الفئة": t.car?.trim||'',
+            "المحرك": t.car?.engine||'',
+            "روابط": links,
+            "أنشئ بواسطة": t.createdBy||'',
+            "تاريخ الإنشاء": createdAt ? createdAt.toLocaleString('ar-SA') : '',
+            "نشط": t.active===false? 'لا' : 'نعم',
+            "Doc ID": t.id
+          };
+        });
+
+        // ورقة ملخص الأعمدة (Counts per Column)
+        const counts = SPACE_COLUMNS.map(col=>{
+          const n = TASKS_SPACES.filter(t=>t.status===col).length;
+          return { "العمود": col, "عدد المهام": n };
+        });
+
+        const wb = XLSX.utils.book_new();
+        const wsTasks = XLSX.utils.json_to_sheet(data);
+        const wsCols  = XLSX.utils.json_to_sheet(counts);
+
+        XLSX.utils.book_append_sheet(wb, wsTasks, 'Tasks');
+        XLSX.utils.book_append_sheet(wb, wsCols,  'Columns');
+
+        // توسيع الأعمدة تلقائيًا
+        const fit = (rows)=> Object.keys(rows[0]||{}).map(k=>{
+          const max = rows.reduce((m,r)=> Math.max(m, String(r[k]??'').length), k.length);
+          return { wch: Math.min(Math.max(12, max+2), 60) };
+        });
+        wsTasks['!cols'] = fit(data);
+        wsCols['!cols']  = fit(counts);
+
+        const spaceName = (SPACES_CACHE.get(CURRENT_SPACE)||'Space').replace(/[\/\\:*?"<>|]/g,'-');
+        const ymd = new Date().toISOString().slice(0,10).replace(/-/g,'');
+        const filename = `MZJ-Space-${spaceName}-${ymd}.xlsx`;
+        XLSX.writeFile(wb, filename);
+      }catch(err){
+        console.error(err);
+        alert('⚠️ فشل التصدير: '+ (err?.message||err));
+      }
+    });
+
+    /* Users on Spaces modal (إنشاء/حفظ تاسك) */
     const taskModal = document.getElementById('taskModal');
     const btnNewTask = document.getElementById('btnNewTask');
     const btnCloseModal = document.getElementById('btnCloseModal');
@@ -466,6 +551,68 @@
     const tGroup = document.getElementById('tGroup');
     let SELECTED_ASSIGNEE=null;
 
+    /* === Car Selector Data === */
+    const CAR_MAP = {
+      "هيونداي": [
+        "سوناتا","النترا","اكسنت","جراند i10","كريتا","جراند كريتا","ستار جيزر",
+        "فينيو","ازيرا","سنتافي","توسان","كونا","ستاريا","بالسييد"
+      ],
+      "شانجان": [
+        "سي اس 75","سي اس 35","ايدو بلس","ال سيفن","يوني كي","يوني تي","يوني في",
+        "سي اس 95","يوني اس","هانتر اب"
+      ],
+      "شيري": [
+        "تيجو 2 برو","اريزو 8","اريزو 6 برو","اريزو 5 برو",
+        "أكسييد ال اكس","تيجو 8 برو","تيجو 7","تيجو 4 برو"
+      ],
+      "فورد": ["رينجر","اكسبلور","تيريتوري","تورس"],
+      "إم جي": ["جي تي","ام جي 3","ام جي 7","ام جي 5","اتش أس","ار اكس 5","ون","زد أس","تي 60","ار أكس 9","وال","ار أكس 8"],
+      "نيسان": ["اكس تريل","ماجنايت","كيكس","صني","اكس تيرا","التيما"]
+    };
+
+    const carBrand  = document.getElementById('carBrand');
+    const carModel  = document.getElementById('carModel');
+    const carTrim   = document.getElementById('carTrim');
+    const carEngine = document.getElementById('carEngine');
+
+    function fillBrands(){
+      carBrand.innerHTML = '<option value="">— اختر الماركة —</option>';
+      Object.keys(CAR_MAP).forEach(b=>{
+        const opt=document.createElement('option'); opt.value=b; opt.textContent=b;
+        carBrand.appendChild(opt);
+      });
+    }
+    function fillModels(brand){
+      carModel.innerHTML = '<option value="">— اختر الموديل —</option>';
+      (CAR_MAP[brand]||[]).forEach(m=>{
+        const opt=document.createElement('option'); opt.value=m; opt.textContent=m;
+        carModel.appendChild(opt);
+      });
+    }
+    function buildAutoTaskName(){
+      const parts = [
+        carBrand?.value?.trim() || '',
+        carModel?.value?.trim() || '',
+        carTrim?.value?.trim() || '',
+        carEngine?.value?.trim() || ''
+      ].filter(Boolean);
+      const auto = parts.join(' ').replace(/\s+/g,' ').trim();
+      if(auto) tName.value = auto;
+    }
+    carBrand?.addEventListener('change', ()=>{
+      fillModels(carBrand.value);
+      buildAutoTaskName();
+    });
+    [carModel, carTrim, carEngine].forEach(el=>{
+      el?.addEventListener('input', buildAutoTaskName);
+      el?.addEventListener('change', buildAutoTaskName);
+    });
+    function initCarSelectors(){
+      fillBrands();
+      fillModels(carBrand.value||'');
+      carTrim.value=''; carEngine.value='';
+    }
+
     function fillGroupSelect(cols=SPACE_COLUMNS){
       tGroup.innerHTML='';
       (cols||[]).forEach(col=>{
@@ -473,7 +620,13 @@
       });
     }
 
-    function openCreate(cols=SPACE_COLUMNS){ if(IS_ADMIN){ taskModal.classList.add('show'); fillGroupSelect(cols); } }
+    function openCreate(cols=SPACE_COLUMNS){
+      if(IS_ADMIN){
+        taskModal.classList.add('show');
+        fillGroupSelect(cols);
+        initCarSelectors();
+      }
+    }
     function closeCreate(){ taskModal.classList.remove('show'); resetCreateForm(); }
 
     btnNewTask.addEventListener('click', ()=> openCreate(SPACE_COLUMNS));
@@ -486,6 +639,7 @@
       tAssigneeSearch.value=''; assigneeMenu.innerHTML=''; assigneeMenu.style.display='none';
       assigneeChip.innerHTML=''; SELECTED_ASSIGNEE=null; tColor.value='#bc8f74';
       fillGroupSelect();
+      initCarSelectors();
     }
 
     function renderAssigneeMenu(filter){
@@ -494,7 +648,8 @@
       USERS.filter(u=>u.name.toLowerCase().includes(f)).forEach(u=>{
         const it=document.createElement('div');
         it.className='dd-item';
-        it.innerHTML=`<span class="row"><span class="color-dot" style="background:${u.color||'#bc8f74'}"></span> ${u.name} <span class="muted">(${u.role})</span></span>`;
+        it.style.padding='8px 10px';
+        it.innerHTML=`<span class="row"><span class="color-dot" style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${u.color||'#bc8f74'}"></span> ${u.name} <span class="muted">(${u.role})</span></span>`;
         it.onclick=()=> selectAssignee(u);
         assigneeMenu.appendChild(it);
       });
@@ -511,7 +666,6 @@
     document.addEventListener('click', (e)=>{ if(!assigneeMenu.contains(e.target) && e.target!==tAssigneeSearch) assigneeMenu.style.display='none'; });
 
     btnSaveTask.addEventListener('click', async ()=>{
-      // يُستخدم لكلٍ من Spaces والحملات — نحدد الوجهة حسب التبويب الظاهر
       const isCampaignTab = !panelCampaigns.classList.contains('hidden');
       const targetSpaceId = isCampaignTab ? CURRENT_CAMPAIGN : CURRENT_SPACE;
       const targetCols    = isCampaignTab ? CAMPAIGN_COLUMNS : SPACE_COLUMNS;
@@ -519,11 +673,22 @@
       if(!targetSpaceId) return alert('اختر لوحة أولاً');
       if(!IS_ADMIN) return alert('خاص بالأدمِن');
 
+      if(!tName.value.trim()) buildAutoTaskName();
       const name=tName.value.trim(); if(!name) return alert('اكتب اسم التاسك');
-      const due=tDue.value||null; const description=tDesc.value||null;
-      const assigneeUid=SELECTED_ASSIGNEE?.uid||null; const assigneeName=SELECTED_ASSIGNEE?.name||null;
+
+      const due=tDue.value||null;
+      const description=tDesc.value||null;
+      const assigneeUid=SELECTED_ASSIGNEE?.uid||null;
+      const assigneeName=SELECTED_ASSIGNEE?.name||null;
       const color=(document.getElementById('tColor').value||'#bc8f74').trim();
       const status=tGroup.value || (targetCols[0]||'عمود');
+
+      const car = {
+        brand:  carBrand?.value?.trim()  || null,
+        model:  carModel?.value?.trim()  || null,
+        trim:   carTrim?.value?.trim()   || null,
+        engine: carEngine?.value?.trim() || null
+      };
 
       try{
         if(assigneeUid){
@@ -532,12 +697,14 @@
         }
         const payload = {
           spaceId: targetSpaceId, name, description, due, status,
+          car,
           assignee: assigneeUid ? { uid:assigneeUid, name:assigneeName, color } : null,
           links: [],
           createdBy: CURRENT_USER?.uid || null, createdAt: serverTimestamp(), active:true
         };
         await addDoc(collection(db,'tasks'), payload);
-        alert('✅ تم حفظ التاسك'); closeCreate();
+        alert('✅ تم حفظ التاسك');
+        closeCreate();
       }catch(e){ alert('حدث خطأ: '+(e?.message||e)); }
     });
 
@@ -590,7 +757,6 @@
           <div class="col-body"><div class="dropzone" data-zone="${col}"></div></div>
         `;
 
-        // سحب وإعادة ترتيب الأعمدة
         const grip = sec.querySelector('.grip');
         if (IS_ADMIN && grip){
           grip.setAttribute('draggable','true');
@@ -620,7 +786,6 @@
         renderColumnHeaderActionsSpaces(sec.querySelector('.__actions'), col);
       });
 
-      // سحب الكروت
       board.querySelectorAll('.dropzone').forEach(zone=>{
         zone.addEventListener('dragover', e=>{
           if (e.dataTransfer.types.includes(MIME_TASK)){
@@ -653,8 +818,10 @@
         list.forEach(t=>{
           const card=document.createElement('article'); card.className='card'; card.dataset.id=t.id;
           const ass=t.assignee;
+          const carLine = t.car ? [t.car.brand, t.car.model, t.car.trim, t.car.engine].filter(Boolean).join(' ') : '';
           card.innerHTML = `
             <h4>${t.name||'-'}</h4>
+            ${carLine ? `<div class="small" style="margin-top:4px">🚗 ${carLine}</div>` : ''}
             <div class="row" style="margin-top:6px">
               ${ass?`<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>`:''}
               ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
@@ -686,18 +853,11 @@
     }
 
     /* ===== Campaigns logic ===== */
-    // أسماء الأعمدة الافتراضية للحملات
     const CAMPAIGN_DEFAULT_COLS = [
-      "ريلز - كاش",
-      "موشن - كاش",
-      "جرافيك - كاش",
-      "ريلز اقساط",
-      "AI Generate - اقساط",
-      "جرافيك اقساط",
-      "اقساط شركات - سوشيال ميديا",
-      "شركات - لينكد ان"
+      "ريلز - كاش","موشن - كاش","جرافيك - كاش",
+      "ريلز اقساط","AI Generate - اقساط","جرافيك اقساط",
+      "اقساط شركات - سوشيال ميديا","شركات - لينكد ان"
     ];
-    // تطبيع الأسماء القديمة
     const CAMPAIGN_NAME_MAP = new Map([
       ["ريل مواصفات","ريلز - كاش"],
       ["ريل قصير","موشن - كاش"],
@@ -738,7 +898,6 @@
       let cols = d.exists()? (Array.isArray(d.data().columns)? d.data().columns.slice() : []) : [];
       if(!cols.length) cols = CAMPAIGN_DEFAULT_COLS.slice();
 
-      // تطبيع أسماء قديمة للجديدة
       let changed=false;
       cols = cols.map(c=>{ const m=CAMPAIGN_NAME_MAP.get(c)||c; if(m!==c) changed=true; return m; });
       CAMPAIGN_DEFAULT_COLS.forEach(def=>{ if(!cols.includes(def)){ cols.push(def); changed=true; } });
@@ -748,9 +907,7 @@
 
       const start = d.data()?.start || null;
       const due   = d.data()?.due   || null;
-      const s = start || '—';
-      const e = due   || '—';
-      campaignDates.textContent = `📅 ${s} → ${e}`;
+      campaignDates.textContent = `📅 ${start||'—'} → ${due||'—'}`;
 
       renderBoardSkeletonCampaigns();
       listenTasksCampaigns();
@@ -759,33 +916,26 @@
     function renderBoardSkeletonCampaigns(){
       const board=boardCampaigns;
       board.innerHTML='';
-      (CAMPAIGN_COLUMNS||[]).forEach((col, index)=>{
+      (CAMPAIGN_COLUMNS||[]).forEach((col)=>{
         const sec=document.createElement('section');
         sec.className='col';
         sec.dataset.status=col;
-        sec.dataset.index=index;
         sec.innerHTML=`
           <div class="col-head">
             <span class="col-title">${col}</span>
-            <div class="grip"><span class="dots">⋮⋮</span> اسحب</div>
             <div class="col-actions" style="${IS_ADMIN?'display:flex':'display:none'}">
               <button class="icon" data-act="newtask" title="تاسك جديد">➕</button>
             </div>
           </div>
           <div class="col-body"><div class="dropzone" data-zone="${col}"></div></div>
         `;
-
-        // Drag tasks فقط (لا نسمح ترتيب أعمدة الحملات من صفحة المشاريع، الإدارة من admin.html)
         board.appendChild(sec);
-
-        // زر إنشاء تاسك سريع داخل عمود
         sec.querySelector('.col-actions').addEventListener('click',(e)=>{
           const act=e.target.dataset.act;
           if(act==='newtask') { fillGroupSelect(CAMPAIGN_COLUMNS); tGroup.value=col; openCreate(CAMPAIGN_COLUMNS); }
         });
       });
 
-      // سحب الكروت
       board.querySelectorAll('.dropzone').forEach(zone=>{
         zone.addEventListener('dragover', e=>{
           if (e.dataTransfer.types.includes(MIME_TASK)){
@@ -818,8 +968,10 @@
         list.forEach(t=>{
           const card=document.createElement('article'); card.className='card'; card.dataset.id=t.id;
           const ass=t.assignee;
+          const carLine = t.car ? [t.car.brand, t.car.model, t.car.trim, t.car.engine].filter(Boolean).join(' ') : '';
           card.innerHTML = `
             <h4>${t.name||'-'}</h4>
+            ${carLine ? `<div class="small" style="margin-top:4px">🚗 ${carLine}</div>` : ''}
             <div class="row" style="margin-top:6px">
               ${ass?`<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>`:''}
               ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
@@ -884,7 +1036,6 @@
 
     document.getElementById('btnMarkReviewed').addEventListener('click', async ()=>{
       if(!OPEN_TASK) return;
-      // هذه العملية خاصة بسبايس؛ في الحملات لا نغيّر تلقائيًا اسم عمود
       try{ await updateDoc(doc(db,'tasks', OPEN_TASK.id), { status: "تحت المراجعة" }); document.getElementById('detailModal').classList.remove('show'); }
       catch(e){ alert('⚠️ تعذر تحديث الحالة: '+e.message); }
     });
@@ -918,36 +1069,6 @@
         });
         document.getElementById('dLinkTitle').value=''; document.getElementById('dLinkUrl').value='';
       }catch(e){ alert('⚠️ تعذر حفظ الرابط: '+e.message); }
-    });
-
-    document.getElementById('dLinks').addEventListener('click', async (e)=>{
-      if(!OPEN_TASK) return;
-      if(!(e.target.matches('.link-edit') || e.target.matches('.link-del'))) return;
-      if(!canManageLinks(OPEN_TASK)) { alert('غير مسموح'); return; }
-      const idx = Number(e.target.dataset.idx||-1);
-      const snap = await getDoc(doc(db,'tasks', OPEN_TASK.id));
-      if(!snap.exists()) return;
-      const data = snap.data()||{};
-      const links = Array.isArray(data.links)? data.links.slice() : [];
-      if(idx<0 || idx>=links.length) return;
-
-      if(e.target.matches('.link-edit')){
-        const cur = links[idx];
-        const nTitle = prompt('عنوان الرابط:', cur.title||'') ?? null;
-        if(nTitle===null) return;
-        const nUrl   = prompt('رابط URL:', cur.url||'') ?? null;
-        if(nUrl===null || !/^https?:\/\//i.test(nUrl)) return alert('ضع رابط صالح يبدأ بـ http(s)://');
-        links[idx] = { ...cur, title:nTitle.trim()||'رابط', url:nUrl.trim(), editedAt: Timestamp.now(), editedBy: CURRENT_USER?.uid||null };
-      } else if(e.target.matches('.link-del')){
-        if(!confirm('حذف هذا الرابط؟')) return;
-        links.splice(idx,1);
-      }
-
-      try{
-        await updateDoc(doc(db,'tasks', OPEN_TASK.id), { links });
-      }catch(err){
-        alert('⚠️ تعذر تحديث الروابط: '+err.message);
-      }
     });
 
     /* Boot spaces default */

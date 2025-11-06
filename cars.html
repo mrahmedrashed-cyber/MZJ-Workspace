@@ -10,7 +10,7 @@
   :root{
     --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --danger:#ef4444; --shadow:0 6px 20px rgba(0,0,0,.06);
     /* قيَم التضييق */
-    --w-brand:90px; --w-model:120px; --w-trim:100px; --w-actions:108px;
+    --w-brand:90px; --w-model:120px; --w-trim:100px; --w-engine:110px; --w-actions:108px;
     --tbl-font:11px; --tbl-pad:6px; --inp-h:30px; --btn-pad:4px 8px;
     --link-max:120px;
   }
@@ -46,7 +46,7 @@
 
   /* ===== جداول مضغوطة ===== */
   .table-soft{overflow:auto;border-radius:16px;border:1px solid #f0e6df}
-  table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed;min-width:1000px}
+  table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed;min-width:1100px}
   thead th{position:sticky;top:0;background:#fbf6f1;color:var(--brown);padding:var(--tbl-pad);border-bottom:1px solid #f0e6df;font-size:var(--tbl-font);z-index:3;text-align:right;white-space:nowrap}
   tbody td{padding:var(--tbl-pad);border-bottom:1px solid #f7eee7;font-size:var(--tbl-font);vertical-align:middle;background:#fff}
   tbody tr:nth-child(even) td{background:#fffdfa}
@@ -95,9 +95,11 @@
 
   /* ===== Toasts + فلاش الصف ===== */
   .toasts{position:fixed; inset-inline-end:16px; inset-block-end:16px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none;}
-  .toast{pointer-events:auto;background:#fff; border:1px solid #eee; box-shadow:var(--shadow); border-radius:12px; padding:12px 14px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:10px; min-width:260px; animation:slideIn .24s ease-out;}
-  .toast.success{border-color:#bbf7d0}.toast.warn{border-color:#fde68a}.toast.error{border-color:#fecaca}
-  .toast button{margin-inline-start:auto}
+  .toast{pointer-events:auto;background:#fff; border:1px solid #eee; box-shadow:var(--shadow); border-radius:12px; padding:12px 14px; font-weight:700; color:#fff; display:flex; align-items:center; gap:10px; min-width:260px; animation:slideIn .24s ease-out;}
+  .toast.success{border-color:#bbf7d0; background:#16a34a}
+  .toast.warn{border-color:#fde68a; background:#d97706}
+  .toast.error{border-color:#fecaca; background:#dc2626}
+  .toast button{margin-inline-start:auto; background:#ffffff22; color:#fff}
   @keyframes slideIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)}}
   .row-flash{animation: flashRow 1.6s ease-out 1;}
   @keyframes flashRow{0%{ background:#fffde7 }30%{ background:#fff2b3 }60%{ background:#fffde7 }100%{ background:#fff }}
@@ -148,15 +150,19 @@
         <div><label>الموديل</label><select id="iModel" disabled></select></div>
         <div><label>السنة</label><input id="iYear" type="number" min="2015" max="2035" value="2026"></div>
         <div><label>الفئة</label><input id="iTrimText" placeholder="اكتب الفئة يدويًا (مثال: سمارت بلس)"></div>
+        <!-- الجديد: سعة المحرك -->
+        <div><label>سعة المحرك</label><input id="iEngine" placeholder="مثال: 2000 سي سي / 2.0L"></div>
         <div><label>اللون الخارجي</label><input id="iColor" placeholder="مثال: أبيض لؤلؤي"></div>
-        <div><label>اللون الداخلي</label><input id="iIntColor" placeholder="مثال: جلد بيج"></div>
       </div>
       <div class="row" style="margin-top:10px">
+        <div><label>اللون الداخلي</label><input id="iIntColor" placeholder="مثال: جلد بيج"></div>
         <div><label>Status – تصوير</label><select id="iShoot"></select></div>
         <div><label>Status – مونتاج</label><select id="iEdit"></select></div>
         <div><label>نوع المحتوى</label><select id="iType"></select></div>
         <div><label>تاريخ التصوير</label><input id="iShootDate" type="date"></div>
         <div><label>داخل الأجندة؟</label><select id="iInAgenda"></select></div>
+      </div>
+      <div class="row" style="margin-top:10px">
         <div id="agendaFields" class="hidden">
           <label>تاريخ الأجندة</label>
           <div style="display:flex;gap:8px">
@@ -164,8 +170,6 @@
             <input id="iAgendaYear" type="number" min="2020" max="2035" value="">
           </div>
         </div>
-      </div>
-      <div class="row" style="margin-top:10px">
         <div><label>مرفوع على الموقع؟</label><select id="iOnSite"></select></div>
         <div id="siteLinkField" class="hidden" style="grid-column: span 2">
           <label>رابط صفحة السيارة (اختياري)</label>
@@ -181,15 +185,17 @@
       <h2 style="margin:0 0 10px 0;color:var(--brown);font-size:18px">الفلاتر</h2>
       <div class="row">
         <div><label>العلامة</label><select id="dBrand"><option value="">الكل</option></select></div>
+        <!-- الجديد: فلتر الموديل -->
+        <div><label>الموديل</label><select id="dModel"><option value="">الكل</option></select></div>
         <div><label>الفئة</label><select id="dTrim"><option value="">الكل</option></select></div>
         <div><label>تصوير</label><select id="dShoot"><option value="">الكل</option></select></div>
         <div><label>مونتاج</label><select id="dEdit"><option value="">الكل</option></select></div>
         <div><label>اللون الخارجي</label><input id="dColor" placeholder="مثال: أبيض"></div>
-        <div><label>اللون الداخلي</label><input id="dIntColor" placeholder="مثال: بيج"></div>
       </div>
       <div class="row" style="margin-top:10px">
+        <div><label>اللون الداخلي</label><input id="dIntColor" placeholder="مثال: بيج"></div>
         <div><label>داخل الأجندة؟</label><select id="dAgenda"><option value="">الكل</option></select></div>
-        <div style="grid-column: span 5"><label>بحث نصّي</label><input id="dSearch" placeholder="ابحث في الموديل/الملاحظات/الألوان"></div>
+        <div style="grid-column: span 4"><label>بحث نصّي</label><input id="dSearch" placeholder="ابحث في الموديل/الملاحظات/الألوان/المحرك"></div>
       </div>
     </div>
 
@@ -198,9 +204,10 @@
       <table id="filteredTable">
         <colgroup>
           <col style="width:var(--w-brand)"><col style="width:var(--w-model)"><col class="narrow-90">
-          <col style="width:var(--w-trim)"><col class="narrow-110"><col class="narrow-110">
+          <col style="width:var(--w-trim)"><col style="width:var(--w-engine)">
+          <col class="narrow-110"><col class="narrow-110">
           <col class="narrow-90"><col class="narrow-90"><col class="narrow-100"><col class="narrow-110">
-          <col class="narrow-90"><col class="narrow-110"><col class="narrow-90"><col class="narrow-120"><col class="narrow-120">
+          <col class="narrow-90"><col class="narrow-120"><col class="narrow-120">
         </colgroup>
         <thead>
           <tr>
@@ -208,10 +215,11 @@
             <th class="sticky-model">الموديل</th>
             <th>السنة</th>
             <th class="sticky-trim">الفئة</th>
+            <th>سعة المحرك</th>
             <th>اللون الخارجي</th><th>اللون الداخلي</th>
             <th>تصوير</th><th>مونتاج</th><th>نوع المحتوى</th>
-            <th>تاريخ التصوير</th><th>داخل الأجندة؟</th><th>تاريخ الأجندة</th>
-            <th>مرفوع على الموقع؟</th><th>رابط الصفحة</th><th>ملاحظات</th>
+            <th>تاريخ التصوير</th><th>داخل الأجندة؟</th><th>مرفوع؟</th>
+            <th>رابط الصفحة</th><th>ملاحظات</th>
           </tr>
         </thead>
         <tbody id="filteredTBody"></tbody>
@@ -224,9 +232,10 @@
       <table id="carsTable">
         <colgroup>
           <col style="width:var(--w-brand)"><col style="width:var(--w-model)"><col class="narrow-90">
-          <col style="width:var(--w-trim)"><col class="narrow-110"><col class="narrow-110">
+          <col style="width:var(--w-trim)"><col style="width:var(--w-engine)">
+          <col class="narrow-110"><col class="narrow-110">
           <col class="narrow-90"><col class="narrow-90"><col class="narrow-100"><col class="narrow-110">
-          <col class="narrow-90"><col class="narrow-110"><col class="narrow-90"><col class="narrow-120"><col class="narrow-120">
+          <col class="narrow-90"><col class="narrow-120"><col class="narrow-120">
           <col style="width:var(--w-actions)">
         </colgroup>
         <thead>
@@ -235,9 +244,10 @@
             <th class="sticky-model">الموديل</th>
             <th>السنة</th>
             <th class="sticky-trim">الفئة</th>
+            <th>سعة المحرك</th>
             <th>اللون الخارجي</th><th>اللون الداخلي</th>
             <th>تصوير</th><th>مونتاج</th><th>نوع المحتوى</th>
-            <th>تاريخ التصوير</th><th>داخل الأجندة؟</th><th>تاريخ الأجندة</th>
+            <th>تاريخ التصوير</th><th>داخل الأجندة؟</th>
             <th>مرفوع على الموقع؟</th><th>رابط الصفحة</th><th>ملاحظات</th>
             <th class="sticky-actions">إجراءات</th>
           </tr>
@@ -256,7 +266,7 @@ import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, orderBy, serverTimestamp, limit
+  onSnapshot, query, orderBy, serverTimestamp, limit, where
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 /* ==== Firebase ==== */
@@ -305,7 +315,7 @@ function markActive(){
 /* ====== Constants ====== */
 const CARS_COL = "cars_production";
 
-/* >>> أضفت تويوتا + (يارس/هايس) هنا */
+/* العلامات + الموديلات (مع تويوتا) */
 const BRANDS = ["هيونداي","شانجان","شيري","فورد","ام جي","نيسان","تويوتا"];
 const MODELS_BY_BRAND = {
   "هيونداي": ["سوناتا","النترا","اكسنت","جراند i10","كريتا","جراند كريتا","ستار جيزر","فينيو","ازيرا","سنتافي","توسان","كونا","ستاريا","بالسييد"],
@@ -314,7 +324,7 @@ const MODELS_BY_BRAND = {
   "فورد": ["رينجر","اكسبلور","تيريتوري","تورس"],
   "ام جي": ["جي تي","ام جي 3","ام جي 7","ام جي 5","اتش أس","ار اكس 5","ون","زد أس","تي 60","ار أكس 9","وال","ار أكس 8"],
   "نيسان": ["اكس تريل","ماجنايت","كيكس","صني","اكس تيرا","التيما"],
-  "تويوتا": ["يارس","هايس"]   /* <<< الجديد */
+  "تويوتا": ["يارس","هايس"]
 };
 const TRIMS  = ["ستاندر","سمارت","سمارت بلس","كومفورت","فل كامل","ترند","امبيانتي","رويـال"];
 const SHOOT_STATUS = ["لم يُصوّر","تم التصوير","بانتظار مراجعة"];
@@ -325,7 +335,7 @@ const MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","
 
 /* ====== State ====== */
 let ROWS = [];
-let FILTERS = {brand:"", trim:"", shoot:"", edit:"", color:"", intColor:"", agenda:"", q:""};
+let FILTERS = {brand:"", model:"", trim:"", shoot:"", edit:"", color:"", intColor:"", agenda:"", q:""};
 let LAST_CHANGED_ID = null;
 
 /* ===== Helpers ===== */
@@ -419,6 +429,7 @@ function renderEditor(){
       <td class="sticky-model">${modelCell("model", r.model||"", r.brand||"", idx)}</td>
       <td class="narrow-90">${numberCell("year", r.year||2026, idx)}</td>
       <td class="sticky-trim">${textCell("trim", r.trim??"", idx)}</td>
+      <td class="narrow-110">${textCell("engine", r.engine??"", idx)}</td>
       <td class="narrow-110">${textCell("color", r.color??"", idx)}</td>
       <td class="narrow-110">${textCell("intColor", r.intColor??"", idx)}</td>
       <td class="narrow-90">${selectCell("shoot", SHOOT_STATUS, r.shoot||SHOOT_STATUS[0], idx)}</td>
@@ -426,7 +437,6 @@ function renderEditor(){
       <td class="narrow-100">${selectCell("ctype", CONTENT_TYPES, r.ctype||CONTENT_TYPES[0], idx)}</td>
       <td class="narrow-110">${dateCell("shootDate", r.shootDate||"", idx)}</td>
       <td class="narrow-90">${selectCell("inAgenda", YESNO, r.inAgenda||"لا", idx)}</td>
-      <td class="narrow-110">${textCell("agendaDate", r.agendaDate??"", idx)}</td>
       <td class="narrow-90">${selectCell("onSite", YESNO, r.onSite||"لا", idx)}</td>
       <td class="narrow-120">${linkCell("siteLink", r.siteLink||"", idx, "Page")}</td>
       <td class="narrow-120">${textCell("notes", r.notes??"", idx)}</td>
@@ -451,6 +461,7 @@ function renderEditor(){
 function currentListReadonly(){
   return ROWS.filter(r=>{
     if(FILTERS.brand && r.brand!==FILTERS.brand) return false;
+    if(FILTERS.model && r.model!==FILTERS.model) return false;
     if(FILTERS.trim && (r.trim||"")!==FILTERS.trim) return false;
     if(FILTERS.shoot && r.shoot!==FILTERS.shoot) return false;
     if(FILTERS.edit && r.edit!==FILTERS.edit) return false;
@@ -459,7 +470,7 @@ function currentListReadonly(){
     if(FILTERS.agenda && r.inAgenda!==FILTERS.agenda) return false;
     if(FILTERS.q){
       const q = FILTERS.q.trim().toLowerCase();
-      const hay = `${r.brand} ${r.model} ${r.trim||""} ${r.color||""} ${r.intColor||""} ${r.notes||""}`.toLowerCase();
+      const hay = `${r.brand} ${r.model} ${r.trim||""} ${r.engine||""} ${r.color||""} ${r.intColor||""} ${r.notes||""}`.toLowerCase();
       if(!hay.includes(q)) return false;
     }
     return true;
@@ -484,6 +495,7 @@ function renderFilteredTable(){
         <td class="sticky-model">${escapeHTML(r.model||"—")}</td>
         <td class="narrow-90">${escapeHTML(r.year||"—")}</td>
         <td class="sticky-trim">${escapeHTML(r.trim||"—")}</td>
+        <td class="narrow-110">${escapeHTML(r.engine||"—")}</td>
         <td class="narrow-110">${escapeHTML(r.color||"—")}</td>
         <td class="narrow-110">${escapeHTML(r.intColor||"—")}</td>
         <td class="narrow-90">${shootP}</td>
@@ -491,7 +503,6 @@ function renderFilteredTable(){
         <td class="narrow-100">${escapeHTML(r.ctype||"—")}</td>
         <td class="narrow-110">${escapeHTML(r.shootDate||"—")}</td>
         <td class="narrow-90">${escapeHTML(r.inAgenda||"—")}</td>
-        <td class="narrow-110">${escapeHTML(r.agendaDate||"—")}</td>
         <td class="narrow-90">${escapeHTML(r.onSite||"—")}</td>
         <td class="narrow-120">${link}</td>
         <td class="narrow-120">${escapeHTML(r.notes||"—")}</td>
@@ -532,6 +543,7 @@ async function addCarFS(){
     model: document.getElementById("iModel").value || "",
     year:  +(document.getElementById("iYear").value || 2026),
     trim:  (document.getElementById("iTrimText").value||"").trim(),
+    engine:(document.getElementById("iEngine").value||"").trim(),          // الجديد
     color: (document.getElementById("iColor").value || "").trim(),
     intColor: (document.getElementById("iIntColor").value || "").trim(),
     shoot: document.getElementById("iShoot").value || SHOOT_STATUS[0],
@@ -550,7 +562,7 @@ async function addCarFS(){
   try{
     const ref = await addDoc(collection(db, CARS_COL), payload);
     LAST_CHANGED_ID = ref.id;
-    ["iModel","iColor","iIntColor","iNotes","iShootDate","iSiteLink","iTrimText"].forEach(id=>document.getElementById(id).value="");
+    ["iModel","iColor","iIntColor","iNotes","iShootDate","iSiteLink","iTrimText","iEngine"].forEach(id=>document.getElementById(id).value="");
     document.getElementById("iInAgenda").value = "لا"; document.getElementById("agendaFields").classList.add("hidden");
     document.getElementById("iOnSite").value = "لا"; document.getElementById("siteLinkField").classList.add("hidden");
     showToast("✅ تم إضافة السيارة إلى Firestore","success");
@@ -604,7 +616,7 @@ async function duplicateRowFS(idx){
 }
 
 /* XLSX */
-function xHeaders(){ return ["brand","model","year","trim","color","intColor","shoot","edit","ctype","shootDate","inAgenda","agendaDate","onSite","siteLink","notes"]; }
+function xHeaders(){ return ["brand","model","year","trim","engine","color","intColor","shoot","edit","ctype","shootDate","inAgenda","agendaDate","onSite","siteLink","notes"]; }
 function exportXLSX(){
   const headers = xHeaders();
   const data = ROWS.map(r=>{ const o={}; headers.forEach(h=>o[h]=r[h]??"" ); return o; });
@@ -616,7 +628,7 @@ function exportXLSX(){
 function downloadTemplate(){
   const headers = xHeaders();
   const sample = [{
-    brand:"هيونداي", model:"سوناتا", year:2026, trim:"سمارت",
+    brand:"هيونداي", model:"سوناتا", year:2026, trim:"سمارت", engine:"2000 سي سي",
     color:"أبيض لؤلؤي", intColor:"أسود", shoot:"تم التصوير", edit:"جاري",
     ctype:"ريل", shootDate:"2025-10-12", inAgenda:"نعم", agendaDate:"أكتوبر 2025",
     onSite:"لا", siteLink:"", notes:"مثال: ينتظر فويس"
@@ -663,11 +675,28 @@ function initFilters(){
   $fill($("#dShoot"), SHOOT_STATUS, true, "الكل");
   $fill($("#dEdit"), EDIT_STATUS, true, "الكل");
   $fill($("#dAgenda"), YESNO, true, "الكل");
+  fillModelFilter(); // تعبئة الموديل مبدئيًا
 }
+function fillModelFilter(){
+  const brand = document.getElementById("dBrand").value;
+  const models = brand ? (MODELS_BY_BRAND[brand]||[]) : Array.from(new Set(ROWS.map(r=>r.model).filter(Boolean)));
+  const sel = document.getElementById("dModel");
+  sel.innerHTML = `<option value="">الكل</option>`;
+  (models||[]).forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; sel.appendChild(o); });
+}
+
 document.addEventListener("change", async (e)=>{
   const t = e.target;
-  if(t.matches("#dBrand,#dTrim,#dShoot,#dEdit,#dAgenda")){
+  if(t.matches("#dBrand")){
     FILTERS.brand = document.getElementById("dBrand").value;
+    // إعادة تعبئة الموديلات بحسب العلامة المختارة
+    fillModelFilter();
+    FILTERS.model = ""; // تصفير قيمة الموديل بعد تبديل العلامة
+    document.getElementById("dModel").value="";
+    renderFilteredTable(); return;
+  }
+  if(t.matches("#dModel,#dTrim,#dShoot,#dEdit,#dAgenda")){
+    FILTERS.model = document.getElementById("dModel").value;
     FILTERS.trim  = document.getElementById("dTrim").value;
     FILTERS.shoot = document.getElementById("dShoot").value;
     FILTERS.edit  = document.getElementById("dEdit").value;

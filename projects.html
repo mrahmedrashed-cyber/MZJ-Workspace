@@ -63,6 +63,20 @@
     .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
     .small{font-size:12px;color:var(--muted)}
 
+    .btn-done-task{
+      border:1px solid #bbf7d0;
+      background:#ecfdf3;
+      color:#166534;
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:11px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+    }
+    .btn-done-task:hover{background:#dcfce7}
+
     /* Daily Task Section */
     .daily-panel{margin-bottom:18px;border-radius:16px;border:1px solid #f1e4db;background:#fff8ef;padding:10px 10px 14px}
     .daily-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
@@ -416,6 +430,9 @@
     const MIME_COLUMN= "application/x-mzj-column";
     const MIME_DAILY = "application/x-mzj-daily";
 
+    const REVIEW_COLUMN = "تحت المراجعة";
+    const DONE_COLUMN   = "تم التنفيذ";
+
     let USERS=[];
     async function loadUsers(){
       const snap = await getDocs(collection(db,'users'));
@@ -676,7 +693,6 @@
 
     /* ===== Spaces logic ===== */
     const DEFAULT_COLUMNS = ["ريل مواصفات","ريل قصير","تصميم صور","يوتيوب"];
-    const REVIEW_COLUMN   = "تحت المراجعة";
 
     const spaceSelect     = document.getElementById('spaceSelect');
     const newGroupNameEl  = document.getElementById('newGroupName');
@@ -689,10 +705,14 @@
     let TASKS_SPACES=[]; let unsubTasksSpaces=null; let OPEN_TASK=null;
     let SPACES_CACHE = new Map(); // id -> name
 
-    async function ensureReviewColumn(){
+    async function ensureCoreColumns(){
       if (!CURRENT_SPACE) return;
-      if (SPACE_COLUMNS.includes(REVIEW_COLUMN)) return;
-      const cols = SPACE_COLUMNS.concat([REVIEW_COLUMN]);
+      let changed = false;
+      let cols = Array.isArray(SPACE_COLUMNS) ? SPACE_COLUMNS.slice() : [];
+      if(!cols.length) cols = DEFAULT_COLUMNS.slice();
+      if(!cols.includes(REVIEW_COLUMN)){ cols.push(REVIEW_COLUMN); changed = true; }
+      if(!cols.includes(DONE_COLUMN)){ cols.push(DONE_COLUMN); changed = true; }
+      if(!changed) return;
       try{
         await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: cols });
         SPACE_COLUMNS = cols;
@@ -705,7 +725,7 @@
       const snap = await getDocs(qy);
       if (snap.empty){
         const label = new Date().toLocaleDateString('ar-SA',{ year:'numeric', month:'long' });
-        const ref = await addDoc(collection(db,'spaces'), { name:label, columns:DEFAULT_COLUMNS, createdAt:serverTimestamp(), active:true });
+        const ref = await addDoc(collection(db,'spaces'), { name:label, columns:[...DEFAULT_COLUMNS, REVIEW_COLUMN, DONE_COLUMN], createdAt:serverTimestamp(), active:true });
         SPACES_CACHE.set(ref.id, label);
         return ref.id;
       } else {
@@ -741,21 +761,21 @@
       if(!CURRENT_SPACE && onlySpaces.length){
         CURRENT_SPACE = onlySpaces[0].id;
         SPACE_COLUMNS = onlySpaces[0].columns?.length? onlySpaces[0].columns : DEFAULT_COLUMNS;
-        renderBoardSkeletonSpaces(); listenTasksSpaces(); fillGroupSelect(); ensureReviewColumn();
+        renderBoardSkeletonSpaces(); listenTasksSpaces(); fillGroupSelect(); ensureCoreColumns();
       }else if(CURRENT_SPACE && !onlySpaces.find(x=>x.id===CURRENT_SPACE) && onlySpaces.length){
         CURRENT_SPACE = onlySpaces[0].id;
         SPACE_COLUMNS = onlySpaces[0].columns?.length? onlySpaces[0].columns : DEFAULT_COLUMNS;
-        renderBoardSkeletonSpaces(); listenTasksSpaces(true); fillGroupSelect(); ensureReviewColumn();
+        renderBoardSkeletonSpaces(); listenTasksSpaces(true); fillGroupSelect(); ensureCoreColumns();
       }
     });
 
     document.getElementById('btnNewSpace')?.addEventListener('click', async ()=>{
       if(!IS_ADMIN) return;
       const name = prompt('اسم الـSpace (مثال: نوفمبر 2025):'); if(!name) return;
-      const ref = await addDoc(collection(db,'spaces'), { name, columns:DEFAULT_COLUMNS, createdAt:serverTimestamp(), active:true });
+      const ref = await addDoc(collection(db,'spaces'), { name, columns:[...DEFAULT_COLUMNS, REVIEW_COLUMN, DONE_COLUMN], createdAt:serverTimestamp(), active:true });
       SPACES_CACHE.set(ref.id, name);
-      CURRENT_SPACE = ref.id; SPACE_COLUMNS = DEFAULT_COLUMNS.slice();
-      renderBoardSkeletonSpaces(); listenTasksSpaces(true); fillGroupSelect(); ensureReviewColumn();
+      CURRENT_SPACE = ref.id; SPACE_COLUMNS = [...DEFAULT_COLUMNS, REVIEW_COLUMN, DONE_COLUMN];
+      renderBoardSkeletonSpaces(); listenTasksSpaces(true); fillGroupSelect();
     });
 
     btnSpaceManage?.addEventListener('click', async ()=>{
@@ -777,7 +797,7 @@
       const d = await getDoc(doc(db,'spaces', CURRENT_SPACE));
       SPACES_CACHE.set(CURRENT_SPACE, d.data()?.name||CURRENT_SPACE);
       SPACE_COLUMNS = d.exists()? (d.data().columns?.length? d.data().columns : DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
-      renderBoardSkeletonSpaces(); listenTasksSpaces(true); fillGroupSelect(); ensureReviewColumn();
+      renderBoardSkeletonSpaces(); listenTasksSpaces(true); fillGroupSelect(); ensureCoreColumns();
     });
 
     btnAddGroup?.addEventListener('click', async ()=>{
@@ -1014,7 +1034,9 @@
           car,
           assignee: assigneeUid ? { uid:assigneeUid, name:assigneeName, color } : null,
           links: [],
-          createdBy: CURRENT_USER?.uid || null, createdAt: serverTimestamp(), active:true
+          createdBy: CURRENT_USER?.uid || null,
+          createdAt: serverTimestamp(),
+          active:true
         };
         await addDoc(collection(db,'tasks'), payload);
         alert('✅ تم حفظ التاسك');
@@ -1118,6 +1140,26 @@
       });
     }
 
+    function attachDoneButtons(container){
+      const buttons = container.querySelectorAll('.btn-done-task');
+      buttons.forEach(btn=>{
+        btn.addEventListener('click', async (e)=>{
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          if(!id) return;
+          try{
+            await updateDoc(doc(db,'tasks', id), {
+              status: DONE_COLUMN,
+              doneAt: serverTimestamp(),
+              doneBy: CURRENT_USER?.uid || null
+            });
+          }catch(err){
+            alert('⚠️ تعذر تحديد المهمة كمكتملة: '+(err?.message||err));
+          }
+        });
+      });
+    }
+
     function renderTasksSpaces(){
       const board=boardSpaces;
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
@@ -1133,13 +1175,19 @@
           const card=document.createElement('article'); card.className='card'; card.dataset.id=t.id;
           const ass=t.assignee;
           const carLine = t.car ? [t.car.brand, t.car.model, t.car.trim, t.car.engine].filter(Boolean).join(' ') : '';
+          const isDone = t.status === DONE_COLUMN;
           card.innerHTML = `
             <h4>${t.name||'-'}</h4>
             ${carLine ? `<div class="small" style="margin-top:4px">🚗 ${carLine}</div>` : ''}
             <div class="row" style="margin-top:6px">
               ${ass?`<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>`:''}
               ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
-            </div>`;
+            </div>
+            ${!isDone ? `
+            <div class="row" style="margin-top:6px;justify-content:flex-end">
+              <button class="btn-done-task" data-id="${t.id}">✅ تم</button>
+            </div>` : ''}
+          `;
           card.setAttribute('draggable','true');
           card.addEventListener('dragstart', e=>{
             e.dataTransfer.effectAllowed='move';
@@ -1150,6 +1198,8 @@
           zone?.appendChild(card);
         });
       });
+
+      attachDoneButtons(board);
     }
 
     function listenTasksSpaces(){
@@ -1170,7 +1220,7 @@
     const CAMPAIGN_DEFAULT_COLS = [
       "ريلز - كاش","موشن - كاش","جرافيك - كاش",
       "ريلز اقساط","AI Generate - اقساط","جرافيك اقساط",
-      "اقساط شركات - سوشيال ميديا","شركات - لينكد ان"
+      "اقساط شركات - سوشيال ميديا","شركات - لينكد ان","تم التنفيذ"
     ];
     const CAMPAIGN_NAME_MAP = new Map([
       ["ريل مواصفات","ريلز - كاش"],
@@ -1215,6 +1265,7 @@
       let changed=false;
       cols = cols.map(c=>{ const m=CAMPAIGN_NAME_MAP.get(c)||c; if(m!==c) changed=true; return m; });
       CAMPAIGN_DEFAULT_COLS.forEach(def=>{ if(!cols.includes(def)){ cols.push(def); changed=true; } });
+      if(!cols.includes(DONE_COLUMN)){ cols.push(DONE_COLUMN); changed=true; }
       if(changed) await updateDoc(doc(db,'spaces', id), { columns: cols });
 
       CAMPAIGN_COLUMNS = cols;
@@ -1283,13 +1334,19 @@
           const card=document.createElement('article'); card.className='card'; card.dataset.id=t.id;
           const ass=t.assignee;
           const carLine = t.car ? [t.car.brand, t.car.model, t.car.trim, t.car.engine].filter(Boolean).join(' ') : '';
+          const isDone = t.status === DONE_COLUMN;
           card.innerHTML = `
             <h4>${t.name||'-'}</h4>
             ${carLine ? `<div class="small" style="margin-top:4px">🚗 ${carLine}</div>` : ''}
             <div class="row" style="margin-top:6px">
               ${ass?`<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>`:''}
               ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
-            </div>`;
+            </div>
+            ${!isDone ? `
+            <div class="row" style="margin-top:6px;justify-content:flex-end">
+              <button class="btn-done-task" data-id="${t.id}">✅ تم</button>
+            </div>` : ''}
+          `;
           card.setAttribute('draggable','true');
           card.addEventListener('dragstart', e=>{
             e.dataTransfer.effectAllowed='move';
@@ -1300,6 +1357,8 @@
           zone?.appendChild(card);
         });
       });
+
+      attachDoneButtons(board);
     }
 
     function listenTasksCampaigns(){
@@ -1350,7 +1409,7 @@
 
     document.getElementById('btnMarkReviewed').addEventListener('click', async ()=>{
       if(!OPEN_TASK) return;
-      try{ await updateDoc(doc(db,'tasks', OPEN_TASK.id), { status: "تحت المراجعة" }); document.getElementById('detailModal').classList.remove('show'); }
+      try{ await updateDoc(doc(db,'tasks', OPEN_TASK.id), { status: REVIEW_COLUMN }); document.getElementById('detailModal').classList.remove('show'); }
       catch(e){ alert('⚠️ تعذر تحديث الحالة: '+e.message); }
     });
 
@@ -1390,7 +1449,7 @@
       if(!CURRENT_SPACE){
         CURRENT_SPACE = await ensureDefaultSpace();
         const d = await getDoc(doc(db,'spaces', CURRENT_SPACE));
-        SPACE_COLUMNS = d.exists()? (d.data().columns?.length? d.data().columns : DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
+        SPACE_COLUMNS = d.exists()? (d.data().columns?.length? d.data().columns : [...DEFAULT_COLUMNS, REVIEW_COLUMN, DONE_COLUMN]) : [...DEFAULT_COLUMNS, REVIEW_COLUMN, DONE_COLUMN];
         renderBoardSkeletonSpaces(); listenTasksSpaces(); fillGroupSelect();
       }
     }

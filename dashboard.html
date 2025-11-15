@@ -84,7 +84,7 @@
     th{color:var(--brown);font-weight:800;background:#fffaf5}
     tr:hover td{background:#fffdf9}
     .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);display:inline-flex;align-items:center;gap:6px}
-    .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:var(--beige)}
+    .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
     .empty{padding:14px;border:1px dashed #ead8cb;border-radius:12px;color:#8f7f76;background:#fffbf6}
 
     /* Charts layout */
@@ -102,7 +102,6 @@
 
     footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);margin-top:8px}
 
-    /* Optional print tuning */
     @media print {
       html, body { background: #fff8ef; }
       #reportRoot { width: 100%; }
@@ -179,11 +178,11 @@
       </div>
     </section>
 
-    <!-- Daily Task Monthly Summary -->
+    <!-- Daily Task Monthly + Weekly Summary -->
     <section class="panel">
       <div class="head">
-        <strong>Daily Task — ملخص شهري</strong>
-        <span class="muted">يعتمد على Space: "Daily Task - المهام اليومية"</span>
+        <strong>Daily Task — ملخص شهري / أسبوعي</strong>
+        <span class="muted">Space: "Daily Task - المهام اليومية"</span>
       </div>
       <div class="body" id="dailyMonthlyWrap">
         <div class="empty">جارِ تحميل بيانات Daily Task ...</div>
@@ -356,7 +355,7 @@
     const todayYMD = ()=>{
       const d=new Date();
       const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0');
-      return ${y}-${m}-${da};
+      return `${y}-${m}-${da}`;
     };
     const toMillis = (v)=>{
       if(!v) return null;
@@ -366,14 +365,12 @@
       if(v instanceof Date) return v.getTime();
       return null;
     };
-    // "تم الانتهاء" فقط (مع دعم done/completed)
     const isDone = (t)=>{
       const s=(t.status||'').trim().toLowerCase();
       return s==="تم الانتهاء" || s==="done" || s==="completed";
     };
     const isReview = (t)=> (t.status==="تحت المراجعة");
 
-    // Count-up animation
     function countUp(el, to){
       const target = Number(to)||0;
       const dur = 600; const start=performance.now();
@@ -386,26 +383,26 @@
       requestAnimationFrame(step);
     }
 
-    // ====== Export PDF (LANDSCAPE) ======
+    // Export PDF
     btnLogout.onclick = async()=>{ await signOut(auth); location.href="login.html"; };
     btnExport.onclick = ()=> {
       const node = document.getElementById('reportRoot');
       const opt = {
         margin: [6,6,6,6],
-        filename: dashboard_${new Date().toISOString().slice(0,10)}.pdf,
+        filename: `dashboard_${new Date().toISOString().slice(0,10)}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
           backgroundColor: '#fff8ef',
-          windowWidth: document.body.scrollWidth   // يضمن عرض الصفحة كله
+          windowWidth: document.body.scrollWidth
         },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } // ← بالعرض
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
       };
       // @ts-ignore
       html2pdf().from(node).set(opt).save();
     };
 
-    // Auth gate
+    // Auth
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.href="login.html"; return; }
       CURRENT_USER=user;
@@ -413,7 +410,7 @@
       const name = u.exists()? (u.data().name||user.email) : (user.email||'User');
       const role = u.exists()? (u.data().role||'member') : 'member';
       IS_ADMIN = role === 'admin';
-      whoEl.textContent = ${name} — ${IS_ADMIN?'مدير':'عضو'};
+      whoEl.textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
 
       todayChip.innerHTML = `<span class="chip">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="#1e90ff" stroke-width="1.5"/><path d="M3 10h18" stroke="#1e90ff" stroke-width="1.5"/><path d="M8 3v4M16 3v4" stroke="#1e90ff" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -430,7 +427,7 @@
       bootDailyTasksWatcher();
     });
 
-    // Spaces list (main dashboard space selector)
+    // Spaces dropdown
     async function bootSpaces(){
       onSnapshot(collection(db,'spaces'), (snap)=>{
         const items=[];
@@ -468,7 +465,7 @@
       });
     }
 
-    // Watch tasks for CURRENT_SPACE (لوحة التحكم الرئيسية)
+    // Main space tasks
     function listenTasks(){
       if(unsubTasks){ unsubTasks(); unsubTasks=null; }
       if(!CURRENT_SPACE) return;
@@ -479,15 +476,13 @@
       }, (err)=>{ console.error(err); });
     }
 
-    // Watch Daily Task space and summarize per month
+    // Daily Task watcher
     async function bootDailyTasksWatcher(){
       try{
         const qSpaces = query(collection(db,'spaces'), where('name','==','Daily Task - المهام اليومية'));
         const snap = await getDocs(qSpaces);
         if(snap.empty){
-          if(dailyMonthlyWrap){
-            dailyMonthlyWrap.innerHTML = <div class="empty">لم يتم العثور على Space باسم "Daily Task - المهام اليومية".</div>;
-          }
+          dailyMonthlyWrap.innerHTML = `<div class="empty">لم يتم العثور على Space باسم "Daily Task - المهام اليومية".</div>`;
           return;
         }
         const sDoc = snap.docs[0];
@@ -501,63 +496,103 @@
           renderDailyMonthly(list);
         }, (err)=>{
           console.error(err);
-          if(dailyMonthlyWrap){
-            dailyMonthlyWrap.innerHTML = <div class="empty">حدث خطأ أثناء تحميل بيانات Daily Task.</div>;
-          }
+          dailyMonthlyWrap.innerHTML = `<div class="empty">حدث خطأ أثناء تحميل بيانات Daily Task.</div>`;
         });
       }catch(err){
         console.error(err);
-        if(dailyMonthlyWrap){
-          dailyMonthlyWrap.innerHTML = <div class="empty">حدث خطأ أثناء تحميل بيانات Daily Task.</div>;
-        }
+        dailyMonthlyWrap.innerHTML = `<div class="empty">حدث خطأ أثناء تحميل بيانات Daily Task.</div>`;
       }
     }
 
+    // Daily Task: group by month + week-of-month
     function renderDailyMonthly(tasks){
-      if(!dailyMonthlyWrap) return;
       if(!tasks || !tasks.length){
-        dailyMonthlyWrap.innerHTML = <div class="empty">لا توجد مهام في Daily Task حاليًا.</div>;
-        return;
-      }
-
-      const monthsMap = {};
-      tasks.forEach(t=>{
-        let dObj=null;
-
-        if(t.due && typeof t.due === 'string'){
-          const parts = t.due.split('-').map(Number);
-          if(parts.length>=2 && parts[0] && parts[1]){
-            const [y,m] = parts;
-            dObj = new Date(y, m-1, 1);
-          }
-        } else {
-          const ms = toMillis(t.createdAt);
-          if(ms){
-            const dt = new Date(ms);
-            dObj = new Date(dt.getFullYear(), dt.getMonth(), 1);
-          }
-        }
-
-        if(!dObj) return;
-        const key = ${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')};
-        if(!monthsMap[key]) monthsMap[key]={ total:0, done:0, remaining:0 };
-        monthsMap[key].total++;
-        if(isDone(t)) monthsMap[key].done++; else monthsMap[key].remaining++;
-      });
-
-      const keys = Object.keys(monthsMap).sort().reverse(); // الأحدث أولاً
-      if(!keys.length){
-        dailyMonthlyWrap.innerHTML = <div class="empty">لا توجد بيانات شهور لعرضها.</div>;
+        dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد مهام في Daily Task حاليًا.</div>`;
         return;
       }
 
       const monthsNames=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 
+      const monthsMap = {}; // key "YYYY-MM" -> { total, done, remaining, weeks: {1..5: {total,done,remaining}} }
+
+      tasks.forEach(t=>{
+        let d;
+        if(typeof t.due === 'string' && t.due){
+          const [y,m,day] = t.due.split('-').map(Number);
+          if(y && m && day){ d = new Date(y, m-1, day); }
+        }
+        if(!d){
+          const ms = toMillis(t.createdAt);
+          if(ms) d = new Date(ms);
+        }
+        if(!d) return;
+
+        const y = d.getFullYear();
+        const m = d.getMonth()+1;
+        const day = d.getDate();
+        const ymKey = `${y}-${String(m).padStart(2,'0')}`;
+        const weekIndex = Math.min(5, Math.floor((day-1)/7)+1); // 1–5
+
+        if(!monthsMap[ymKey]) monthsMap[ymKey] = {
+          year:y, month:m,
+          total:0, done:0, remaining:0,
+          weeks:{}
+        };
+        const bucket = monthsMap[ymKey];
+        bucket.total++;
+        if(isDone(t)) bucket.done++; else bucket.remaining++;
+
+        if(!bucket.weeks[weekIndex]) bucket.weeks[weekIndex]={ total:0, done:0, remaining:0 };
+        const wb = bucket.weeks[weekIndex];
+        wb.total++;
+        if(isDone(t)) wb.done++; else wb.remaining++;
+      });
+
+      const keys = Object.keys(monthsMap).sort().reverse();
+      if(!keys.length){
+        dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد بيانات شهور لعرضها.</div>`;
+        return;
+      }
+
+      let rows = '';
+      keys.forEach(key=>{
+        const mData = monthsMap[key];
+        const label = `${monthsNames[mData.month-1]} ${mData.year}`;
+        const monthPct = mData.total ? Math.round(mData.done/mData.total*100) : 0;
+
+        // سطر إجمالي الشهر
+        rows += `
+          <tr style="background:#fffaf5">
+            <td><strong>${label}</strong> (إجمالي الشهر)</td>
+            <td>${mData.total}</td>
+            <td style="color:var(--ok);font-weight:700">${mData.done}</td>
+            <td style="color:var(--danger);font-weight:700">${mData.remaining}</td>
+            <td>${monthPct}%</td>
+          </tr>
+        `;
+
+        // أسابيع الشهر
+        const weekKeys = Object.keys(mData.weeks).map(Number).sort((a,b)=>a-b);
+        weekKeys.forEach(wk=>{
+          const w = mData.weeks[wk];
+          const wPct = w.total ? Math.round(w.done/w.total*100) : 0;
+          rows += `
+            <tr>
+              <td style="padding-right:24px;">الأسبوع ${wk}</td>
+              <td>${w.total}</td>
+              <td style="color:var(--ok);font-weight:700">${w.done}</td>
+              <td style="color:var(--danger);font-weight:700">${w.remaining}</td>
+              <td>${wPct}%</td>
+            </tr>
+          `;
+        });
+      });
+
       dailyMonthlyWrap.innerHTML = `
         <table>
           <thead>
             <tr>
-              <th>الشهر</th>
+              <th>الشهر / الأسبوع</th>
               <th>إجمالي المهام</th>
               <th>تم الانتهاء</th>
               <th>متبقّي</th>
@@ -565,27 +600,13 @@
             </tr>
           </thead>
           <tbody>
-            ${keys.map(k=>{
-              const [yStr,mStr] = k.split('-');
-              const y = Number(yStr), m = Number(mStr);
-              const label = \${monthsNames[m-1]} ${y}\;
-              const data = monthsMap[k];
-              const pct = data.total ? Math.round(data.done/data.total*100) : 0;
-              return `
-                <tr>
-                  <td><strong>${label}</strong></td>
-                  <td>${data.total}</td>
-                  <td style="color:var(--ok);font-weight:700">${data.done}</td>
-                  <td style="color:var(--danger);font-weight:700">${data.remaining}</td>
-                  <td>${pct}%</td>
-                </tr>
-              `;
-            }).join('')}
+            ${rows}
           </tbody>
         </table>
       `;
     }
 
+    // Main dashboard render
     function renderAll(){
       const today = todayYMD();
       const total = TASKS.length;
@@ -600,7 +621,7 @@
       countUp(kRev, review);
       countUp(kUnas, unas);
 
-      todayInfo.textContent = Today: ${new Date().toLocaleDateString('en-GB')};
+      todayInfo.textContent = `Today: ${new Date().toLocaleDateString('en-GB')}`;
 
       // Column counters
       colsBox.innerHTML='';
@@ -626,43 +647,43 @@
             ${soon.map(t=>`
               <tr>
                 <td>${t.name||'-'}</td>
-                <td>${t.assignee?<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>:'—'}</td>
+                <td>${t.assignee?`<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>`:'—'}</td>
                 <td>${fmtDate(t.due)||'—'}</td>
                 <td>${t.status||'—'}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
-      ` : <div class="empty">لا توجد تواريخ قريبة حاليًا.</div>;
+      ` : `<div class="empty">لا توجد تواريخ قريبة حاليًا.</div>`;
 
-      // Assignees distribution (top 10)
+      // Assignees distribution
       const mapAss={};
       TASKS.forEach(t=>{
         const key = t.assignee?.name || 'غير معيّن';
         mapAss[key] = (mapAss[key]||0)+1;
       });
-      const rows = Object.entries(mapAss).sort((a,b)=> b[1]-a[1]).slice(0,10);
-      assigneesWrap.innerHTML = rows.length? `
+      const rowsAss = Object.entries(mapAss).sort((a,b)=> b[1]-a[1]).slice(0,10);
+      assigneesWrap.innerHTML = rowsAss.length? `
         <table>
           <thead><tr><th>العضو</th><th>عدد المهام</th></tr></thead>
           <tbody>
-            ${rows.map(([n,c])=> <tr><td>${n}</td><td>${c}</td></tr>).join('')}
+            ${rowsAss.map(([n,c])=> `<tr><td>${n}</td><td>${c}</td></tr>`).join('')}
           </tbody>
         </table>
-      ` : <div class="empty">لا مهام مسندة بعد.</div>;
+      ` : `<div class="empty">لا مهام مسندة بعد.</div>`;
 
-      // ======= Per-member details =======
-      const perMember = new Map();     // name -> {total, done, review, remaining}
-      const perStatus = { todo:0, review:0, done:0 }; // لإجمالي الدونات
+      // Per-member details + pie
+      const perMember = new Map();
+      const perStatus = { todo:0, review:0, done:0 };
 
       TASKS.forEach(t=>{
         const name = t.assignee?.name || 'غير معيّن';
         if(!perMember.has(name)) perMember.set(name,{ total:0, done:0, review:0, remaining:0 });
         const m = perMember.get(name);
-        m.total += 1;
-        if(isDone(t)){ m.done += 1; perStatus.done += 1; }
-        else if(isReview(t)){ m.review += 1; perStatus.review += 1; }
-        else { m.remaining += 1; perStatus.todo += 1; }
+        m.total++;
+        if(isDone(t)){ m.done++; perStatus.done++; }
+        else if(isReview(t)){ m.review++; perStatus.review++; }
+        else { m.remaining++; perStatus.todo++; }
       });
 
       const ordered = Array.from(perMember.entries()).sort((a,b)=> b[1].total - a[1].total);
@@ -693,9 +714,8 @@
             }).join('')}
           </tbody>
         </table>
-      ` : <div class="empty">لا توجد بيانات أعضاء لعرضها.</div>;
+      ` : `<div class="empty">لا توجد بيانات أعضاء لعرضها.</div>`;
 
-      // ======= Charts: Per member / Status mix =======
       const labelsUser = ordered.map(([n])=>n);
       const doneArr = ordered.map(([,v])=>v.done);
       const remArr  = ordered.map(([,v])=>v.remaining);
@@ -732,18 +752,16 @@
         }
       });
 
-      // ======= Lead Time & Cycle Time (Median per week) =======
-      // lead = completedAt - createdAt
-      // cycle = completedAt - (startedAt || createdAt)
-      const weeks = {}; // key 'YYYY-WW' -> {lead:[], cycle:[]}
+      // Lead/Cycle
+      const weeks = {};
       TASKS.forEach(t=>{
         if(!isDone(t)) return;
         const cAt = toMillis(t.createdAt);
         const sAt = toMillis(t.startedAt) || cAt;
         const dAt = toMillis(t.completedAt);
         if(!dAt || !cAt) return;
-        const leadDays = (dAt - cAt) / (1000*60*60*24);
-        const cycDays  = (dAt - sAt) / (1000*60*60*24);
+        const leadDays = (dAt - cAt) / 86400000;
+        const cycDays  = (dAt - sAt) / 86400000;
         const d = new Date(dAt);
         const key = weekKey(d);
         if(!weeks[key]) weeks[key]={lead:[],cycle:[]};
@@ -771,7 +789,7 @@
         }
       });
 
-      // ======= Throughput Weekly (completed per week) =======
+      // Throughput
       const throughput = {};
       TASKS.forEach(t=>{
         if(!isDone(t)) return;
@@ -794,7 +812,7 @@
         }
       });
 
-      // ======= SLA Breach Gauge (completed after due date) =======
+      // SLA
       let totalCompleted=0, breaches=0;
       TASKS.forEach(t=>{
         if(!isDone(t)) return;
@@ -822,14 +840,14 @@
         }
       });
 
-      // ======= Completion by Column (Done vs Remaining) =======
+      // Completion by column
       const colDone=[], colRem=[], colLabels=[];
       SPACE_COLUMNS.forEach(c=>{
         colLabels.push(c);
         let d=0, r=0;
         TASKS.forEach(t=>{
           if(t.status!==c) return;
-          if(isDone(t)) d++; else if(!isReview(t)) r++; // المراجعة لها لونها في الرسم الآخر
+          if(isDone(t)) d++; else if(!isReview(t)) r++;
         });
         colDone.push(d); colRem.push(r);
       });
@@ -850,10 +868,10 @@
         }
       });
 
-      // ======= Heatmap: Next 14 days by Due & Member (Top 8) =======
+      // Heatmap
       renderHeatmap();
 
-      // ======= Recent activity =======
+      // Activity
       const sorted = TASKS.slice().sort((a,b)=> (toMillis(b.createdAt)||0)-(toMillis(a.createdAt)||0)).slice(0,15);
       activityWrap.innerHTML = sorted.length? `
         <table>
@@ -865,7 +883,7 @@
               return `
                 <tr>
                   <td>${t.name||'-'}</td>
-                  <td>${t.assignee?<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>:'—'}</td>
+                  <td>${t.assignee?`<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>`:'—'}</td>
                   <td>${t.status||'—'}</td>
                   <td>${created}</td>
                   <td>${linksCount}</td>
@@ -873,18 +891,16 @@
             }).join('')}
           </tbody>
         </table>
-      ` : <div class="empty">لا نشاط حديث.</div>;
+      ` : `<div class="empty">لا نشاط حديث.</div>`;
     }
 
-    // Helpers: week key + median + heatmap render
     function weekKey(d){
-      // ISO week
       const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
       const dayNum = date.getUTCDay() || 7;
       date.setUTCDate(date.getUTCDate() + 4 - dayNum);
       const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
       const weekNo = Math.ceil((((date - yearStart)/86400000)+1)/7);
-      return ${date.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')};
+      return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
     }
     function median(arr){
       const a = arr.slice().filter(x=>isFinite(x)).sort((x,y)=>x-y);
@@ -903,8 +919,7 @@
         const d = new Date(today.getTime()+i*86400000);
         days.push(d);
       }
-      // members count by due per day
-      const memberMap = new Map(); // name -> counts array per day
+      const memberMap = new Map();
       TASKS.forEach(t=>{
         const name = t.assignee?.name || 'غير معيّن';
         const due = t.due;
@@ -916,24 +931,21 @@
         if(!memberMap.has(name)) memberMap.set(name, Array(horizonDays).fill(0));
         memberMap.get(name)[idx] += 1;
       });
-      // pick top 8 members by total workload
       const ranked = Array.from(memberMap.entries())
         .map(([n,arr])=> [n, arr, arr.reduce((a,b)=>a+b,0)])
         .sort((a,b)=> b[2]-a[2])
         .slice(0,8);
 
-      // header row
       hm.appendChild(cell('Member / Date','hm-head'));
       days.forEach(d=> hm.appendChild(cell(d.toLocaleDateString('en-GB'), 'hm-head')));
 
-      // rows
       ranked.forEach(([name,arr])=>{
         hm.appendChild(cell(name,'hm-name'));
         arr.forEach(v=>{
           const c = document.createElement('div');
           c.className = 'hm-cell';
-          if(v>=3){ c.style.background='#fef2f2'; c.style.borderColor='#fee2e2'; } // high
-          else if(v>=1){ c.style.background='#fff7ed'; c.style.borderColor='#ffedd5'; } // medium
+          if(v>=3){ c.style.background='#fef2f2'; c.style.borderColor='#fee2e2'; }
+          else if(v>=1){ c.style.background='#fff7ed'; c.style.borderColor='#ffedd5'; }
           c.textContent = v? v : '';
           hm.appendChild(c);
         });

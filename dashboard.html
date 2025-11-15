@@ -181,8 +181,11 @@
     <!-- Daily Task Monthly + Weekly Summary -->
     <section class="panel">
       <div class="head">
-        <strong>Daily Task — ملخص شهري / أسبوعي</strong>
-        <span class="muted" id="dailySpaceLabel">Space: —</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <strong>🗓 Daily Task — المهام اليومية</strong>
+          <span class="muted" id="dailySpaceLabel">Space: —</span>
+        </div>
+        <select id="dailyMonthSelect" class="select" style="padding:6px 10px;font-size:13px;min-width:150px;"></select>
       </div>
       <div class="body" id="dailyMonthlyWrap">
         <div class="empty">جارِ تحميل بيانات Daily Task ...</div>
@@ -305,14 +308,15 @@
     const db   = getFirestore();
 
     /* UI refs */
-    const spaceSelect = document.getElementById('spaceSelect');
-    const whoEl       = document.getElementById('who');
-    const btnLogout   = document.getElementById('btnLogout');
-    const btnExport   = document.getElementById('btnExportPdf');
-    const todayChip   = document.getElementById('todayChip');
-    const todayInfo   = document.getElementById('todayInfo');
+    const spaceSelect      = document.getElementById('spaceSelect');
+    const whoEl            = document.getElementById('who');
+    const btnLogout        = document.getElementById('btnLogout');
+    const btnExport        = document.getElementById('btnExportPdf');
+    const todayChip        = document.getElementById('todayChip');
+    const todayInfo        = document.getElementById('todayInfo');
     const dailyMonthlyWrap = document.getElementById('dailyMonthlyWrap');
     const dailySpaceLabel  = document.getElementById('dailySpaceLabel');
+    const dailyMonthSelect = document.getElementById('dailyMonthSelect');
 
     // KPI refs
     const kTotal=document.getElementById('k_total');
@@ -345,6 +349,11 @@
     // Daily Task space watcher
     let DAILY_SPACE_ID=null;
     let unsubDaily=null;
+    let DAILY_TASKS = [];
+    let DAILY_MONTHS_MAP = {};
+    let DAILY_SELECTED_KEY = null;
+
+    const MONTHS_NAMES=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 
     /* Utils */
     const fmtDate = (ymd)=> {
@@ -502,7 +511,7 @@
       }, (err)=>{ console.error(err); });
     }
 
-    // Daily Task watcher (يبحث بالـ contains على الاسم)
+    // Daily Task watcher (يبحث عن أي Space اسمه يحتوي Daily Task / المهام اليومية)
     async function bootDailyTasksWatcher(){
       try{
         const snap = await getDocs(collection(db,'spaces'));
@@ -522,6 +531,7 @@
         if(!sDoc){
           dailyMonthlyWrap.innerHTML = `<div class="empty">لم يتم العثور على Space خاص بالـ Daily Task.</div>`;
           dailySpaceLabel.textContent = 'Space: —';
+          dailyMonthSelect.innerHTML = '';
           return;
         }
 
@@ -532,31 +542,37 @@
         if(unsubDaily){ unsubDaily(); unsubDaily=null; }
         const qTasks = query(collection(db,'tasks'), where('spaceId','==', DAILY_SPACE_ID));
         unsubDaily = onSnapshot(qTasks, (snapTasks)=>{
-          const list=[];
-          snapTasks.forEach(d=> list.push({ id:d.id, ...(d.data()||{}) }));
-          renderDailyMonthly(list);
+          DAILY_TASKS=[];
+          snapTasks.forEach(d=> DAILY_TASKS.push({ id:d.id, ...(d.data()||{}) }));
+          rebuildDailyMonths();
         }, (err)=>{
           console.error(err);
           dailyMonthlyWrap.innerHTML = `<div class="empty">حدث خطأ أثناء تحميل بيانات Daily Task.</div>`;
         });
+
+        dailyMonthSelect.addEventListener('change', ()=>{
+          DAILY_SELECTED_KEY = dailyMonthSelect.value || null;
+          renderDailyMonthlyForSelected();
+        });
+
       }catch(err){
         console.error(err);
         dailyMonthlyWrap.innerHTML = `<div class="empty">حدث خطأ أثناء تحميل بيانات Daily Task.</div>`;
       }
     }
 
-    // Daily Task: أحدث شهر فقط + 4 أسابيع (سبت–خميس)
-    function renderDailyMonthly(tasks){
-      if(!tasks || !tasks.length){
+    // إعادة بناء قائمة الشهور + الماب
+    function rebuildDailyMonths(){
+      DAILY_MONTHS_MAP = {};
+      DAILY_SELECTED_KEY = DAILY_SELECTED_KEY; // بس علشان نستخدم القيمة السابقة لو موجودة
+
+      if(!DAILY_TASKS.length){
         dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد مهام في Daily Task حاليًا.</div>`;
+        dailyMonthSelect.innerHTML = '';
         return;
       }
 
-      const monthsNames=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-
-      const monthsMap = {}; // key "YYYY-MM" -> { total, done, remaining, weeks: {1..4: {total,done,remaining}} }
-
-      tasks.forEach(t=>{
+      DAILY_TASKS.forEach(t=>{
         let d;
         if(typeof t.due === 'string' && t.due){
           const [y,m,day] = t.due.split('-').map(Number);
@@ -572,14 +588,14 @@
         const m = d.getMonth()+1;
         const ymKey = `${y}-${String(m).padStart(2,'0')}`;
 
-        const weekIndex = weekIndexSatThu(d); // 1..4 فقط
+        const weekIndex = weekIndexSatThu(d); // 1..4
 
-        if(!monthsMap[ymKey]) monthsMap[ymKey] = {
+        if(!DAILY_MONTHS_MAP[ymKey]) DAILY_MONTHS_MAP[ymKey] = {
           year:y, month:m,
           total:0, done:0, remaining:0,
           weeks:{}
         };
-        const bucket = monthsMap[ymKey];
+        const bucket = DAILY_MONTHS_MAP[ymKey];
         bucket.total++;
         if(isDone(t)) bucket.done++; else bucket.remaining++;
 
@@ -589,20 +605,42 @@
         if(isDone(t)) wb.done++; else wb.remaining++;
       });
 
-      const keys = Object.keys(monthsMap).sort(); // تصاعدي
+      const keys = Object.keys(DAILY_MONTHS_MAP).sort(); // تصاعدي
       if(!keys.length){
         dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد بيانات شهور لعرضها.</div>`;
+        dailyMonthSelect.innerHTML = '';
         return;
       }
 
-      // أحدث شهر
-      const latestKey = keys[keys.length-1];
-      const mData = monthsMap[latestKey];
+      // بناء الدروب داون: أجندة + اسم الشهر
+      const prev = DAILY_SELECTED_KEY;
+      dailyMonthSelect.innerHTML = '';
+      keys.forEach(key=>{
+        const mData = DAILY_MONTHS_MAP[key];
+        const label = `أجندة ${MONTHS_NAMES[mData.month-1]} ${mData.year}`;
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = label;
+        dailyMonthSelect.appendChild(opt);
+      });
 
-      const monthLabel = `${monthsNames[mData.month-1]} ${mData.year}`;
+      let selected = prev && keys.includes(prev) ? prev : keys[keys.length-1]; // آخر شهر كافتراضي
+      DAILY_SELECTED_KEY = selected;
+      dailyMonthSelect.value = selected;
+
+      renderDailyMonthlyForSelected();
+    }
+
+    function renderDailyMonthlyForSelected(){
+      if(!DAILY_SELECTED_KEY || !DAILY_MONTHS_MAP[DAILY_SELECTED_KEY]){
+        dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد بيانات لهذا الشهر.</div>`;
+        return;
+      }
+      const mData = DAILY_MONTHS_MAP[DAILY_SELECTED_KEY];
+      const monthLabel = `${MONTHS_NAMES[mData.month-1]} ${mData.year}`;
       const monthPct = mData.total ? Math.round(mData.done/mData.total*100) : 0;
 
-      // هيدر شبيه بصفحة Daily Task
+      // هيدر أعلى الجدول
       const headerLine = `
         <div style="margin-bottom:10px;font-weight:700;color:var(--brown);font-size:15px;">
           ${monthLabel}
@@ -625,9 +663,8 @@
         </tr>
       `;
 
-      // أسابيع الشهر (1 إلى 4)
-      const weekKeys = [1,2,3,4];
-      weekKeys.forEach(wk=>{
+      // أسابيع الشهر (1–4)
+      [1,2,3,4].forEach(wk=>{
         const w = mData.weeks[wk];
         if(!w) return;
         const wPct = w.total ? Math.round(w.done/w.total*100) : 0;

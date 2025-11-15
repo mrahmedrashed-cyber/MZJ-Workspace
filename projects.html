@@ -115,6 +115,10 @@
 
     .daily-done-col .col-head{background:#e1f7ea;border-bottom-color:#bbdec6}
     .daily-done-col .col-title{color:#166534}
+
+    /* Campaign done column */
+    .campaign-done-col .col-head{background:#e1f7ea;border-bottom-color:#bbdec6}
+    .campaign-done-col .col-title{color:#166534}
   </style>
 
   <!-- SheetJS (للتصدير إلى Excel) -->
@@ -171,6 +175,7 @@
         <div class="controls">
           <select id="campaignSelect" class="select"></select>
           <button class="btn" id="btnNewCampaignTask" style="display:none">تاسك جديد (حملة)</button>
+          <button class="btn secondary" id="btnNewCampaign" style="display:none">حملة جديدة</button>
           <span class="muted" id="campaignDates">—</span>
         </div>
         <div class="muted" id="who2"></div>
@@ -392,7 +397,7 @@
       document.getElementById('who').textContent  = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
       document.getElementById('who2').textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
 
-      ['btnNewSpace','btnAddGroup','newGroupName','btnNewTask','btnSpaceManage','btnNewCampaignTask'].forEach(id=>{
+      ['btnNewSpace','btnAddGroup','newGroupName','btnNewTask','btnSpaceManage','btnNewCampaignTask','btnNewCampaign'].forEach(id=>{
         const el=document.getElementById(id);
         if(el) el.style.display = IS_ADMIN? '' : 'none';
       });
@@ -753,43 +758,151 @@
       if(!assigneeMenu.contains(e.target) && e.target!==tAssigneeSearch) assigneeMenu.style.display='none';
     });
 
-    /* ===== Campaign ثابت ===== */
+    /* ===== Campaign logic ===== */
     const CAMPAIGN_DEFAULT_COLS = [
       "ريلز - كاش","موشن - كاش","جرافيك - كاش",
-      "ريلز اقساط","AI Generate - اقساط","جرافيك اقساط",
+      "ريلز اقساط","اقساط - Ai Generate","جرافيك - اقساط",
       "اقساط شركات - سوشيال ميديا","شركات - لينكد ان"
     ];
-    const CAMPAIGN_SPACE_ID = "campaign-board";
 
     const campaignSelect     = document.getElementById('campaignSelect');
     const boardCampaigns     = document.getElementById('boardCampaigns');
     const btnNewCampaignTask = document.getElementById('btnNewCampaignTask');
+    const btnNewCampaign     = document.getElementById('btnNewCampaign');
     const campaignDates      = document.getElementById('campaignDates');
 
-    let CURRENT_CAMPAIGN = CAMPAIGN_SPACE_ID;
+    let CURRENT_CAMPAIGN = null;
     let CAMPAIGN_COLUMNS = CAMPAIGN_DEFAULT_COLS.slice();
     let TASKS_CAMPAIGNS  = [];
     let unsubTasksCampaigns = null;
+    let CAMPAIGNS = [];
 
-    function bootCampaigns(){
-      // تعبئة القائمة بنفس اللي في الصورة
-      campaignSelect.innerHTML = '';
-      CAMPAIGN_COLUMNS.forEach(col=>{
-        const opt = document.createElement('option');
-        opt.value = col;
-        opt.textContent = col;
+    function fillCampaignDropdown(list, selectedId){
+      campaignSelect.innerHTML='';
+      if(!list.length){
+        const opt=document.createElement('option');
+        opt.value=''; opt.textContent='لا توجد حملات — أنشئ حملة جديدة';
+        campaignSelect.appendChild(opt);
+        campaignSelect.disabled = true;
+        return;
+      }
+      campaignSelect.disabled = false;
+      list.forEach(c=>{
+        const opt=document.createElement('option');
+        opt.value=c.id;
+        opt.textContent=c.name || 'حملة بدون اسم';
         campaignSelect.appendChild(opt);
       });
-      // نص توضيحي بسيط
-      campaignDates.textContent = "اختر نوع المحتوى ثم أنشئ تاسك جديد وحدد العمود المناسب";
-      renderBoardSkeletonCampaigns();
-      listenTasksCampaigns();
-      btnNewCampaignTask?.addEventListener('click', ()=> openCreate(CAMPAIGN_COLUMNS));
+      if(selectedId && list.find(c=>c.id===selectedId)){
+        campaignSelect.value=selectedId;
+      }else{
+        campaignSelect.value=list[0].id;
+      }
+    }
+
+    // استماع لحملات type="campaign"
+    onSnapshot(
+      query(collection(db,'spaces'), where('type','==','campaign')),
+      snap=>{
+        const arr=[];
+        snap.forEach(d=>{
+          const data=d.data()||{};
+          if(data.active===false) return;
+          arr.push({ id:d.id, ...data });
+          SPACES_CACHE.set(d.id, data.name||d.id);
+        });
+        arr.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+        CAMPAIGNS = arr;
+        fillCampaignDropdown(CAMPAIGNS, CURRENT_CAMPAIGN);
+
+        if(!CAMPAIGNS.length){
+          CURRENT_CAMPAIGN = null;
+          boardCampaigns.innerHTML='';
+          campaignDates.textContent = "لا توجد حملات حالياً — أنشئ حملة جديدة من الزر.";
+          if(unsubTasksCampaigns){ unsubTasksCampaigns(); unsubTasksCampaigns=null; }
+          return;
+        }
+
+        const selectedId = campaignSelect.value || CAMPAIGNS[0].id;
+        CURRENT_CAMPAIGN = selectedId;
+        const found = CAMPAIGNS.find(c=>c.id===CURRENT_CAMPAIGN);
+        CAMPAIGN_COLUMNS = found?.columns?.length ? found.columns : CAMPAIGN_DEFAULT_COLS.slice();
+        renderBoardSkeletonCampaigns();
+        listenTasksCampaigns();
+      },
+      err=>{
+        console.error(err);
+        campaignDates.textContent = "⚠️ تعذر تحميل الحملات";
+      }
+    );
+
+    function bootCampaigns(){
+      campaignDates.textContent = "اختر حملة من القائمة أو أنشئ حملة جديدة. الأعمدة ثابتة لكل حملة.";
+
+      campaignSelect.addEventListener('change', async (e)=>{
+        const id = e.target.value || null;
+        CURRENT_CAMPAIGN = id;
+        if(!id){
+          boardCampaigns.innerHTML='';
+          if(unsubTasksCampaigns){unsubTasksCampaigns();unsubTasksCampaigns=null;}
+          return;
+        }
+        const d = await getDoc(doc(db,'spaces', id));
+        const data = d.data()||{};
+        CAMPAIGN_COLUMNS = data.columns?.length ? data.columns : CAMPAIGN_DEFAULT_COLS.slice();
+        renderBoardSkeletonCampaigns();
+        listenTasksCampaigns();
+      });
+
+      btnNewCampaignTask?.addEventListener('click', ()=>{
+        if(!CURRENT_CAMPAIGN) return alert('اختر حملة أولاً');
+        fillGroupSelect(CAMPAIGN_COLUMNS);
+        openCreate(CAMPAIGN_COLUMNS);
+      });
+
+      btnNewCampaign?.addEventListener('click', async ()=>{
+        if(!IS_ADMIN) return;
+        const name = prompt('اسم الحملة:');
+        if(!name) return;
+        try{
+          const ref = await addDoc(collection(db,'spaces'), {
+            name,
+            type:'campaign',
+            columns: CAMPAIGN_DEFAULT_COLS,
+            createdAt: serverTimestamp(),
+            active: true
+          });
+          CURRENT_CAMPAIGN = ref.id;
+          CAMPAIGN_COLUMNS = CAMPAIGN_DEFAULT_COLS.slice();
+          renderBoardSkeletonCampaigns();
+          listenTasksCampaigns();
+        }catch(err){
+          console.error(err);
+          alert('⚠️ تعذر إنشاء الحملة: '+(err?.message||err));
+        }
+      });
+
+      // زر "تم" داخل كروت الحملة
+      boardCampaigns.addEventListener('click', async (e)=>{
+        const doneBtn = e.target.closest('.campaign-done-btn');
+        if(!doneBtn) return;
+        e.stopPropagation();
+        const id = doneBtn.dataset.id;
+        if(!id) return;
+        try{
+          await updateDoc(doc(db,'tasks', id), { status: "تم التنفيذ" });
+        }catch(err){
+          console.error(err);
+          alert('⚠️ تعذر تحديث حالة التاسك: '+(err?.message||err));
+        }
+      });
     }
 
     function renderBoardSkeletonCampaigns(){
       const board=boardCampaigns;
       board.innerHTML='';
+
+      // الأعمدة الأساسية للحملة
       (CAMPAIGN_COLUMNS||[]).forEach((col)=>{
         const sec=document.createElement('section');
         sec.className='col';
@@ -814,6 +927,18 @@
         });
       });
 
+      // عمود "تم التنفيذ"
+      const doneCol = document.createElement('section');
+      doneCol.className = 'col campaign-done-col';
+      doneCol.dataset.status = 'تم التنفيذ';
+      doneCol.innerHTML = `
+        <div class="col-head" style="cursor:default">
+          <span class="col-title">تم التنفيذ</span>
+        </div>
+        <div class="col-body"><div class="dropzone" data-zone="تم التنفيذ"></div></div>
+      `;
+      board.appendChild(doneCol);
+
       board.querySelectorAll('.dropzone').forEach(zone=>{
         zone.addEventListener('dragover', e=>{
           if (e.dataTransfer.types.includes(MIME_TASK)){
@@ -826,8 +951,11 @@
           e.preventDefault(); zone.classList.remove('drag');
           const cardId = e.dataTransfer.getData(MIME_TASK);
           const newStatus = zone.dataset.zone;
-          try{ await updateDoc(doc(db,'tasks', cardId), { status:newStatus }); }
-          catch(err){ alert('⚠️ تعذر النقل: '+err.message); }
+          try{
+            await updateDoc(doc(db,'tasks', cardId), { status:newStatus });
+          }catch(err){
+            alert('⚠️ تعذر النقل: '+err.message);
+          }
         });
       });
     }
@@ -836,13 +964,15 @@
       const board=boardCampaigns;
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
 
-      const byStatus={}; (CAMPAIGN_COLUMNS||[]).forEach(s=> byStatus[s]=[]);
+      const byStatus={};
+      [...(CAMPAIGN_COLUMNS||[]), 'تم التنفيذ'].forEach(s=> byStatus[s]=[]);
       TASKS_CAMPAIGNS.forEach(t=>{
         (byStatus[t.status]||(byStatus[t.status]=[])).push(t);
       });
 
-      (CAMPAIGN_COLUMNS||[]).forEach(status=>{
+      [...(CAMPAIGN_COLUMNS||[]), 'تم التنفيذ'].forEach(status=>{
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
+        if(!zone) return;
         const list = byStatus[status]||[];
         list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
         list.forEach(t=>{
@@ -851,27 +981,52 @@
           card.dataset.id=t.id;
           const ass=t.assignee;
           const carLine = t.car ? [t.car.brand, t.car.model, t.car.trim, t.car.engine].filter(Boolean).join(' ') : '';
+
           card.innerHTML = `
             <h4>${t.name||'-'}</h4>
             ${carLine ? `<div class="small" style="margin-top:4px">🚗 ${carLine}</div>` : ''}
-            <div class="row" style="margin-top:6px">
-              ${ass?`<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>`:''}
-              ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
-            </div>`;
+          `;
+
+          const footer = document.createElement('div');
+          footer.className = 'row between';
+          const left = document.createElement('div');
+          left.innerHTML = `
+            ${ass?`<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>`:''}
+            ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
+          `;
+          footer.appendChild(left);
+
+          if(IS_ADMIN){
+            const right = document.createElement('div');
+            const btn = document.createElement('button');
+            btn.className = 'btn secondary xs campaign-done-btn';
+            btn.textContent = '✓';
+            btn.title = 'نقل إلى تم التنفيذ';
+            btn.dataset.id = t.id;
+            right.appendChild(btn);
+            footer.appendChild(right);
+          }
+
+          card.appendChild(footer);
+
           card.setAttribute('draggable','true');
           card.addEventListener('dragstart', e=>{
             e.dataTransfer.effectAllowed='move';
             e.dataTransfer.setData(MIME_TASK, t.id);
             e.dataTransfer.setData('text/plain', t.id);
           });
-          card.addEventListener('click', ()=> openDetail(t));
-          zone?.appendChild(card);
+          card.addEventListener('click', (e)=>{
+            if(e.target.closest('.campaign-done-btn')) return;
+            openDetail(t);
+          });
+          zone.appendChild(card);
         });
       });
     }
 
     function listenTasksCampaigns(){
       if(unsubTasksCampaigns){ unsubTasksCampaigns(); unsubTasksCampaigns=null; }
+      if(!CURRENT_CAMPAIGN) return;
       const qy=query(collection(db,'tasks'), where('spaceId','==', CURRENT_CAMPAIGN));
       unsubTasksCampaigns=onSnapshot(qy,(snap)=>{
         TASKS_CAMPAIGNS=[];

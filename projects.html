@@ -335,6 +335,25 @@
     </div>
   </div>
 
+  <!-- مودال الملاحظات الشهرية -->
+  <div class="modal" id="noteModal">
+    <div class="sheet">
+      <div class="head">
+        <strong id="noteModalTitle">ملاحظة</strong>
+      </div>
+      <div class="body">
+        <label>نص الملاحظة</label>
+        <textarea id="noteText" placeholder="اكتب الملاحظة هنا…"></textarea>
+        <p class="hint">* الملاحظات ترتبط بالشهر المختار، وليست مرتبطة بيوم معين.</p>
+      </div>
+      <div class="footer">
+        <button class="btn secondary" id="btnNoteCancel">إلغاء</button>
+        <button class="btn danger" id="btnNoteDelete" style="display:none">حذف</button>
+        <button class="btn" id="btnNoteSave">حفظ الملاحظة</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="footer" style="padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);">
     <small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small>
   </footer>
@@ -1366,12 +1385,24 @@
     const btnDailyCancel   = document.getElementById('btnDailyCancel');
     const btnDailyDelete   = document.getElementById('btnDailyDelete');
 
+    // ملاحظات شهرية
+    const noteModal        = document.getElementById('noteModal');
+    const noteModalTitle   = document.getElementById('noteModalTitle');
+    const noteText         = document.getElementById('noteText');
+    const btnNoteSave      = document.getElementById('btnNoteSave');
+    const btnNoteCancel    = document.getElementById('btnNoteCancel');
+    const btnNoteDelete    = document.getElementById('btnNoteDelete');
+
     let DAILY_MONTH_KEY = null;
     let DAILY_TASKS = [];
     let unsubDailyTasks = null;
     let CURRENT_DAILY_EDIT = null;
     let CURRENT_DAILY_WEEK = null;
     let CURRENT_DAILY_DAY  = null;
+
+    let DAILY_NOTES = [];
+    let unsubDailyNotes = null;
+    let CURRENT_NOTE_ID = null;
 
     function currentMonthKey(){
       const d=new Date();
@@ -1404,7 +1435,8 @@
       const label = dailyMonthSelect.options[dailyMonthSelect.selectedIndex]?.textContent || '';
       const countMonth = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && !t.completed).length;
       const countDone  = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && t.completed).length;
-      dailyMeta.textContent = `${label} — مهام قيد العمل: ${countMonth} | تم التنفيذ: ${countDone}`;
+      const notesCount = DAILY_NOTES.filter(n=>n.monthKey===DAILY_MONTH_KEY).length;
+      dailyMeta.textContent = `${label} — مهام قيد العمل: ${countMonth} | تم التنفيذ: ${countDone} | الملاحظات: ${notesCount}`;
     }
 
     function listenDailyTasks(){
@@ -1416,6 +1448,18 @@
       },(err)=>{
         console.error(err);
         alert('⚠️ فشل قراءة المهام اليومية.');
+      });
+    }
+
+    function listenDailyNotes(){
+      if(unsubDailyNotes){ unsubDailyNotes(); unsubDailyNotes=null; }
+      unsubDailyNotes = onSnapshot(collection(db,'dailyNotes'), (snap)=>{
+        DAILY_NOTES=[];
+        snap.forEach(d=> DAILY_NOTES.push({ id:d.id, ...(d.data()||{}) }));
+        renderDailyBoard();
+      },(err)=>{
+        console.error(err);
+        alert('⚠️ فشل قراءة الملاحظات.');
       });
     }
 
@@ -1493,6 +1537,65 @@
       }
     });
 
+    // ملاحظات: فتح/غلق المودال
+    function openNoteModal(note=null){
+      if(!IS_ADMIN) return;
+      if(note){
+        CURRENT_NOTE_ID = note.id;
+        noteModalTitle.textContent = 'تعديل ملاحظة';
+        noteText.value = note.text || '';
+        btnNoteDelete.style.display = '';
+      }else{
+        CURRENT_NOTE_ID = null;
+        noteModalTitle.textContent = 'ملاحظة جديدة';
+        noteText.value = '';
+        btnNoteDelete.style.display = 'none';
+      }
+      noteModal.classList.add('show');
+    }
+
+    function closeNoteModal(){
+      noteModal.classList.remove('show');
+    }
+
+    btnNoteCancel.addEventListener('click', ()=> closeNoteModal());
+    noteModal.addEventListener('click', (e)=>{ if(e.target===noteModal) closeNoteModal(); });
+
+    btnNoteSave.addEventListener('click', async ()=>{
+      if(!IS_ADMIN) return alert('الملاحظات للأدمِن فقط حالياً.');
+      const text = (noteText.value||'').trim();
+      if(!text) return alert('اكتب نص الملاحظة.');
+
+      try{
+        if(CURRENT_NOTE_ID){
+          await updateDoc(doc(db,'dailyNotes', CURRENT_NOTE_ID), { text });
+        }else{
+          await addDoc(collection(db,'dailyNotes'), {
+            monthKey: DAILY_MONTH_KEY,
+            text,
+            createdAt: serverTimestamp(),
+            createdBy: CURRENT_USER?.uid || null
+          });
+        }
+        closeNoteModal();
+      }catch(err){
+        console.error(err);
+        alert('⚠️ تعذر حفظ الملاحظة: '+(err?.message||err));
+      }
+    });
+
+    btnNoteDelete.addEventListener('click', async ()=>{
+      if(!IS_ADMIN || !CURRENT_NOTE_ID) return;
+      if(!confirm('تأكيد حذف الملاحظة؟')) return;
+      try{
+        await deleteDoc(doc(db,'dailyNotes', CURRENT_NOTE_ID));
+        closeNoteModal();
+      }catch(err){
+        console.error(err);
+        alert('⚠️ تعذر حذف الملاحظة: '+(err?.message||err));
+      }
+    });
+
     function bootDailyTasks(){
       fillDailyMonthOptions();
       dailyMonthSelect.addEventListener('change', ()=>{
@@ -1500,11 +1603,12 @@
         renderDailyBoard();
       });
       listenDailyTasks();
+      listenDailyNotes();
 
       if(dailyBoard){
         dailyBoard.addEventListener('click', async (e)=>{
           const addBtn = e.target.closest('.day-add');
-          if(addBtn){
+          if(addBtn && !addBtn.classList.contains('notes-add')){
             if(!IS_ADMIN) return alert('المهام اليومية خاصة بالأدمِن فقط حالياً.');
             const week = parseInt(addBtn.dataset.week,10);
             const dayKey = addBtn.dataset.day;
@@ -1512,6 +1616,13 @@
             CURRENT_DAILY_WEEK = week;
             CURRENT_DAILY_DAY  = dayKey;
             openDailyModal('new');
+            return;
+          }
+
+          const noteAddBtn = e.target.closest('.notes-add');
+          if(noteAddBtn){
+            if(!IS_ADMIN) return alert('الملاحظات للأدمِن فقط حالياً.');
+            openNoteModal(null);
             return;
           }
 
@@ -1542,6 +1653,14 @@
               CURRENT_DAILY_DAY  = task.dayKey;
               openDailyModal('edit', task);
             }
+          }
+
+          const noteCard = e.target.closest('.note-card');
+          if(noteCard){
+            if(!IS_ADMIN) return;
+            const nid = noteCard.dataset.id;
+            const note = DAILY_NOTES.find(n=>n.id===nid);
+            if(note) openNoteModal(note);
           }
         });
       }
@@ -1587,6 +1706,20 @@
         dailyBoard.appendChild(sec);
       });
 
+      // عمود الملاحظات (جنب الأسبوع الرابع)
+      const notesCol=document.createElement('section');
+      notesCol.className='col';
+      notesCol.innerHTML=`
+        <div class="col-head" style="cursor:default">
+          <span class="col-title">الملاحظات</span>
+          ${IS_ADMIN?'<button class="day-add notes-add">➕</button>':''}
+        </div>
+        <div class="col-body">
+          <div class="daily-notes" id="dailyNotesZone"></div>
+        </div>
+      `;
+      dailyBoard.appendChild(notesCol);
+
       // كارت "تم التنفيذ"
       const doneCol=document.createElement('section');
       doneCol.className='col daily-done-col';
@@ -1616,7 +1749,24 @@
         doneZone.appendChild(card);
       });
 
-      // سحب وإفلات
+      // ملاحظات الشهر الحالي
+      const notesZone = dailyBoard.querySelector('#dailyNotesZone');
+      if(notesZone){
+        const monthNotes = DAILY_NOTES.filter(n=>n.monthKey===DAILY_MONTH_KEY);
+        monthNotes.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+        monthNotes.forEach(n=>{
+          const card = document.createElement('article');
+          card.className = 'card note-card';
+          card.dataset.id = n.id;
+          card.style.cursor = IS_ADMIN ? 'pointer' : 'default';
+          card.innerHTML = `
+            <div class="small" style="white-space:pre-wrap;line-height:1.5">${n.text||''}</div>
+          `;
+          notesZone.appendChild(card);
+        });
+      }
+
+      // سحب وإفلات للمهام اليومية (بدون الملاحظات)
       dailyBoard.querySelectorAll('.daily-drop').forEach(zone=>{
         zone.addEventListener('dragover', e=>{
           if(e.dataTransfer.types.includes(MIME_DAILY)){

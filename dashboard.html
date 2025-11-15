@@ -183,9 +183,9 @@
       <div class="head">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <strong>🗓 Daily Task — المهام اليومية</strong>
-          <span class="muted" id="dailySpaceLabel">Space: —</span>
+          <span class="muted" id="dailySpaceLabel">قائمة الشهور الفعّالة فقط</span>
         </div>
-        <select id="dailyMonthSelect" class="select" style="padding:6px 10px;font-size:13px;min-width:150px;"></select>
+        <select id="dailyMonthSelect" class="select" style="padding:6px 10px;font-size:13px;min-width:170px;"></select>
       </div>
       <div class="body" id="dailyMonthlyWrap">
         <div class="empty">جارِ تحميل بيانات Daily Task ...</div>
@@ -346,10 +346,8 @@
     let unsubTasks=null;
     let TASKS=[];
 
-    // Daily Task space watcher
-    let DAILY_SPACE_ID=null;
-    let unsubDaily=null;
-    let DAILY_TASKS = [];
+    // Daily Task (من Collection: dailyTasks مثل صفحة المشاريع)
+    let DAILY_TASKS_ALL = [];
     let DAILY_MONTHS_MAP = {};
     let DAILY_SELECTED_KEY = null;
 
@@ -393,31 +391,6 @@
       requestAnimationFrame(step);
     }
 
-    // حساب رقم الأسبوع في الشهر (1–4) على أساس أن بداية الأسبوع = السبت ونهايته = الخميس
-    function weekIndexSatThu(date){
-      const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const y = d.getFullYear();
-      const m = d.getMonth();
-
-      // أول سبت في الشهر
-      let firstSat = new Date(y, m, 1);
-      while(firstSat.getDay() !== 6){ // 6 = Saturday
-        firstSat.setDate(firstSat.getDate()+1);
-      }
-
-      // لو اليوم قبل أول سبت نحسبه مع الأسبوع الأول
-      if(d < firstSat){
-        return 1;
-      }
-
-      const diffDays = Math.floor((d - firstSat) / 86400000);
-      let idx = Math.floor(diffDays / 7) + 1;
-
-      if(idx < 1) idx = 1;
-      if(idx > 4) idx = 4;
-      return idx;
-    }
-
     // Export PDF
     btnLogout.onclick = async()=>{ await signOut(auth); location.href="login.html"; };
     btnExport.onclick = ()=> {
@@ -459,7 +432,7 @@
         return;
       }
       bootSpaces();
-      bootDailyTasksWatcher();
+      bootDailyTasksDashboard();   // <-- من dailyTasks
     });
 
     // Spaces dropdown
@@ -511,108 +484,72 @@
       }, (err)=>{ console.error(err); });
     }
 
-    // Daily Task watcher (يبحث عن أي Space اسمه يحتوي Daily Task / المهام اليومية)
-    async function bootDailyTasksWatcher(){
-      try{
-        const snap = await getDocs(collection(db,'spaces'));
-        let sDoc = null;
-        snap.forEach(d=>{
-          if(sDoc) return;
-          const data = d.data() || {};
-          const name = (data.name || '').toString();
-          if(
-            name.includes('Daily Task') ||
-            name.includes('المهام اليومية')
-          ){
-            sDoc = d;
-          }
-        });
+    /* ===========================
+       Daily Task Dashboard (dailyTasks)
+       =========================== */
 
-        if(!sDoc){
-          dailyMonthlyWrap.innerHTML = `<div class="empty">لم يتم العثور على Space خاص بالـ Daily Task.</div>`;
-          dailySpaceLabel.textContent = 'Space: —';
-          dailyMonthSelect.innerHTML = '';
-          return;
-        }
-
-        DAILY_SPACE_ID = sDoc.id;
-        const data = sDoc.data() || {};
-        dailySpaceLabel.textContent = `Space: ${data.name || 'Daily Task'}`;
-
-        if(unsubDaily){ unsubDaily(); unsubDaily=null; }
-        const qTasks = query(collection(db,'tasks'), where('spaceId','==', DAILY_SPACE_ID));
-        unsubDaily = onSnapshot(qTasks, (snapTasks)=>{
-          DAILY_TASKS=[];
-          snapTasks.forEach(d=> DAILY_TASKS.push({ id:d.id, ...(d.data()||{}) }));
-          rebuildDailyMonths();
-        }, (err)=>{
-          console.error(err);
-          dailyMonthlyWrap.innerHTML = `<div class="empty">حدث خطأ أثناء تحميل بيانات Daily Task.</div>`;
-        });
-
-        dailyMonthSelect.addEventListener('change', ()=>{
-          DAILY_SELECTED_KEY = dailyMonthSelect.value || null;
-          renderDailyMonthlyForSelected();
-        });
-
-      }catch(err){
+    function bootDailyTasksDashboard(){
+      // نسمع على Collection: dailyTasks (نفس شغل صفحة المشاريع/التاب)
+      const qDaily = collection(db,'dailyTasks');
+      onSnapshot(qDaily, (snap)=>{
+        DAILY_TASKS_ALL = [];
+        snap.forEach(d=> DAILY_TASKS_ALL.push({ id:d.id, ...(d.data()||{}) }));
+        rebuildDailyMonthsFromTasks();
+      }, (err)=>{
         console.error(err);
         dailyMonthlyWrap.innerHTML = `<div class="empty">حدث خطأ أثناء تحميل بيانات Daily Task.</div>`;
-      }
+      });
+
+      dailyMonthSelect.addEventListener('change', ()=>{
+        DAILY_SELECTED_KEY = dailyMonthSelect.value || null;
+        renderDailyMonthlyForSelected();
+      });
     }
 
-    // إعادة بناء قائمة الشهور + الماب
-    function rebuildDailyMonths(){
+    function rebuildDailyMonthsFromTasks(){
       DAILY_MONTHS_MAP = {};
-      DAILY_SELECTED_KEY = DAILY_SELECTED_KEY; // بس علشان نستخدم القيمة السابقة لو موجودة
 
-      if(!DAILY_TASKS.length){
-        dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد مهام في Daily Task حاليًا.</div>`;
+      if(!DAILY_TASKS_ALL.length){
         dailyMonthSelect.innerHTML = '';
+        dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد مهام يومية (Daily Task) حتى الآن.</div>`;
         return;
       }
 
-      DAILY_TASKS.forEach(t=>{
-        let d;
-        if(typeof t.due === 'string' && t.due){
-          const [y,m,day] = t.due.split('-').map(Number);
-          if(y && m && day){ d = new Date(y, m-1, day); }
-        }
-        if(!d){
-          const ms = toMillis(t.createdAt);
-          if(ms) d = new Date(ms);
-        }
-        if(!d) return;
+      DAILY_TASKS_ALL.forEach(t=>{
+        const mk = (t.monthKey || '').toString(); // مثال: "2025-11"
+        if(!mk || mk.length<7) return;
+        const parts = mk.split('-').map(Number);
+        if(parts.length<2 || !parts[0] || !parts[1]) return;
+        const y = parts[0];
+        const m = parts[1];
 
-        const y = d.getFullYear();
-        const m = d.getMonth()+1;
-        const ymKey = `${y}-${String(m).padStart(2,'0')}`;
-
-        const weekIndex = weekIndexSatThu(d); // 1..4
-
-        if(!DAILY_MONTHS_MAP[ymKey]) DAILY_MONTHS_MAP[ymKey] = {
+        if(!DAILY_MONTHS_MAP[mk]) DAILY_MONTHS_MAP[mk] = {
           year:y, month:m,
           total:0, done:0, remaining:0,
           weeks:{}
         };
-        const bucket = DAILY_MONTHS_MAP[ymKey];
-        bucket.total++;
-        if(isDone(t)) bucket.done++; else bucket.remaining++;
+        const bucket = DAILY_MONTHS_MAP[mk];
 
-        if(!bucket.weeks[weekIndex]) bucket.weeks[weekIndex]={ total:0, done:0, remaining:0 };
-        const wb = bucket.weeks[weekIndex];
-        wb.total++;
-        if(isDone(t)) wb.done++; else wb.remaining++;
+        const completed = !!t.completed;
+        bucket.total++;
+        if(completed) bucket.done++; else bucket.remaining++;
+
+        let w = Number(t.week||0);
+        if(w>=1 && w<=4){
+          if(!bucket.weeks[w]) bucket.weeks[w]={ total:0, done:0, remaining:0 };
+          const wb = bucket.weeks[w];
+          wb.total++;
+          if(completed) wb.done++; else wb.remaining++;
+        }
       });
 
-      const keys = Object.keys(DAILY_MONTHS_MAP).sort(); // تصاعدي
+      const keys = Object.keys(DAILY_MONTHS_MAP).sort(); // YYYY-MM تصاعدي
       if(!keys.length){
-        dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد بيانات شهور لعرضها.</div>`;
         dailyMonthSelect.innerHTML = '';
+        dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد شهور فعّالة للـ Daily Task.</div>`;
         return;
       }
 
-      // بناء الدروب داون: أجندة + اسم الشهر
       const prev = DAILY_SELECTED_KEY;
       dailyMonthSelect.innerHTML = '';
       keys.forEach(key=>{
@@ -624,7 +561,7 @@
         dailyMonthSelect.appendChild(opt);
       });
 
-      let selected = prev && keys.includes(prev) ? prev : keys[keys.length-1]; // آخر شهر كافتراضي
+      let selected = prev && keys.includes(prev) ? prev : keys[keys.length-1];
       DAILY_SELECTED_KEY = selected;
       dailyMonthSelect.value = selected;
 
@@ -637,10 +574,9 @@
         return;
       }
       const mData = DAILY_MONTHS_MAP[DAILY_SELECTED_KEY];
-      const monthLabel = `${MONTHS_NAMES[mData.month-1]} ${mData.year}`;
+      const monthLabel = `أجندة ${MONTHS_NAMES[mData.month-1]} ${mData.year}`;
       const monthPct = mData.total ? Math.round(mData.done/mData.total*100) : 0;
 
-      // هيدر أعلى الجدول
       const headerLine = `
         <div style="margin-bottom:10px;font-weight:700;color:var(--brown);font-size:15px;">
           ${monthLabel}
@@ -648,7 +584,7 @@
             مهام قيد العمل: ${mData.remaining} | تم التنفيذ: ${mData.done}
           </span>
           <span style="margin-inline-start:12px;font-weight:500;color:var(--muted);">
-            نسبة الإنهاء: ${monthPct}%
+            نسبة الإنهاء: ${monthPct}% 
           </span>
         </div>
       `;
@@ -663,7 +599,6 @@
         </tr>
       `;
 
-      // أسابيع الشهر (1–4)
       [1,2,3,4].forEach(wk=>{
         const w = mData.weeks[wk];
         if(!w) return;
@@ -698,7 +633,8 @@
       `;
     }
 
-    // Main dashboard render
+    /* ============ باقي الداشبورد ============ */
+
     function renderAll(){
       const today = todayYMD();
       const total = TASKS.length;

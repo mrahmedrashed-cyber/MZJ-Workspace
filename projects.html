@@ -38,7 +38,7 @@
     .muted{color:var(--muted)}
     .hint{font-size:12px;color:var(--muted)}
 
-    /* Board */
+    /* Board عام */
     .board{display:grid;gap:14px;grid-template-columns:repeat(5,1fr)}
     @media(max-width:1400px){.board{grid-template-columns:repeat(3,1fr)}}
     @media(max-width:900px){.board{grid-template-columns:repeat(2,1fr)}}
@@ -62,6 +62,25 @@
     .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);display:inline-flex;align-items:center;gap:6px}
     .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
     .small{font-size:12px;color:var(--muted)}
+
+    /* Daily Task Section */
+    .daily-panel{margin-bottom:18px;border-radius:16px;border:1px solid #f1e4db;background:#fff8ef;padding:10px 10px 14px}
+    .daily-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+    .daily-title{font-weight:800;color:var(--brown);display:flex;align-items:center;gap:8px}
+    .daily-title span.icon{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:999px;background:#fff;color:var(--brown);font-size:14px;box-shadow:0 4px 10px rgba(62,36,32,.18)}
+    .daily-hint{font-size:12px;color:var(--muted)}
+    .daily-board{display:grid;gap:10px;grid-template-columns:repeat(6,1fr)}
+    @media(max-width:1200px){.daily-board{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:800px){.daily-board{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:580px){.daily-board{grid-template-columns:1fr}}
+    .daily-col{min-height:180px}
+    .daily-col-head{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid #f2e7df;background:#fff;border-top-left-radius:14px;border-top-right-radius:14px}
+    .daily-col-head .day-name{font-weight:700;color:var(--brown);font-size:14px}
+    .daily-add-btn{border:0;border-radius:999px;padding:4px 8px;font-size:11px;background:#fff;color:var(--brown);cursor:pointer;border:1px solid #e8d8cb;display:inline-flex;align-items:center;gap:4px}
+    .daily-add-btn:hover{background:#fff8ef}
+    .daily-card{cursor:default}
+    .daily-card h4{font-size:14px;margin:0 0 4px}
+    .daily-card .small-desc{font-size:12px;color:var(--muted);margin-top:2px;max-height:52px;overflow:hidden}
 
     /* Modal */
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;place-items:center;padding:16px;z-index:99}
@@ -136,6 +155,22 @@
         <div class="muted" id="who"></div>
       </div>
       <div class="body">
+
+        <!-- Daily Task (Admin only) -->
+        <section class="daily-panel" id="dailyPanel">
+          <div class="daily-head">
+            <div class="daily-title">
+              <span class="icon">🗓</span>
+              <span>Daily Task — المهام اليومية</span>
+            </div>
+            <div class="daily-hint">
+              من السبت إلى الخميس — خاصة بحساب الأدمِن فقط.
+            </div>
+          </div>
+          <div class="daily-board" id="dailyBoard"></div>
+        </section>
+
+        <!-- Board الرئيسية للـ Spaces -->
         <div class="board" id="boardSpaces"></div>
       </div>
     </section>
@@ -156,7 +191,7 @@
     </section>
   </main>
 
-  <!-- نافذة إنشاء التاسك (نفسها من نسختك الأخيرة مع اختيار السيارة) -->
+  <!-- نافذة إنشاء التاسك (Spaces / Campaign) -->
   <div class="modal" id="taskModal">
     <div class="sheet">
       <div class="head"><strong id="taskModalTitle">تاسك جديد</strong></div>
@@ -225,6 +260,30 @@
         <button class="btn secondary" id="btnCancelTask">إلغاء</button>
         <button class="btn" id="btnSaveTask">حفظ التاسك</button>
         <button class="btn secondary" id="btnCloseModal">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة المهام اليومية -->
+  <div class="modal" id="dailyModal">
+    <div class="sheet">
+      <div class="head">
+        <strong>تاسك يومي</strong>
+        <span class="small muted" id="dailyDayLabel"></span>
+      </div>
+      <div class="body">
+        <label>عنوان التاسك</label>
+        <input id="dailyTitle" placeholder="مثال: تجهيز خطة نشر يوم الأحد">
+
+        <label>تاريخ المهمة</label>
+        <input id="dailyDate" type="date">
+
+        <label>وصف / تفاصيل</label>
+        <textarea id="dailyDesc" placeholder="مثال: مراجعة المهام مع الفريق، تحضير الملفات المطلوبة…"></textarea>
+      </div>
+      <div class="footer">
+        <button class="btn secondary" id="btnDailyCancel">إلغاء</button>
+        <button class="btn" id="btnDailySave">حفظ التاسك اليومي</button>
       </div>
     </div>
   </div>
@@ -332,6 +391,12 @@
       });
       document.querySelectorAll('.col-actions').forEach(el=> el.style.display = IS_ADMIN? 'flex' : 'none');
 
+      // إظهار/إخفاء لوحة Daily Task بحسب الصلاحية
+      const dailyPanel = document.getElementById('dailyPanel');
+      if(dailyPanel){
+        dailyPanel.style.display = IS_ADMIN ? 'block' : 'none';
+      }
+
       if(!IS_ADMIN){
         document.getElementById('navDashboard').style.display='none';
         document.getElementById('navMembers').style.display='none';
@@ -341,6 +406,7 @@
       await loadUsers();
       bootSpaces();
       bootCampaigns();
+      bootDailyTasks();
     });
 
     /* Common helpers */
@@ -353,6 +419,172 @@
       USERS=[]; snap.forEach(d=>{
         const u=d.data()||{};
         USERS.push({ uid:d.id, name:u.name||d.id.slice(0,6), role:u.role||'member', color:u.color||'#bc8f74' });
+      });
+    }
+
+    function canManageLinks(task){ return IS_ADMIN || (task?.assignee?.uid && task.assignee.uid === (CURRENT_USER?.uid||'')); }
+
+    /* ===== Daily Task logic ===== */
+    const dailyPanelEl  = document.getElementById('dailyPanel');
+    const dailyBoardEl  = document.getElementById('dailyBoard');
+    const dailyModal    = document.getElementById('dailyModal');
+    const dailyDayLabel = document.getElementById('dailyDayLabel');
+    const dailyTitle    = document.getElementById('dailyTitle');
+    const dailyDate     = document.getElementById('dailyDate');
+    const dailyDesc     = document.getElementById('dailyDesc');
+    const btnDailyCancel= document.getElementById('btnDailyCancel');
+    const btnDailySave  = document.getElementById('btnDailySave');
+
+    const DAILY_DAYS = [
+      { key:'sat', label:'السبت' },
+      { key:'sun', label:'الأحد' },
+      { key:'mon', label:'الاثنين' },
+      { key:'tue', label:'الثلاثاء' },
+      { key:'wed', label:'الأربعاء' },
+      { key:'thu', label:'الخميس' }
+    ];
+
+    let DAILY_TASKS = [];
+    let unsubDaily = null;
+    let CURRENT_DAY_KEY = null;
+    let CURRENT_DAY_LABEL = null;
+
+    function bootDailyTasks(){
+      if(!dailyBoardEl) return;
+      if(!IS_ADMIN){
+        if(dailyPanelEl) dailyPanelEl.style.display='none';
+        return;
+      }
+      if(dailyPanelEl) dailyPanelEl.style.display='block';
+      renderDailyBoard();
+      listenDailyTasks();
+    }
+
+    function listenDailyTasks(){
+      if(unsubDaily){ unsubDaily(); unsubDaily=null; }
+      unsubDaily = onSnapshot(collection(db,'dailyTasks'), (snap)=>{
+        DAILY_TASKS = [];
+        snap.forEach(d=> DAILY_TASKS.push({ id:d.id, ...(d.data()||{}) }));
+        renderDailyBoard();
+      },(err)=>{
+        console.error(err);
+        alert('⚠️ فشل قراءة المهام اليومية.');
+      });
+    }
+
+    function renderDailyBoard(){
+      if(!dailyBoardEl) return;
+      dailyBoardEl.innerHTML = '';
+      DAILY_DAYS.forEach(day=>{
+        const sec = document.createElement('section');
+        sec.className = 'col daily-col';
+        sec.dataset.dayKey = day.key;
+
+        const head = document.createElement('div');
+        head.className = 'daily-col-head';
+        head.innerHTML = `
+          <span class="day-name">${day.label}</span>
+          ${IS_ADMIN ? `<button class="daily-add-btn" data-act="add-day-task" data-day-key="${day.key}" data-day-label="${day.label}">➕ تاسك جديد</button>` : ''}
+        `;
+
+        const body = document.createElement('div');
+        body.className = 'col-body';
+
+        const list = DAILY_TASKS
+          .filter(t=>t.dayKey===day.key)
+          .sort((a,b)=>{
+            const da = (a.dayDate||'') || '';
+            const db = (b.dayDate||'') || '';
+            return (da>db?-1:da<db?1:0);
+          });
+
+        list.forEach(task=>{
+          const card = document.createElement('article');
+          card.className = 'card daily-card';
+          card.dataset.id = task.id;
+          card.innerHTML = `
+            <h4>${task.title||'-'}</h4>
+            ${task.dayDate ? `<div class="small">📅 ${task.dayDate}</div>` : ''}
+            ${task.description ? `<div class="small-desc">${task.description}</div>` : ''}
+          `;
+          body.appendChild(card);
+        });
+
+        sec.appendChild(head);
+        sec.appendChild(body);
+        dailyBoardEl.appendChild(sec);
+      });
+    }
+
+    function openDailyModal(dayKey, dayLabel){
+      if(!IS_ADMIN) return alert('هذه المنطقة خاصة بالأدمِن فقط.');
+      CURRENT_DAY_KEY = dayKey;
+      CURRENT_DAY_LABEL = dayLabel;
+      dailyDayLabel.textContent = `اليوم: ${dayLabel}`;
+      dailyTitle.value = '';
+      dailyDesc.value = '';
+      const today = new Date().toISOString().slice(0,10);
+      dailyDate.value = today;
+      dailyModal.classList.add('show');
+    }
+
+    function closeDailyModal(){
+      dailyModal.classList.remove('show');
+    }
+
+    if(btnDailyCancel){
+      btnDailyCancel.addEventListener('click', closeDailyModal);
+    }
+    if(dailyModal){
+      dailyModal.addEventListener('click',(e)=>{ if(e.target===dailyModal) closeDailyModal(); });
+    }
+    if(btnDailySave){
+      btnDailySave.addEventListener('click', async ()=>{
+        if(!IS_ADMIN) return alert('هذه المنطقة خاصة بالأدمِن فقط.');
+        if(!CURRENT_DAY_KEY) return;
+        const title = (dailyTitle.value||'').trim();
+        const dayDate = (dailyDate.value||'').trim();
+        const description = (dailyDesc.value||'').trim();
+        if(!title) return alert('اكتب عنوان للتاسك اليومي.');
+
+        try{
+          await addDoc(collection(db,'dailyTasks'), {
+            dayKey: CURRENT_DAY_KEY,
+            dayLabel: CURRENT_DAY_LABEL,
+            title,
+            dayDate: dayDate || null,
+            description: description || null,
+            createdAt: serverTimestamp(),
+            createdBy: CURRENT_USER?.uid || null,
+            active: true
+          });
+          closeDailyModal();
+        }catch(e){
+          console.error(e);
+          alert('⚠️ تعذر حفظ التاسك اليومي: '+(e?.message||e));
+        }
+      });
+    }
+
+    if(dailyBoardEl){
+      dailyBoardEl.addEventListener('click', async (e)=>{
+        const addBtn = e.target.closest('[data-act="add-day-task"]');
+        if(addBtn){
+          const key = addBtn.dataset.dayKey;
+          const label = addBtn.dataset.dayLabel;
+          return openDailyModal(key,label);
+        }
+        const card = e.target.closest('.daily-card');
+        if(card && IS_ADMIN){
+          const id = card.dataset.id;
+          const t = DAILY_TASKS.find(x=>x.id===id);
+          if(!t) return;
+          const info = `${t.title||'-'}\n${t.dayDate||''}\n\n${t.description||''}`;
+          const doDelete = confirm(info + '\n\nهل تريد حذف هذا التاسك اليومي؟');
+          if(doDelete){
+            try{ await deleteDoc(doc(db,'dailyTasks', id)); }catch(err){ alert('⚠️ تعذر الحذف: '+(err?.message||err)); }
+          }
+        }
       });
     }
 
@@ -370,8 +602,6 @@
     let CURRENT_SPACE=null; let SPACE_COLUMNS=DEFAULT_COLUMNS.slice();
     let TASKS_SPACES=[]; let unsubTasksSpaces=null; let OPEN_TASK=null;
     let SPACES_CACHE = new Map(); // id -> name
-
-    function canManageLinks(task){ return IS_ADMIN || (task?.assignee?.uid && task.assignee.uid === (CURRENT_USER?.uid||'')); }
 
     async function ensureReviewColumn(){
       if (!CURRENT_SPACE) return;
@@ -503,7 +733,6 @@
           };
         });
 
-        // ورقة ملخص الأعمدة (Counts per Column)
         const counts = SPACE_COLUMNS.map(col=>{
           const n = TASKS_SPACES.filter(t=>t.status===col).length;
           return { "العمود": col, "عدد المهام": n };
@@ -516,13 +745,12 @@
         XLSX.utils.book_append_sheet(wb, wsTasks, 'Tasks');
         XLSX.utils.book_append_sheet(wb, wsCols,  'Columns');
 
-        // توسيع الأعمدة تلقائيًا
         const fit = (rows)=> Object.keys(rows[0]||{}).map(k=>{
           const max = rows.reduce((m,r)=> Math.max(m, String(r[k]??'').length), k.length);
           return { wch: Math.min(Math.max(12, max+2), 60) };
         });
-        wsTasks['!cols'] = fit(data);
-        wsCols['!cols']  = fit(counts);
+        if(data.length) wsTasks['!cols'] = fit(data);
+        if(counts.length) wsCols['!cols']  = fit(counts);
 
         const spaceName = (SPACES_CACHE.get(CURRENT_SPACE)||'Space').replace(/[\/\\:*?"<>|]/g,'-');
         const ymd = new Date().toISOString().slice(0,10).replace(/-/g,'');

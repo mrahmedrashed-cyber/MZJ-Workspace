@@ -309,6 +309,27 @@
     </div>
   </div>
 
+  <!-- مودال المهام اليومية (احترافي) -->
+  <div class="modal" id="dailyModal">
+    <div class="sheet">
+      <div class="head">
+        <strong id="dailyModalTitle">تاسك يومي</strong>
+      </div>
+      <div class="body">
+        <label>عنوان المهمة اليومية</label>
+        <input id="dailyTitle" placeholder="مثال: مراجعة محتوى إنستجرام">
+        <label>الوصف / التفاصيل</label>
+        <textarea id="dailyDesc" placeholder="اكتب تفاصيل مختصرة للمهمة…"></textarea>
+        <p class="hint">* سيتم ربط المهمة باليوم الذي اخترته من الجدول، ويمكنك نقلها لأي يوم آخر بالسحب والإفلات.</p>
+      </div>
+      <div class="footer">
+        <button class="btn secondary" id="btnDailyCancel">إلغاء</button>
+        <button class="btn danger" id="btnDailyDelete" style="display:none">حذف</button>
+        <button class="btn" id="btnDailySave">حفظ</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="footer" style="padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);">
     <small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small>
   </footer>
@@ -381,12 +402,15 @@
         document.getElementById('navDashboard').style.display='none';
         document.getElementById('navMembers').style.display='none';
         document.getElementById('navAdmin').style.display='none';
+        if(tabDaily) tabDaily.style.display='none'; // إخفاء تبويب المهام اليومية عن الأعضاء
+      }else{
+        if(tabDaily) tabDaily.style.display='inline-flex';
       }
 
       await loadUsers();
       bootSpaces();
       bootCampaigns();
-      bootDailyTasks();
+      if(IS_ADMIN) bootDailyTasks(); // المهام اليومية للأدمِن فقط
     });
 
     /* Common helpers */
@@ -730,7 +754,7 @@
     });
 
     btnSaveTask.addEventListener('click', async ()=>{
-      const isCampaignTab = !panelCampaigns.classList.contains('hidden') && panelSpaces.classList.contains('hidden') && panelDaily.classList.contains('hidden')===false ? false : !panelCampaigns.classList.contains('hidden');
+      const isCampaignTab = !panelCampaigns.classList.contains('hidden'); // أوضح وأسهل
       const targetSpaceId = isCampaignTab ? CURRENT_CAMPAIGN : CURRENT_SPACE;
       const targetCols    = isCampaignTab ? CAMPAIGN_COLUMNS : SPACE_COLUMNS;
 
@@ -1216,9 +1240,20 @@
     const dailyBoard       = document.getElementById('dailyBoard');
     const dailyMeta        = document.getElementById('dailyMeta');
 
+    const dailyModal       = document.getElementById('dailyModal');
+    const dailyModalTitle  = document.getElementById('dailyModalTitle');
+    const dailyTitleInput  = document.getElementById('dailyTitle');
+    const dailyDescInput   = document.getElementById('dailyDesc');
+    const btnDailySave     = document.getElementById('btnDailySave');
+    const btnDailyCancel   = document.getElementById('btnDailyCancel');
+    const btnDailyDelete   = document.getElementById('btnDailyDelete');
+
     let DAILY_MONTH_KEY = null;
     let DAILY_TASKS = [];
     let unsubDailyTasks = null;
+    let CURRENT_DAILY_EDIT = null;
+    let CURRENT_DAILY_WEEK = null;
+    let CURRENT_DAILY_DAY  = null;
 
     function currentMonthKey(){
       const d=new Date();
@@ -1232,10 +1267,10 @@
       dailyMonthSelect.innerHTML='';
       const now=new Date();
       const year=now.getFullYear();
-      // 12 شهر في السنة الحالية
+      // 12 شهر في السنة الحالية (المفتاح فيه السنة، الليبل شهر فقط)
       for(let m=1;m<=12;m++){
         const key = `${year}-${String(m).padStart(2,'0')}`;
-        const label = new Date(year, m-1, 1).toLocaleDateString('ar-SA',{month:'long',year:'numeric'});
+        const label = new Date(year, m-1, 1).toLocaleDateString('ar-SA',{month:'long'});
         const opt=document.createElement('option');
         opt.value=key; opt.textContent=label;
         dailyMonthSelect.appendChild(opt);
@@ -1265,6 +1300,80 @@
       });
     }
 
+    function openDailyModal(mode, task=null){
+      if(!IS_ADMIN) return;
+      if(mode==='new'){
+        CURRENT_DAILY_EDIT = null;
+        dailyModalTitle.textContent='تاسك يومي جديد';
+        dailyTitleInput.value='';
+        dailyDescInput.value='';
+        btnDailyDelete.style.display='none';
+      }else if(mode==='edit' && task){
+        CURRENT_DAILY_EDIT = task.id;
+        CURRENT_DAILY_WEEK = task.week;
+        CURRENT_DAILY_DAY  = task.dayKey;
+        dailyModalTitle.textContent='تعديل تاسك يومي';
+        dailyTitleInput.value = task.title || '';
+        dailyDescInput.value  = task.description || '';
+        btnDailyDelete.style.display='';
+      }
+      dailyModal.classList.add('show');
+    }
+
+    function closeDailyModal(){
+      dailyModal.classList.remove('show');
+    }
+
+    btnDailyCancel.addEventListener('click', ()=> closeDailyModal());
+    dailyModal.addEventListener('click', (e)=>{ if(e.target===dailyModal) closeDailyModal(); });
+
+    btnDailySave.addEventListener('click', async ()=>{
+      if(!IS_ADMIN) return alert('المهام اليومية خاصة بالأدمِن فقط.');
+      const title = (dailyTitleInput.value||'').trim();
+      const desc  = (dailyDescInput.value||'').trim() || null;
+      if(!title) return alert('اكتب عنوان المهمة اليومية.');
+
+      try{
+        if(CURRENT_DAILY_EDIT){
+          await updateDoc(doc(db,'dailyTasks', CURRENT_DAILY_EDIT), {
+            title,
+            description: desc
+          });
+        }else{
+          if(!CURRENT_DAILY_WEEK || !CURRENT_DAILY_DAY){
+            alert('اليوم غير محدد، اختر اليوم من الجدول.');
+            return;
+          }
+          await addDoc(collection(db,'dailyTasks'), {
+            monthKey: DAILY_MONTH_KEY,
+            week: CURRENT_DAILY_WEEK,
+            dayKey: CURRENT_DAILY_DAY,
+            title,
+            description: desc,
+            completed:false,
+            createdAt: serverTimestamp(),
+            createdBy: CURRENT_USER?.uid || null
+          });
+        }
+        closeDailyModal();
+      }catch(err){
+        console.error(err);
+        alert('⚠️ تعذر حفظ المهمة اليومية: '+(err?.message||err));
+      }
+    });
+
+    btnDailyDelete.addEventListener('click', async ()=>{
+      if(!IS_ADMIN || !CURRENT_DAILY_EDIT) return;
+      if(!confirm('تأكيد حذف المهمة اليومية؟')) return;
+      try{
+        await deleteDoc(doc(db,'dailyTasks', CURRENT_DAILY_EDIT));
+        closeDailyModal();
+      }catch(err){
+        console.error(err);
+        alert('⚠️ تعذر حذف المهمة اليومية: '+(err?.message||err));
+      }
+    });
+
     function bootDailyTasks(){
       fillDailyMonthOptions();
       dailyMonthSelect.addEventListener('change', ()=>{
@@ -1273,7 +1382,6 @@
       });
       listenDailyTasks();
 
-      // إضافة / إكمال من الـ board بالـ delegation
       if(dailyBoard){
         dailyBoard.addEventListener('click', async (e)=>{
           const addBtn = e.target.closest('.day-add');
@@ -1281,24 +1389,10 @@
             if(!IS_ADMIN) return alert('المهام اليومية خاصة بالأدمِن فقط حالياً.');
             const week = parseInt(addBtn.dataset.week,10);
             const dayKey = addBtn.dataset.day;
-            const title = prompt('عنوان التاسك اليومي:');
-            if(!title) return;
-            const desc  = prompt('وصف / تفاصيل (اختياري):') || null;
-            try{
-              await addDoc(collection(db,'dailyTasks'), {
-                monthKey: DAILY_MONTH_KEY,
-                week,
-                dayKey,
-                title,
-                description: desc,
-                completed:false,
-                createdAt: serverTimestamp(),
-                createdBy: CURRENT_USER?.uid || null
-              });
-            }catch(err){
-              console.error(err);
-              alert('⚠️ تعذر حفظ التاسك اليومي: '+(err?.message||err));
-            }
+            CURRENT_DAILY_EDIT = null;
+            CURRENT_DAILY_WEEK = week;
+            CURRENT_DAILY_DAY  = dayKey;
+            openDailyModal('new');
             return;
           }
 
@@ -1315,6 +1409,19 @@
             }catch(err){
               console.error(err);
               alert('⚠️ تعذر تحديث حالة التاسك: '+(err?.message||err));
+            }
+            return;
+          }
+
+          const cardEl = e.target.closest('.daily-card');
+          if(cardEl && !e.target.closest('.daily-done-btn')){
+            if(!IS_ADMIN) return;
+            const id = cardEl.dataset.id;
+            const task = DAILY_TASKS.find(t=>t.id===id);
+            if(task){
+              CURRENT_DAILY_WEEK = task.week;
+              CURRENT_DAILY_DAY  = task.dayKey;
+              openDailyModal('edit', task);
             }
           }
         });
@@ -1374,7 +1481,6 @@
       `;
       dailyBoard.appendChild(doneCol);
 
-      // تعبئة الكروت
       const activeTasks = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && !t.completed);
       const doneTasks   = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && t.completed);
 

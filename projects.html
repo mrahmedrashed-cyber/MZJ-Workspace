@@ -22,7 +22,7 @@
 
     /* Tabs */
     .tabs{display:flex;gap:8px;flex-wrap:wrap}
-    .tab{padding:10px 14px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-weight:800;color:var(--brown);display:inline-flex;align-items:center;gap:6px}
+    .tab{padding:10px 14px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-weight:800;color:var(--brown)}
     .tab.active{background:var(--brown);color:#fff;border-color:var(--brown)}
     .hidden{display:none !important}
 
@@ -35,11 +35,10 @@
     .btn{padding:10px 12px;border-radius:12px;border:0;background:var(--brown);color:#fff;cursor:pointer;font-weight:800}
     .btn.secondary{background:#fff;color:var(--brown);border:1px solid var(--brown)}
     .btn.danger{background:#b91c1c;color:#fff}
-    .btn.xs{padding:4px 8px;font-size:11px;border-radius:999px}
     .muted{color:var(--muted)}
     .hint{font-size:12px;color:var(--muted)}
 
-    /* Board عام */
+    /* Board */
     .board{display:grid;gap:14px;grid-template-columns:repeat(5,1fr)}
     @media(max-width:1400px){.board{grid-template-columns:repeat(3,1fr)}}
     @media(max-width:900px){.board{grid-template-columns:repeat(2,1fr)}}
@@ -60,7 +59,6 @@
     .card{background:#fff;border:1px solid #eee;border-radius:12px;padding:8px;box-shadow:0 8px 20px rgba(62,36,32,.06);cursor:grab}
     .card h4{margin:0;color:var(--brown);font-size:15px;line-height:1.4}
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .row.between{justify-content:space-between;align-items:flex-start}
     .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);display:inline-flex;align-items:center;gap:6px}
     .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
     .small{font-size:12px;color:var(--muted)}
@@ -93,28 +91,6 @@
       .sheet{max-height:92vh}
       .sheet .footer{position:sticky;bottom:0}
     }
-
-    /* === Daily Task board === */
-    .daily-board{display:grid;gap:14px;grid-template-columns:repeat(5,1fr)}
-    @media(max-width:1400px){.daily-board{grid-template-columns:repeat(3,1fr)}}
-    @media(max-width:1024px){.daily-board{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:640px){.daily-board{grid-template-columns:1fr}}
-
-    .daily-week-body{display:grid;gap:10px}
-    .daily-day{background:#fdf7f2;border:1px dashed #ecd8c8;border-radius:12px;padding:6px}
-    .daily-day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-    .daily-day-name{font-size:13px;font-weight:700;color:var(--brown)}
-    .day-add{border:0;border-radius:999px;padding:2px 8px;font-size:11px;background:#fff;color:var(--brown);border:1px solid #e5d2c6;cursor:pointer}
-    .day-add:hover{background:#fff8ef}
-    .daily-drop{min-height:60px;border:2px dashed transparent;border-radius:10px;padding:4px;transition:.15s}
-    .daily-drop.drag{border-color:#e5d2c6;background:#fffaf5}
-
-    .daily-card{cursor:grab}
-    .daily-card-title{font-size:14px;font-weight:700;color:var(--brown);margin:0 0 2px}
-    .daily-card-desc{font-size:12px;color:var(--muted);margin:0;margin-top:2px}
-
-    .daily-done-col .col-head{background:#e1f7ea;border-bottom-color:#bbdec6}
-    .daily-done-col .col-title{color:#166534}
   </style>
 
   <!-- SheetJS (للتصدير إلى Excel) -->
@@ -142,7 +118,6 @@
     <div class="tabs">
       <button class="tab active" id="tabSpaces">Spaces</button>
       <button class="tab" id="tabCampaigns">Campaign</button>
-      <button class="tab" id="tabDaily">🗓 Daily Task — المهام اليومية</button>
     </div>
 
     <!-- ===== تبويب Spaces ===== -->
@@ -155,7 +130,7 @@
           <button class="btn secondary" id="btnNewSpace" style="display:none">Space جديد</button>
           <button class="btn" id="btnNewTask" style="display:none">تاسك جديد</button>
           <button class="btn secondary" id="btnSpaceManage" style="display:none">⚙️ إدارة الـSpace</button>
-          <!-- زر التصدير -->
+          <!-- زر التصدير الجديد -->
           <button class="btn secondary" id="btnExportSpace">📤 تصدير Excel</button>
         </div>
         <div class="muted" id="who"></div>
@@ -179,23 +154,9 @@
         <div class="board" id="boardCampaigns"></div>
       </div>
     </section>
-
-    <!-- ===== تبويب Daily Task ===== -->
-    <section class="panel hidden" id="panelDaily">
-      <div class="head">
-        <div class="controls">
-          <select id="dailyMonthSelect" class="select"></select>
-          <span class="muted">اختر شهر المهام اليومية — مقسّم إلى ٤ أسابيع (السبت إلى الخميس)</span>
-        </div>
-        <div class="muted" id="dailyMeta"></div>
-      </div>
-      <div class="body">
-        <div class="daily-board" id="dailyBoard"></div>
-      </div>
-    </section>
   </main>
 
-  <!-- نافذة إنشاء التاسك (Spaces / Campaign) -->
+  <!-- نافذة إنشاء التاسك (نفسها من نسختك الأخيرة مع اختيار السيارة) -->
   <div class="modal" id="taskModal">
     <div class="sheet">
       <div class="head"><strong id="taskModalTitle">تاسك جديد</strong></div>
@@ -309,27 +270,6 @@
     </div>
   </div>
 
-  <!-- مودال المهام اليومية (احترافي) -->
-  <div class="modal" id="dailyModal">
-    <div class="sheet">
-      <div class="head">
-        <strong id="dailyModalTitle">تاسك يومي</strong>
-      </div>
-      <div class="body">
-        <label>عنوان المهمة اليومية</label>
-        <input id="dailyTitle" placeholder="مثال: مراجعة محتوى إنستجرام">
-        <label>الوصف / التفاصيل</label>
-        <textarea id="dailyDesc" placeholder="اكتب تفاصيل مختصرة للمهمة…"></textarea>
-        <p class="hint">* سيتم ربط المهمة باليوم الذي اخترته من الجدول، ويمكنك نقلها لأي يوم آخر بالسحب والإفلات.</p>
-      </div>
-      <div class="footer">
-        <button class="btn secondary" id="btnDailyCancel">إلغاء</button>
-        <button class="btn danger" id="btnDailyDelete" style="display:none">حذف</button>
-        <button class="btn" id="btnDailySave">حفظ</button>
-      </div>
-    </div>
-  </div>
-
   <footer class="footer" style="padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);">
     <small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small>
   </footer>
@@ -355,28 +295,22 @@
     const auth = getAuth(); const db = getFirestore();
 
     /* Tabs */
-    const tabSpaces    = document.getElementById('tabSpaces');
+    const tabSpaces = document.getElementById('tabSpaces');
     const tabCampaigns = document.getElementById('tabCampaigns');
-    const tabDaily     = document.getElementById('tabDaily');
-
-    const panelSpaces    = document.getElementById('panelSpaces');
+    const panelSpaces = document.getElementById('panelSpaces');
     const panelCampaigns = document.getElementById('panelCampaigns');
-    const panelDaily     = document.getElementById('panelDaily');
 
     function switchTab(which){
-      const tabs   = { spaces:tabSpaces, campaigns:tabCampaigns, daily:tabDaily };
-      const panels = { spaces:panelSpaces, campaigns:panelCampaigns, daily:panelDaily };
-
-      Object.keys(tabs).forEach(k=>{
-        if(tabs[k]) tabs[k].classList.toggle('active', k===which);
-      });
-      Object.keys(panels).forEach(k=>{
-        if(panels[k]) panels[k].classList.toggle('hidden', k!==which);
-      });
+      if(which==='spaces'){
+        tabSpaces.classList.add('active'); tabCampaigns.classList.remove('active');
+        panelSpaces.classList.remove('hidden'); panelCampaigns.classList.add('hidden');
+      }else{
+        tabCampaigns.classList.add('active'); tabSpaces.classList.remove('active');
+        panelCampaigns.classList.remove('hidden'); panelSpaces.classList.add('hidden');
+      }
     }
-    tabSpaces.onclick    = ()=> switchTab('spaces');
+    tabSpaces.onclick = ()=> switchTab('spaces');
     tabCampaigns.onclick = ()=> switchTab('campaigns');
-    tabDaily.onclick     = ()=> switchTab('daily');
 
     /* Auth / Roles */
     let CURRENT_USER=null, CURRENT_ROLE='member', IS_ADMIN=false;
@@ -402,34 +336,24 @@
         document.getElementById('navDashboard').style.display='none';
         document.getElementById('navMembers').style.display='none';
         document.getElementById('navAdmin').style.display='none';
-        if(tabDaily) tabDaily.style.display='none'; // إخفاء تبويب المهام اليومية عن الأعضاء
-      }else{
-        if(tabDaily) tabDaily.style.display='inline-flex';
       }
 
       await loadUsers();
       bootSpaces();
       bootCampaigns();
-      if(IS_ADMIN) bootDailyTasks(); // المهام اليومية للأدمِن فقط
     });
 
     /* Common helpers */
-    const MIME_TASK   = "application/x-mzj-task";
-    const MIME_COLUMN = "application/x-mzj-column";
-    const MIME_DAILY  = "application/x-mzj-daily";
+    const MIME_TASK="application/x-mzj-task";
+    const MIME_COLUMN="application/x-mzj-column";
 
     let USERS=[];
     async function loadUsers(){
       const snap = await getDocs(collection(db,'users'));
-      USERS=[];
-      snap.forEach(d=>{
+      USERS=[]; snap.forEach(d=>{
         const u=d.data()||{};
         USERS.push({ uid:d.id, name:u.name||d.id.slice(0,6), role:u.role||'member', color:u.color||'#bc8f74' });
       });
-    }
-
-    function canManageLinks(task){
-      return IS_ADMIN || (task?.assignee?.uid && task.assignee.uid === (CURRENT_USER?.uid||'')); 
     }
 
     /* ===== Spaces logic ===== */
@@ -447,6 +371,8 @@
     let TASKS_SPACES=[]; let unsubTasksSpaces=null; let OPEN_TASK=null;
     let SPACES_CACHE = new Map(); // id -> name
 
+    function canManageLinks(task){ return IS_ADMIN || (task?.assignee?.uid && task.assignee.uid === (CURRENT_USER?.uid||'')); }
+
     async function ensureReviewColumn(){
       if (!CURRENT_SPACE) return;
       if (SPACE_COLUMNS.includes(REVIEW_COLUMN)) return;
@@ -463,17 +389,13 @@
       const snap = await getDocs(qy);
       if (snap.empty){
         const label = new Date().toLocaleDateString('ar-SA',{ year:'numeric', month:'long' });
-        const ref = await addDoc(collection(db,'spaces'), {
-          name:label, columns:DEFAULT_COLUMNS, createdAt:serverTimestamp(), active:true
-        });
+        const ref = await addDoc(collection(db,'spaces'), { name:label, columns:DEFAULT_COLUMNS, createdAt:serverTimestamp(), active:true });
         SPACES_CACHE.set(ref.id, label);
         return ref.id;
       } else {
-        let id=null, ts=0;
-        snap.forEach(d=>{
-          const data=d.data()||{};
-          const s=data.createdAt?.seconds||0;
-          SPACES_CACHE.set(d.id, data.name||d.id);
+        let id=null, ts=0; snap.forEach(d=>{
+          const s=d.data()?.createdAt?.seconds||0;
+          SPACES_CACHE.set(d.id, d.data()?.name||d.id);
           if(s>=ts){ts=s; id=d.id;}
         });
         return id;
@@ -484,8 +406,7 @@
       spaceSelect.innerHTML='';
       list.forEach(s=>{
         if(s.type==='campaign') return;
-        const opt=document.createElement('option'); 
-        opt.value=s.id; opt.textContent=s.name;
+        const opt=document.createElement('option'); opt.value=s.id; opt.textContent=s.name;
         spaceSelect.appendChild(opt);
         SPACES_CACHE.set(s.id, s.name||s.id);
       });
@@ -514,11 +435,8 @@
 
     document.getElementById('btnNewSpace')?.addEventListener('click', async ()=>{
       if(!IS_ADMIN) return;
-      const name = prompt('اسم الـSpace (مثال: نوفمبر 2025):'); 
-      if(!name) return;
-      const ref = await addDoc(collection(db,'spaces'), {
-        name, columns:DEFAULT_COLUMNS, createdAt:serverTimestamp(), active:true
-      });
+      const name = prompt('اسم الـSpace (مثال: نوفمبر 2025):'); if(!name) return;
+      const ref = await addDoc(collection(db,'spaces'), { name, columns:DEFAULT_COLUMNS, createdAt:serverTimestamp(), active:true });
       SPACES_CACHE.set(ref.id, name);
       CURRENT_SPACE = ref.id; SPACE_COLUMNS = DEFAULT_COLUMNS.slice();
       renderBoardSkeletonSpaces(); listenTasksSpaces(true); fillGroupSelect(); ensureReviewColumn();
@@ -534,9 +452,7 @@
         SPACES_CACHE.set(CURRENT_SPACE, nm);
       } else if(action.toLowerCase()==='archive'){
         if(!confirm('تأكيد أرشفة الـSpace؟')) return;
-        await updateDoc(doc(db,'spaces', CURRENT_SPACE), {
-          active:false, archivedAt:serverTimestamp()
-        });
+        await updateDoc(doc(db,'spaces', CURRENT_SPACE), { active:false, archivedAt:serverTimestamp() });
       }
     });
 
@@ -544,9 +460,7 @@
       CURRENT_SPACE = e.target.value;
       const d = await getDoc(doc(db,'spaces', CURRENT_SPACE));
       SPACES_CACHE.set(CURRENT_SPACE, d.data()?.name||CURRENT_SPACE);
-      SPACE_COLUMNS = d.exists()
-        ? (d.data().columns?.length? d.data().columns : DEFAULT_COLUMNS)
-        : DEFAULT_COLUMNS;
+      SPACE_COLUMNS = d.exists()? (d.data().columns?.length? d.data().columns : DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
       renderBoardSkeletonSpaces(); listenTasksSpaces(true); fillGroupSelect(); ensureReviewColumn();
     });
 
@@ -558,8 +472,7 @@
       if(SPACE_COLUMNS.includes(name)) return alert('الاسم موجود');
       const cols = SPACE_COLUMNS.concat([name]);
       await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: cols });
-      SPACE_COLUMNS = cols; newGroupNameEl.value='';
-      renderBoardSkeletonSpaces(); renderTasksSpaces(); fillGroupSelect();
+      SPACE_COLUMNS = cols; newGroupNameEl.value=''; renderBoardSkeletonSpaces(); renderTasksSpaces(); fillGroupSelect();
     });
 
     /* === EXPORT: Space to XLSX === */
@@ -590,6 +503,7 @@
           };
         });
 
+        // ورقة ملخص الأعمدة (Counts per Column)
         const counts = SPACE_COLUMNS.map(col=>{
           const n = TASKS_SPACES.filter(t=>t.status===col).length;
           return { "العمود": col, "عدد المهام": n };
@@ -602,12 +516,13 @@
         XLSX.utils.book_append_sheet(wb, wsTasks, 'Tasks');
         XLSX.utils.book_append_sheet(wb, wsCols,  'Columns');
 
+        // توسيع الأعمدة تلقائيًا
         const fit = (rows)=> Object.keys(rows[0]||{}).map(k=>{
           const max = rows.reduce((m,r)=> Math.max(m, String(r[k]??'').length), k.length);
           return { wch: Math.min(Math.max(12, max+2), 60) };
         });
-        if(data.length)   wsTasks['!cols'] = fit(data);
-        if(counts.length) wsCols['!cols']  = fit(counts);
+        wsTasks['!cols'] = fit(data);
+        wsCols['!cols']  = fit(counts);
 
         const spaceName = (SPACES_CACHE.get(CURRENT_SPACE)||'Space').replace(/[\/\\:*?"<>|]/g,'-');
         const ymd = new Date().toISOString().slice(0,10).replace(/-/g,'');
@@ -620,20 +535,20 @@
     });
 
     /* Users on Spaces modal (إنشاء/حفظ تاسك) */
-    const taskModal      = document.getElementById('taskModal');
-    const btnNewTask     = document.getElementById('btnNewTask');
-    const btnCloseModal  = document.getElementById('btnCloseModal');
-    const btnCancelTask  = document.getElementById('btnCancelTask');
-    const btnSaveTask    = document.getElementById('btnSaveTask');
+    const taskModal = document.getElementById('taskModal');
+    const btnNewTask = document.getElementById('btnNewTask');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnCancelTask = document.getElementById('btnCancelTask');
+    const btnSaveTask = document.getElementById('btnSaveTask');
 
-    const tName          = document.getElementById('tName');
-    const tDesc          = document.getElementById('tDesc');
-    const tDue           = document.getElementById('tDue');
-    const tAssigneeSearch= document.getElementById('tAssigneeSearch');
-    const assigneeMenu   = document.getElementById('assigneeMenu');
-    const assigneeChip   = document.getElementById('assigneeChip');
-    const tColor         = document.getElementById('tColor');
-    const tGroup         = document.getElementById('tGroup');
+    const tName = document.getElementById('tName');
+    const tDesc = document.getElementById('tDesc');
+    const tDue  = document.getElementById('tDue');
+    const tAssigneeSearch = document.getElementById('tAssigneeSearch');
+    const assigneeMenu = document.getElementById('assigneeMenu');
+    const assigneeChip = document.getElementById('assigneeChip');
+    const tColor = document.getElementById('tColor');
+    const tGroup = document.getElementById('tGroup');
     let SELECTED_ASSIGNEE=null;
 
     /* === Car Selector Data === */
@@ -701,8 +616,7 @@
     function fillGroupSelect(cols=SPACE_COLUMNS){
       tGroup.innerHTML='';
       (cols||[]).forEach(col=>{
-        const opt=document.createElement('option'); opt.value=col; opt.textContent=col; 
-        tGroup.appendChild(opt);
+        const opt=document.createElement('option'); opt.value=col; opt.textContent=col; tGroup.appendChild(opt);
       });
     }
 
@@ -749,12 +663,10 @@
     }
     tAssigneeSearch.addEventListener('input', (e)=> renderAssigneeMenu(e.target.value.trim()));
     tAssigneeSearch.addEventListener('focus', ()=> renderAssigneeMenu(tAssigneeSearch.value));
-    document.addEventListener('click', (e)=>{
-      if(!assigneeMenu.contains(e.target) && e.target!==tAssigneeSearch) assigneeMenu.style.display='none';
-    });
+    document.addEventListener('click', (e)=>{ if(!assigneeMenu.contains(e.target) && e.target!==tAssigneeSearch) assigneeMenu.style.display='none'; });
 
     btnSaveTask.addEventListener('click', async ()=>{
-      const isCampaignTab = !panelCampaigns.classList.contains('hidden'); // أوضح وأسهل
+      const isCampaignTab = !panelCampaigns.classList.contains('hidden');
       const targetSpaceId = isCampaignTab ? CURRENT_CAMPAIGN : CURRENT_SPACE;
       const targetCols    = isCampaignTab ? CAMPAIGN_COLUMNS : SPACE_COLUMNS;
 
@@ -762,8 +674,7 @@
       if(!IS_ADMIN) return alert('خاص بالأدمِن');
 
       if(!tName.value.trim()) buildAutoTaskName();
-      const name=tName.value.trim(); 
-      if(!name) return alert('اكتب اسم التاسك');
+      const name=tName.value.trim(); if(!name) return alert('اكتب اسم التاسك');
 
       const due=tDue.value||null;
       const description=tDesc.value||null;
@@ -782,17 +693,14 @@
       try{
         if(assigneeUid){
           await setDoc(doc(db,'users', assigneeUid), { color }, { merge:true });
-          const idx=USERS.findIndex(u=>u.uid===assigneeUid);
-          if(idx>-1) USERS[idx].color=color;
+          const idx=USERS.findIndex(u=>u.uid===assigneeUid); if(idx>-1) USERS[idx].color=color;
         }
         const payload = {
           spaceId: targetSpaceId, name, description, due, status,
           car,
           assignee: assigneeUid ? { uid:assigneeUid, name:assigneeName, color } : null,
           links: [],
-          createdBy: CURRENT_USER?.uid || null,
-          createdAt: serverTimestamp(),
-          active:true
+          createdBy: CURRENT_USER?.uid || null, createdAt: serverTimestamp(), active:true
         };
         await addDoc(collection(db,'tasks'), payload);
         alert('✅ تم حفظ التاسك');
@@ -802,44 +710,27 @@
 
     /* Board & Details — Spaces */
     function renderColumnHeaderActionsSpaces(container, columnName){
-      const actions=document.createElement('div');
-      actions.className='col-actions';
-      actions.style.display=IS_ADMIN?'flex':'none';
-
-      const btnRename=document.createElement('button');
-      btnRename.className='icon';
-      btnRename.textContent='✏️';
-      btnRename.title='إعادة تسمية العمود';
+      const actions=document.createElement('div'); actions.className='col-actions'; actions.style.display=IS_ADMIN?'flex':'none';
+      const btnRename=document.createElement('button'); btnRename.className='icon'; btnRename.textContent='✏️'; btnRename.title='إعادة تسمية العمود';
       btnRename.onclick=async ()=>{
         if(!IS_ADMIN) return;
-        const nn=prompt('اسم العمود الجديد:', columnName); 
-        if(!nn||nn===columnName) return;
-        const cols=SPACE_COLUMNS.map(c=>c===columnName?nn:c);
-        await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: cols });
+        const nn=prompt('اسم العمود الجديد:', columnName); if(!nn||nn===columnName) return;
+        const cols=SPACE_COLUMNS.map(c=>c===columnName?nn:c); await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: cols });
         SPACE_COLUMNS=cols; renderBoardSkeletonSpaces(); renderTasksSpaces(); fillGroupSelect();
       };
-
-      const btnDelete=document.createElement('button');
-      btnDelete.className='icon';
-      btnDelete.textContent='🗑️';
-      btnDelete.title='حذف العمود';
+      const btnDelete=document.createElement('button'); btnDelete.className='icon'; btnDelete.textContent='🗑️'; btnDelete.title='حذف العمود';
       btnDelete.onclick=async ()=>{
         if(!IS_ADMIN) return;
         if(SPACE_COLUMNS.length<=1) return alert('لا يمكن حذف آخر عمود.');
         const target=prompt(`سيتم حذف "${columnName}". انقل المهام إلى: \n${SPACE_COLUMNS.join(', ')}`);
         if(!target || !SPACE_COLUMNS.includes(target) || target===columnName) return;
         const affected=TASKS_SPACES.filter(t=>t.status===columnName);
-        for(const t of affected){
-          try{ await updateDoc(doc(db,'tasks', t.id), { status:target }); }catch{}
-        }
+        for(const t of affected){ try{ await updateDoc(doc(db,'tasks', t.id), { status:target }); }catch{} }
         const cols=SPACE_COLUMNS.filter(c=>c!==columnName);
         await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: cols });
         SPACE_COLUMNS=cols; renderBoardSkeletonSpaces(); renderTasksSpaces(); fillGroupSelect();
       };
-
-      actions.appendChild(btnRename);
-      actions.appendChild(btnDelete);
-      container.appendChild(actions);
+      actions.appendChild(btnRename); actions.appendChild(btnDelete); container.appendChild(actions);
     }
 
     async function persistColumnsOrderSpaces(newOrder){
@@ -875,9 +766,7 @@
           });
         }
         sec.addEventListener('dragover',(e)=>{
-          if (e.dataTransfer.types.includes(MIME_COLUMN)){
-            e.preventDefault(); e.dataTransfer.dropEffect='move';
-          }
+          if (e.dataTransfer.types.includes(MIME_COLUMN)){ e.preventDefault(); e.dataTransfer.dropEffect='move'; }
         });
         sec.addEventListener('drop', async (e)=>{
           if (!e.dataTransfer.types.includes(MIME_COLUMN)) return;
@@ -920,18 +809,14 @@
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
 
       const byStatus={}; (SPACE_COLUMNS||[]).forEach(s=> byStatus[s]=[]);
-      TASKS_SPACES.forEach(t=>{
-        (byStatus[t.status]||(byStatus[t.status]=[])).push(t);
-      });
+      TASKS_SPACES.forEach(t=>{ (byStatus[t.status]||(byStatus[t.status]=[])).push(t); });
 
       (SPACE_COLUMNS||[]).forEach(status=>{
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
         const list = byStatus[status]||[];
         list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
         list.forEach(t=>{
-          const card=document.createElement('article'); 
-          card.className='card'; 
-          card.dataset.id=t.id;
+          const card=document.createElement('article'); card.className='card'; card.dataset.id=t.id;
           const ass=t.assignee;
           const carLine = t.car ? [t.car.brand, t.car.model, t.car.trim, t.car.engine].filter(Boolean).join(' ') : '';
           card.innerHTML = `
@@ -958,8 +843,7 @@
       if(!CURRENT_SPACE) return;
       const qy=query(collection(db,'tasks'), where('spaceId','==', CURRENT_SPACE));
       unsubTasksSpaces=onSnapshot(qy,(snap)=>{
-        TASKS_SPACES=[];
-        snap.forEach(d=> TASKS_SPACES.push({ id:d.id, ...(d.data()||{}) }));
+        TASKS_SPACES=[]; snap.forEach(d=> TASKS_SPACES.push({ id:d.id, ...(d.data()||{}) }));
         renderTasksSpaces();
         if(OPEN_TASK){
           const now = TASKS_SPACES.find(t=>t.id===OPEN_TASK.id);
@@ -997,14 +881,10 @@
 
     function bootCampaigns(){
       onSnapshot(query(collection(db,'spaces'), where('type','==','campaign'), where('active','!=', false)), (snap)=>{
-        const items=[]; 
-        snap.forEach(d=> items.push({ id:d.id, ...(d.data()||{}) }));
+        const items=[]; snap.forEach(d=> items.push({ id:d.id, ...(d.data()||{}) }));
         items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
         campaignSelect.innerHTML='';
-        items.forEach(s=>{
-          const opt=document.createElement('option'); opt.value=s.id; opt.textContent=s.name;
-          campaignSelect.appendChild(opt);
-        });
+        items.forEach(s=>{ const opt=document.createElement('option'); opt.value=s.id; opt.textContent=s.name; campaignSelect.appendChild(opt); });
         if(!CURRENT_CAMPAIGN && items.length) selectCampaign(items[0].id);
       });
       campaignSelect.addEventListener('change', (e)=> selectCampaign(e.target.value));
@@ -1019,14 +899,8 @@
       if(!cols.length) cols = CAMPAIGN_DEFAULT_COLS.slice();
 
       let changed=false;
-      cols = cols.map(c=>{
-        const m=CAMPAIGN_NAME_MAP.get(c)||c;
-        if(m!==c) changed=true;
-        return m;
-      });
-      CAMPAIGN_DEFAULT_COLS.forEach(def=>{
-        if(!cols.includes(def)){ cols.push(def); changed=true; }
-      });
+      cols = cols.map(c=>{ const m=CAMPAIGN_NAME_MAP.get(c)||c; if(m!==c) changed=true; return m; });
+      CAMPAIGN_DEFAULT_COLS.forEach(def=>{ if(!cols.includes(def)){ cols.push(def); changed=true; } });
       if(changed) await updateDoc(doc(db,'spaces', id), { columns: cols });
 
       CAMPAIGN_COLUMNS = cols;
@@ -1047,7 +921,7 @@
         sec.className='col';
         sec.dataset.status=col;
         sec.innerHTML=`
-          <div class="col-head" style="cursor:default">
+          <div class="col-head">
             <span class="col-title">${col}</span>
             <div class="col-actions" style="${IS_ADMIN?'display:flex':'display:none'}">
               <button class="icon" data-act="newtask" title="تاسك جديد">➕</button>
@@ -1058,11 +932,7 @@
         board.appendChild(sec);
         sec.querySelector('.col-actions').addEventListener('click',(e)=>{
           const act=e.target.dataset.act;
-          if(act==='newtask'){
-            fillGroupSelect(CAMPAIGN_COLUMNS);
-            tGroup.value=col;
-            openCreate(CAMPAIGN_COLUMNS);
-          }
+          if(act==='newtask') { fillGroupSelect(CAMPAIGN_COLUMNS); tGroup.value=col; openCreate(CAMPAIGN_COLUMNS); }
         });
       });
 
@@ -1089,18 +959,14 @@
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
 
       const byStatus={}; (CAMPAIGN_COLUMNS||[]).forEach(s=> byStatus[s]=[]);
-      TASKS_CAMPAIGNS.forEach(t=>{
-        (byStatus[t.status]||(byStatus[t.status]=[])).push(t);
-      });
+      TASKS_CAMPAIGNS.forEach(t=>{ (byStatus[t.status]||(byStatus[t.status]=[])).push(t); });
 
       (CAMPAIGN_COLUMNS||[]).forEach(status=>{
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
         const list = byStatus[status]||[];
         list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
         list.forEach(t=>{
-          const card=document.createElement('article'); 
-          card.className='card'; 
-          card.dataset.id=t.id;
+          const card=document.createElement('article'); card.className='card'; card.dataset.id=t.id;
           const ass=t.assignee;
           const carLine = t.car ? [t.car.brand, t.car.model, t.car.trim, t.car.engine].filter(Boolean).join(' ') : '';
           card.innerHTML = `
@@ -1127,8 +993,7 @@
       if(!CURRENT_CAMPAIGN) return;
       const qy=query(collection(db,'tasks'), where('spaceId','==', CURRENT_CAMPAIGN));
       unsubTasksCampaigns=onSnapshot(qy,(snap)=>{
-        TASKS_CAMPAIGNS=[];
-        snap.forEach(d=> TASKS_CAMPAIGNS.push({ id:d.id, ...(d.data()||{}) }));
+        TASKS_CAMPAIGNS=[]; snap.forEach(d=> TASKS_CAMPAIGNS.push({ id:d.id, ...(d.data()||{}) }));
         renderTasksCampaigns();
       },(err)=>{ console.error(err); alert('⚠️ فشل قراءة التاسكات (الحملات).'); });
     }
@@ -1149,8 +1014,7 @@
       document.getElementById('btnEditTask').style.display = IS_ADMIN ? '' : 'none';
       document.getElementById('btnDeleteTask').style.display = IS_ADMIN ? '' : 'none';
 
-      const linksEl=document.getElementById('dLinks'); 
-      linksEl.innerHTML='';
+      const linksEl=document.getElementById('dLinks'); linksEl.innerHTML='';
       (task.links||[]).forEach((l, idx)=>{
         const chip=document.createElement('span'); chip.className='chip'; chip.dataset.idx=idx;
         const title = l.title || l.url;
@@ -1172,10 +1036,8 @@
 
     document.getElementById('btnMarkReviewed').addEventListener('click', async ()=>{
       if(!OPEN_TASK) return;
-      try{
-        await updateDoc(doc(db,'tasks', OPEN_TASK.id), { status: "تحت المراجعة" });
-        document.getElementById('detailModal').classList.remove('show');
-      }catch(e){ alert('⚠️ تعذر تحديث الحالة: '+e.message); }
+      try{ await updateDoc(doc(db,'tasks', OPEN_TASK.id), { status: "تحت المراجعة" }); document.getElementById('detailModal').classList.remove('show'); }
+      catch(e){ alert('⚠️ تعذر تحديث الحالة: '+e.message); }
     });
 
     document.getElementById('btnEditTask').addEventListener('click', async ()=>{
@@ -1190,10 +1052,8 @@
     document.getElementById('btnDeleteTask').addEventListener('click', async ()=>{
       if(!IS_ADMIN || !OPEN_TASK) return;
       if(!confirm('تأكيد حذف المهمة؟')) return;
-      try{
-        await deleteDoc(doc(db,'tasks', OPEN_TASK.id));
-        document.getElementById('detailModal').classList.remove('show');
-      }catch(e){ alert('⚠️ فشل الحذف: '+e.message); }
+      try{ await deleteDoc(doc(db,'tasks', OPEN_TASK.id)); document.getElementById('detailModal').classList.remove('show'); }
+      catch(e){ alert('⚠️ فشل الحذف: '+e.message); }
     });
 
     document.getElementById('btnAddLink').addEventListener('click', async ()=>{
@@ -1207,8 +1067,7 @@
         await updateDoc(doc(db,'tasks', OPEN_TASK.id), {
           links: arrayUnion({ title, url, by: CURRENT_USER?.uid || null, at: Timestamp.now() })
         });
-        document.getElementById('dLinkTitle').value='';
-        document.getElementById('dLinkUrl').value='';
+        document.getElementById('dLinkTitle').value=''; document.getElementById('dLinkUrl').value='';
       }catch(e){ alert('⚠️ تعذر حفظ الرابط: '+e.message); }
     });
 
@@ -1217,365 +1076,9 @@
       if(!CURRENT_SPACE){
         CURRENT_SPACE = await ensureDefaultSpace();
         const d = await getDoc(doc(db,'spaces', CURRENT_SPACE));
-        SPACE_COLUMNS = d.exists()
-          ? (d.data().columns?.length? d.data().columns : DEFAULT_COLUMNS)
-          : DEFAULT_COLUMNS;
+        SPACE_COLUMNS = d.exists()? (d.data().columns?.length? d.data().columns : DEFAULT_COLUMNS) : DEFAULT_COLUMNS;
         renderBoardSkeletonSpaces(); listenTasksSpaces(); fillGroupSelect();
       }
-    }
-
-    /* ===== Daily Task logic ===== */
-
-    const DAILY_DAYS = [
-      { key:'sat', label:'السبت' },
-      { key:'sun', label:'الأحد' },
-      { key:'mon', label:'الاثنين' },
-      { key:'tue', label:'الثلاثاء' },
-      { key:'wed', label:'الأربعاء' },
-      { key:'thu', label:'الخميس' }
-    ];
-    const DAILY_WEEKS = [1,2,3,4];
-
-    const dailyMonthSelect = document.getElementById('dailyMonthSelect');
-    const dailyBoard       = document.getElementById('dailyBoard');
-    const dailyMeta        = document.getElementById('dailyMeta');
-
-    const dailyModal       = document.getElementById('dailyModal');
-    const dailyModalTitle  = document.getElementById('dailyModalTitle');
-    const dailyTitleInput  = document.getElementById('dailyTitle');
-    const dailyDescInput   = document.getElementById('dailyDesc');
-    const btnDailySave     = document.getElementById('btnDailySave');
-    const btnDailyCancel   = document.getElementById('btnDailyCancel');
-    const btnDailyDelete   = document.getElementById('btnDailyDelete');
-
-    let DAILY_MONTH_KEY = null;
-    let DAILY_TASKS = [];
-    let unsubDailyTasks = null;
-    let CURRENT_DAILY_EDIT = null;
-    let CURRENT_DAILY_WEEK = null;
-    let CURRENT_DAILY_DAY  = null;
-
-    function currentMonthKey(){
-      const d=new Date();
-      const y=d.getFullYear();
-      const m=String(d.getMonth()+1).padStart(2,'0');
-      return `${y}-${m}`;
-    }
-
-    function fillDailyMonthOptions(){
-      if(!dailyMonthSelect) return;
-      dailyMonthSelect.innerHTML='';
-      const now=new Date();
-      const year=now.getFullYear();
-      // 12 شهر في السنة الحالية (المفتاح فيه السنة، الليبل شهر فقط)
-      for(let m=1;m<=12;m++){
-        const key = `${year}-${String(m).padStart(2,'0')}`;
-        const label = new Date(year, m-1, 1).toLocaleDateString('ar-SA',{month:'long'});
-        const opt=document.createElement('option');
-        opt.value=key; opt.textContent=label;
-        dailyMonthSelect.appendChild(opt);
-      }
-      DAILY_MONTH_KEY = DAILY_MONTH_KEY || currentMonthKey();
-      dailyMonthSelect.value = DAILY_MONTH_KEY;
-      updateDailyMeta();
-    }
-
-    function updateDailyMeta(){
-      if(!dailyMeta) return;
-      const label = dailyMonthSelect.options[dailyMonthSelect.selectedIndex]?.textContent || '';
-      const countMonth = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && !t.completed).length;
-      const countDone  = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && t.completed).length;
-      dailyMeta.textContent = `${label} — مهام قيد العمل: ${countMonth} | تم التنفيذ: ${countDone}`;
-    }
-
-    function listenDailyTasks(){
-      if(unsubDailyTasks){ unsubDailyTasks(); unsubDailyTasks=null; }
-      unsubDailyTasks = onSnapshot(collection(db,'dailyTasks'), (snap)=>{
-        DAILY_TASKS=[];
-        snap.forEach(d=> DAILY_TASKS.push({ id:d.id, ...(d.data()||{}) }));
-        renderDailyBoard();
-      },(err)=>{
-        console.error(err);
-        alert('⚠️ فشل قراءة المهام اليومية.');
-      });
-    }
-
-    function openDailyModal(mode, task=null){
-      if(!IS_ADMIN) return;
-      if(mode==='new'){
-        CURRENT_DAILY_EDIT = null;
-        dailyModalTitle.textContent='تاسك يومي جديد';
-        dailyTitleInput.value='';
-        dailyDescInput.value='';
-        btnDailyDelete.style.display='none';
-      }else if(mode==='edit' && task){
-        CURRENT_DAILY_EDIT = task.id;
-        CURRENT_DAILY_WEEK = task.week;
-        CURRENT_DAILY_DAY  = task.dayKey;
-        dailyModalTitle.textContent='تعديل تاسك يومي';
-        dailyTitleInput.value = task.title || '';
-        dailyDescInput.value  = task.description || '';
-        btnDailyDelete.style.display='';
-      }
-      dailyModal.classList.add('show');
-    }
-
-    function closeDailyModal(){
-      dailyModal.classList.remove('show');
-    }
-
-    btnDailyCancel.addEventListener('click', ()=> closeDailyModal());
-    dailyModal.addEventListener('click', (e)=>{ if(e.target===dailyModal) closeDailyModal(); });
-
-    btnDailySave.addEventListener('click', async ()=>{
-      if(!IS_ADMIN) return alert('المهام اليومية خاصة بالأدمِن فقط.');
-      const title = (dailyTitleInput.value||'').trim();
-      const desc  = (dailyDescInput.value||'').trim() || null;
-      if(!title) return alert('اكتب عنوان المهمة اليومية.');
-
-      try{
-        if(CURRENT_DAILY_EDIT){
-          await updateDoc(doc(db,'dailyTasks', CURRENT_DAILY_EDIT), {
-            title,
-            description: desc
-          });
-        }else{
-          if(!CURRENT_DAILY_WEEK || !CURRENT_DAILY_DAY){
-            alert('اليوم غير محدد، اختر اليوم من الجدول.');
-            return;
-          }
-          await addDoc(collection(db,'dailyTasks'), {
-            monthKey: DAILY_MONTH_KEY,
-            week: CURRENT_DAILY_WEEK,
-            dayKey: CURRENT_DAILY_DAY,
-            title,
-            description: desc,
-            completed:false,
-            createdAt: serverTimestamp(),
-            createdBy: CURRENT_USER?.uid || null
-          });
-        }
-        closeDailyModal();
-      }catch(err){
-        console.error(err);
-        alert('⚠️ تعذر حفظ المهمة اليومية: '+(err?.message||err));
-      }
-    });
-
-    btnDailyDelete.addEventListener('click', async ()=>{
-      if(!IS_ADMIN || !CURRENT_DAILY_EDIT) return;
-      if(!confirm('تأكيد حذف المهمة اليومية؟')) return;
-      try{
-        await deleteDoc(doc(db,'dailyTasks', CURRENT_DAILY_EDIT));
-        closeDailyModal();
-      }catch(err){
-        console.error(err);
-        alert('⚠️ تعذر حذف المهمة اليومية: '+(err?.message||err));
-      }
-    });
-
-    function bootDailyTasks(){
-      fillDailyMonthOptions();
-      dailyMonthSelect.addEventListener('change', ()=>{
-        DAILY_MONTH_KEY = dailyMonthSelect.value;
-        renderDailyBoard();
-      });
-      listenDailyTasks();
-
-      if(dailyBoard){
-        dailyBoard.addEventListener('click', async (e)=>{
-          const addBtn = e.target.closest('.day-add');
-          if(addBtn){
-            if(!IS_ADMIN) return alert('المهام اليومية خاصة بالأدمِن فقط حالياً.');
-            const week = parseInt(addBtn.dataset.week,10);
-            const dayKey = addBtn.dataset.day;
-            CURRENT_DAILY_EDIT = null;
-            CURRENT_DAILY_WEEK = week;
-            CURRENT_DAILY_DAY  = dayKey;
-            openDailyModal('new');
-            return;
-          }
-
-          const doneBtn = e.target.closest('.daily-done-btn');
-          if(doneBtn){
-            const id = doneBtn.dataset.id;
-            const task = DAILY_TASKS.find(t=>t.id===id);
-            if(!task) return;
-            try{
-              await updateDoc(doc(db,'dailyTasks', id), {
-                completed:true,
-                completedAt: serverTimestamp()
-              });
-            }catch(err){
-              console.error(err);
-              alert('⚠️ تعذر تحديث حالة التاسك: '+(err?.message||err));
-            }
-            return;
-          }
-
-          const cardEl = e.target.closest('.daily-card');
-          if(cardEl && !e.target.closest('.daily-done-btn')){
-            if(!IS_ADMIN) return;
-            const id = cardEl.dataset.id;
-            const task = DAILY_TASKS.find(t=>t.id===id);
-            if(task){
-              CURRENT_DAILY_WEEK = task.week;
-              CURRENT_DAILY_DAY  = task.dayKey;
-              openDailyModal('edit', task);
-            }
-          }
-        });
-      }
-    }
-
-    function renderDailyBoard(){
-      if(!dailyBoard) return;
-      DAILY_MONTH_KEY = DAILY_MONTH_KEY || currentMonthKey();
-      if(dailyMonthSelect && dailyMonthSelect.value!==DAILY_MONTH_KEY){
-        dailyMonthSelect.value = DAILY_MONTH_KEY;
-      }
-
-      dailyBoard.innerHTML='';
-
-      // ٤ أسابيع
-      DAILY_WEEKS.forEach(week=>{
-        const sec=document.createElement('section');
-        sec.className='col';
-        sec.dataset.week=week;
-        sec.innerHTML=`
-          <div class="col-head" style="cursor:default">
-            <span class="col-title">الأسبوع ${week}</span>
-          </div>
-          <div class="col-body daily-week-body"></div>
-        `;
-        const body=sec.querySelector('.daily-week-body');
-
-        DAILY_DAYS.forEach(day=>{
-          const dayBox=document.createElement('div');
-          dayBox.className='daily-day';
-          dayBox.dataset.week=week;
-          dayBox.dataset.day=day.key;
-          dayBox.innerHTML=`
-            <div class="daily-day-head">
-              <span class="daily-day-name">${day.label}</span>
-              ${IS_ADMIN?`<button class="day-add" data-week="${week}" data-day="${day.key}">➕</button>`:''}
-            </div>
-            <div class="daily-drop" data-week="${week}" data-day="${day.key}"></div>
-          `;
-          body.appendChild(dayBox);
-        });
-
-        dailyBoard.appendChild(sec);
-      });
-
-      // كارت "تم التنفيذ"
-      const doneCol=document.createElement('section');
-      doneCol.className='col daily-done-col';
-      doneCol.innerHTML=`
-        <div class="col-head" style="cursor:default">
-          <span class="col-title">تم التنفيذ</span>
-        </div>
-        <div class="col-body">
-          <div class="daily-drop" data-week="done" data-day="done"></div>
-        </div>
-      `;
-      dailyBoard.appendChild(doneCol);
-
-      const activeTasks = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && !t.completed);
-      const doneTasks   = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && t.completed);
-
-      activeTasks.forEach(t=>{
-        const zone = dailyBoard.querySelector(`.daily-drop[data-week="${t.week}"][data-day="${t.dayKey}"]`);
-        if(!zone) return;
-        const card = buildDailyCard(t,false);
-        zone.appendChild(card);
-      });
-
-      const doneZone = dailyBoard.querySelector(`.daily-drop[data-week="done"][data-day="done"]`);
-      doneTasks.forEach(t=>{
-        const card = buildDailyCard(t,true);
-        doneZone.appendChild(card);
-      });
-
-      // سحب وإفلات
-      dailyBoard.querySelectorAll('.daily-drop').forEach(zone=>{
-        zone.addEventListener('dragover', e=>{
-          if(e.dataTransfer.types.includes(MIME_DAILY)){
-            e.preventDefault();
-            zone.classList.add('drag');
-          }
-        });
-        zone.addEventListener('dragleave', ()=> zone.classList.remove('drag'));
-        zone.addEventListener('drop', async (e)=>{
-          if(!e.dataTransfer.types.includes(MIME_DAILY)) return;
-          e.preventDefault();
-          zone.classList.remove('drag');
-          const id = e.dataTransfer.getData(MIME_DAILY);
-          const task = DAILY_TASKS.find(t=>t.id===id);
-          if(!task) return;
-          const week = zone.dataset.week;
-          const day  = zone.dataset.day;
-          try{
-            if(week==='done'){
-              await updateDoc(doc(db,'dailyTasks', id), {
-                completed:true,
-                completedAt: serverTimestamp()
-              });
-            }else{
-              await updateDoc(doc(db,'dailyTasks', id), {
-                week: parseInt(week,10),
-                dayKey: day,
-                completed:false
-              });
-            }
-          }catch(err){
-            console.error(err);
-            alert('⚠️ تعذر نقل التاسك اليومي: '+(err?.message||err));
-          }
-        });
-      });
-
-      updateDailyMeta();
-    }
-
-    function buildDailyCard(t, isDone){
-      const card=document.createElement('article');
-      card.className='card daily-card';
-      card.dataset.id=t.id;
-      card.setAttribute('draggable','true');
-
-      const title = t.title || '-';
-      const desc  = t.description || '';
-
-      const inner=document.createElement('div');
-      inner.className='row between';
-      const left=document.createElement('div');
-      left.innerHTML = `
-        <p class="daily-card-title">${title}</p>
-        ${desc?`<p class="daily-card-desc">${desc}</p>`:''}
-      `;
-      inner.appendChild(left);
-
-      if(!isDone){
-        const right=document.createElement('div');
-        if(IS_ADMIN){
-          const btn=document.createElement('button');
-          btn.className='btn secondary xs daily-done-btn';
-          btn.textContent='تم';
-          btn.dataset.id=t.id;
-          right.appendChild(btn);
-        }
-        inner.appendChild(right);
-      }
-
-      card.appendChild(inner);
-
-      card.addEventListener('dragstart', e=>{
-        e.dataTransfer.effectAllowed='move';
-        e.dataTransfer.setData(MIME_DAILY, t.id);
-      });
-
-      return card;
     }
   </script>
 </body>

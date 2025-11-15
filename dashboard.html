@@ -350,7 +350,7 @@
       if(!ymd) return '';
       const [y,m,d] = ymd.split('-').map(Number);
       const js = new Date(y, m-1, d);
-      return js.toLocaleDateString('en-GB'); // DD/MM/YYYY
+      return js.toLocaleDateString('en-GB');
     };
     const todayYMD = ()=>{
       const d=new Date();
@@ -381,6 +381,33 @@
         if(p<1) requestAnimationFrame(step); else el.dataset.from = target;
       }
       requestAnimationFrame(step);
+    }
+
+    // حساب رقم الأسبوع في الشهر (1–4) على أساس أن بداية الأسبوع = السبت ونهايته = الخميس
+    function weekIndexSatThu(date){
+      const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      const firstOfMonth = new Date(y, m, 1);
+
+      // أول سبت في الشهر
+      let firstSat = new Date(y, m, 1);
+      while(firstSat.getDay() !== 6){ // 6 = Saturday
+        firstSat.setDate(firstSat.getDate()+1);
+      }
+
+      // لو اليوم قبل أول سبت نحسبه مع الأسبوع الأول (عشان ما يضيعش)
+      if(d < firstSat){
+        return 1;
+      }
+
+      const diffDays = Math.floor((d - firstSat) / 86400000);
+      let idx = Math.floor(diffDays / 7) + 1; // يبدأ من 1
+
+      // تثبيت على 4 أسابيع فقط
+      if(idx < 1) idx = 1;
+      if(idx > 4) idx = 4;
+      return idx;
     }
 
     // Export PDF
@@ -504,7 +531,7 @@
       }
     }
 
-    // Daily Task: group by month + week-of-month
+    // Daily Task: group by month + 4 weeks (Sat–Thu)
     function renderDailyMonthly(tasks){
       if(!tasks || !tasks.length){
         dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد مهام في Daily Task حاليًا.</div>`;
@@ -513,7 +540,7 @@
 
       const monthsNames=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 
-      const monthsMap = {}; // key "YYYY-MM" -> { total, done, remaining, weeks: {1..5: {total,done,remaining}} }
+      const monthsMap = {}; // key "YYYY-MM" -> { total, done, remaining, weeks: {1..4: {total,done,remaining}} }
 
       tasks.forEach(t=>{
         let d;
@@ -529,9 +556,10 @@
 
         const y = d.getFullYear();
         const m = d.getMonth()+1;
-        const day = d.getDate();
         const ymKey = `${y}-${String(m).padStart(2,'0')}`;
-        const weekIndex = Math.min(5, Math.floor((day-1)/7)+1); // 1–5
+
+        // الأسبوع 1–4 بناءً على سبت–خميس
+        const weekIndex = weekIndexSatThu(d); // 1..4 فقط
 
         if(!monthsMap[ymKey]) monthsMap[ymKey] = {
           year:y, month:m,
@@ -571,14 +599,15 @@
           </tr>
         `;
 
-        // أسابيع الشهر
-        const weekKeys = Object.keys(mData.weeks).map(Number).sort((a,b)=>a-b);
+        // أسابيع الشهر (1 إلى 4 فقط)
+        const weekKeys = [1,2,3,4];
         weekKeys.forEach(wk=>{
           const w = mData.weeks[wk];
+          if(!w) return; // لو مفيش مهام في الأسبوع ده نعديه
           const wPct = w.total ? Math.round(w.done/w.total*100) : 0;
           rows += `
             <tr>
-              <td style="padding-right:24px;">الأسبوع ${wk}</td>
+              <td style="padding-right:24px;">الأسبوع ${wk} (سبت–خميس)</td>
               <td>${w.total}</td>
               <td style="color:var(--ok);font-weight:700">${w.done}</td>
               <td style="color:var(--danger);font-weight:700">${w.remaining}</td>

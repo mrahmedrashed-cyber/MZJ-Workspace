@@ -182,7 +182,7 @@
     <section class="panel">
       <div class="head">
         <strong>Daily Task — ملخص شهري / أسبوعي</strong>
-        <span class="muted">Space: "Daily Task - المهام اليومية"</span>
+        <span class="muted" id="dailySpaceLabel">Space: —</span>
       </div>
       <div class="body" id="dailyMonthlyWrap">
         <div class="empty">جارِ تحميل بيانات Daily Task ...</div>
@@ -312,6 +312,7 @@
     const todayChip   = document.getElementById('todayChip');
     const todayInfo   = document.getElementById('todayInfo');
     const dailyMonthlyWrap = document.getElementById('dailyMonthlyWrap');
+    const dailySpaceLabel  = document.getElementById('dailySpaceLabel');
 
     // KPI refs
     const kTotal=document.getElementById('k_total');
@@ -501,17 +502,32 @@
       }, (err)=>{ console.error(err); });
     }
 
-    // Daily Task watcher
+    // Daily Task watcher (يبحث بالـ contains على الاسم)
     async function bootDailyTasksWatcher(){
       try{
-        const qSpaces = query(collection(db,'spaces'), where('name','==','Daily Task - المهام اليومية'));
-        const snap = await getDocs(qSpaces);
-        if(snap.empty){
-          dailyMonthlyWrap.innerHTML = `<div class="empty">لم يتم العثور على Space باسم "Daily Task - المهام اليومية".</div>`;
+        const snap = await getDocs(collection(db,'spaces'));
+        let sDoc = null;
+        snap.forEach(d=>{
+          if(sDoc) return;
+          const data = d.data() || {};
+          const name = (data.name || '').toString();
+          if(
+            name.includes('Daily Task') ||
+            name.includes('المهام اليومية')
+          ){
+            sDoc = d;
+          }
+        });
+
+        if(!sDoc){
+          dailyMonthlyWrap.innerHTML = `<div class="empty">لم يتم العثور على Space خاص بالـ Daily Task.</div>`;
+          dailySpaceLabel.textContent = 'Space: —';
           return;
         }
-        const sDoc = snap.docs[0];
+
         DAILY_SPACE_ID = sDoc.id;
+        const data = sDoc.data() || {};
+        dailySpaceLabel.textContent = `Space: ${data.name || 'Daily Task'}`;
 
         if(unsubDaily){ unsubDaily(); unsubDaily=null; }
         const qTasks = query(collection(db,'tasks'), where('spaceId','==', DAILY_SPACE_ID));
@@ -579,14 +595,14 @@
         return;
       }
 
-      // نختار أحدث شهر (آخر واحد في الترتيب)
+      // أحدث شهر
       const latestKey = keys[keys.length-1];
       const mData = monthsMap[latestKey];
 
       const monthLabel = `${monthsNames[mData.month-1]} ${mData.year}`;
       const monthPct = mData.total ? Math.round(mData.done/mData.total*100) : 0;
 
-      // هيدر يشبه صفحة Daily Task
+      // هيدر شبيه بصفحة Daily Task
       const headerLine = `
         <div style="margin-bottom:10px;font-weight:700;color:var(--brown);font-size:15px;">
           ${monthLabel}
@@ -658,7 +674,7 @@
       countUp(kOver, overdue);
       countUp(kToday, dueToday);
       countUp(kRev, review);
-      countUp(kUnas, umas);
+      countUp(kUnas, unas);
 
       todayInfo.textContent = `Today: ${new Date().toLocaleDateString('en-GB')}`;
 

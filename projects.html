@@ -78,9 +78,10 @@
     .daily-col-head .day-name{font-weight:700;color:var(--brown);font-size:14px}
     .daily-add-btn{border:0;border-radius:999px;padding:4px 8px;font-size:11px;background:#fff;color:var(--brown);cursor:pointer;border:1px solid #e8d8cb;display:inline-flex;align-items:center;gap:4px}
     .daily-add-btn:hover{background:#fff8ef}
-    .daily-card{cursor:default}
+    .daily-card{cursor:pointer}
     .daily-card h4{font-size:14px;margin:0 0 4px}
     .daily-card .small-desc{font-size:12px;color:var(--muted);margin-top:2px;max-height:52px;overflow:hidden}
+    .daily-drop.drag{border:2px dashed #e5d2c6;background:#fffaf5;border-radius:12px}
 
     /* Modal */
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;place-items:center;padding:16px;z-index:99}
@@ -149,7 +150,6 @@
           <button class="btn secondary" id="btnNewSpace" style="display:none">Space جديد</button>
           <button class="btn" id="btnNewTask" style="display:none">تاسك جديد</button>
           <button class="btn secondary" id="btnSpaceManage" style="display:none">⚙️ إدارة الـSpace</button>
-          <!-- زر التصدير الجديد -->
           <button class="btn secondary" id="btnExportSpace">📤 تصدير Excel</button>
         </div>
         <div class="muted" id="who"></div>
@@ -264,11 +264,11 @@
     </div>
   </div>
 
-  <!-- نافذة المهام اليومية -->
+  <!-- نافذة المهام اليومية (عرض + تعديل + حذف) -->
   <div class="modal" id="dailyModal">
     <div class="sheet">
       <div class="head">
-        <strong>تاسك يومي</strong>
+        <strong id="dailyModalTitle">تاسك يومي</strong>
         <span class="small muted" id="dailyDayLabel"></span>
       </div>
       <div class="body">
@@ -283,12 +283,14 @@
       </div>
       <div class="footer">
         <button class="btn secondary" id="btnDailyCancel">إلغاء</button>
-        <button class="btn" id="btnDailySave">حفظ التاسك اليومي</button>
+        <span style="flex:1"></span>
+        <button class="btn danger" id="btnDailyDelete" style="display:none">حذف التاسك</button>
+        <button class="btn" id="btnDailySave">حفظ</button>
       </div>
     </div>
   </div>
 
-  <!-- تفاصيل تاسك -->
+  <!-- تفاصيل تاسك (Spaces / Campaign) -->
   <div class="modal" id="detailModal">
     <div class="sheet">
       <div class="head"><strong id="dTitle">تفاصيل المهمة</strong></div>
@@ -410,8 +412,9 @@
     });
 
     /* Common helpers */
-    const MIME_TASK="application/x-mzj-task";
-    const MIME_COLUMN="application/x-mzj-column";
+    const MIME_TASK  = "application/x-mzj-task";
+    const MIME_COLUMN= "application/x-mzj-column";
+    const MIME_DAILY = "application/x-mzj-daily";
 
     let USERS=[];
     async function loadUsers(){
@@ -428,12 +431,14 @@
     const dailyPanelEl  = document.getElementById('dailyPanel');
     const dailyBoardEl  = document.getElementById('dailyBoard');
     const dailyModal    = document.getElementById('dailyModal');
+    const dailyModalTitle = document.getElementById('dailyModalTitle');
     const dailyDayLabel = document.getElementById('dailyDayLabel');
     const dailyTitle    = document.getElementById('dailyTitle');
     const dailyDate     = document.getElementById('dailyDate');
     const dailyDesc     = document.getElementById('dailyDesc');
     const btnDailyCancel= document.getElementById('btnDailyCancel');
     const btnDailySave  = document.getElementById('btnDailySave');
+    const btnDailyDelete= document.getElementById('btnDailyDelete');
 
     const DAILY_DAYS = [
       { key:'sat', label:'السبت' },
@@ -448,6 +453,12 @@
     let unsubDaily = null;
     let CURRENT_DAY_KEY = null;
     let CURRENT_DAY_LABEL = null;
+    let CURRENT_DAILY_ID = null;
+
+    function dayLabelFromKey(key){
+      const d = DAILY_DAYS.find(x=>x.key===key);
+      return d ? d.label : key;
+    }
 
     function bootDailyTasks(){
       if(!dailyBoardEl) return;
@@ -488,7 +499,8 @@
         `;
 
         const body = document.createElement('div');
-        body.className = 'col-body';
+        body.className = 'col-body daily-drop';
+        body.dataset.dayKey = day.key;
 
         const list = DAILY_TASKS
           .filter(t=>t.dayKey===day.key)
@@ -502,12 +514,51 @@
           const card = document.createElement('article');
           card.className = 'card daily-card';
           card.dataset.id = task.id;
+          card.setAttribute('draggable','true');
           card.innerHTML = `
             <h4>${task.title||'-'}</h4>
             ${task.dayDate ? `<div class="small">📅 ${task.dayDate}</div>` : ''}
             ${task.description ? `<div class="small-desc">${task.description}</div>` : ''}
           `;
+          card.addEventListener('dragstart', e=>{
+            e.dataTransfer.effectAllowed='move';
+            e.dataTransfer.setData(MIME_DAILY, task.id);
+          });
+          card.addEventListener('click', ()=>{
+            if(!IS_ADMIN) return;
+            const t = DAILY_TASKS.find(x=>x.id===task.id);
+            if(!t) return;
+            openDailyEdit(t);
+          });
           body.appendChild(card);
+        });
+
+        // drag & drop بين الأيام
+        body.addEventListener('dragover', e=>{
+          if(e.dataTransfer.types.includes(MIME_DAILY)){
+            e.preventDefault();
+            body.classList.add('drag');
+          }
+        });
+        body.addEventListener('dragleave', ()=>{
+          body.classList.remove('drag');
+        });
+        body.addEventListener('drop', async (e)=>{
+          if(!e.dataTransfer.types.includes(MIME_DAILY)) return;
+          e.preventDefault();
+          body.classList.remove('drag');
+          const id = e.dataTransfer.getData(MIME_DAILY);
+          const task = DAILY_TASKS.find(t=>t.id===id);
+          if(!task || task.dayKey===day.key) return;
+          try{
+            await updateDoc(doc(db,'dailyTasks', id), {
+              dayKey: day.key,
+              dayLabel: day.label
+            });
+          }catch(err){
+            console.error(err);
+            alert('⚠️ تعذر نقل التاسك اليومي: '+(err?.message||err));
+          }
         });
 
         sec.appendChild(head);
@@ -520,16 +571,34 @@
       if(!IS_ADMIN) return alert('هذه المنطقة خاصة بالأدمِن فقط.');
       CURRENT_DAY_KEY = dayKey;
       CURRENT_DAY_LABEL = dayLabel;
+      CURRENT_DAILY_ID = null;
+      dailyModalTitle.textContent = 'تاسك يومي جديد';
       dailyDayLabel.textContent = `اليوم: ${dayLabel}`;
       dailyTitle.value = '';
       dailyDesc.value = '';
       const today = new Date().toISOString().slice(0,10);
       dailyDate.value = today;
+      if(btnDailyDelete) btnDailyDelete.style.display='none';
+      dailyModal.classList.add('show');
+    }
+
+    function openDailyEdit(task){
+      if(!IS_ADMIN) return alert('هذه المنطقة خاصة بالأدمِن فقط.');
+      CURRENT_DAY_KEY = task.dayKey;
+      CURRENT_DAY_LABEL = task.dayLabel || dayLabelFromKey(task.dayKey);
+      CURRENT_DAILY_ID = task.id;
+      dailyModalTitle.textContent = 'تعديل التاسك اليومي';
+      dailyDayLabel.textContent = `اليوم: ${CURRENT_DAY_LABEL}`;
+      dailyTitle.value = task.title || '';
+      dailyDate.value = task.dayDate || '';
+      dailyDesc.value = task.description || '';
+      if(btnDailyDelete) btnDailyDelete.style.display='inline-flex';
       dailyModal.classList.add('show');
     }
 
     function closeDailyModal(){
       dailyModal.classList.remove('show');
+      CURRENT_DAILY_ID = null;
     }
 
     if(btnDailyCancel){
@@ -538,26 +607,40 @@
     if(dailyModal){
       dailyModal.addEventListener('click',(e)=>{ if(e.target===dailyModal) closeDailyModal(); });
     }
+
     if(btnDailySave){
       btnDailySave.addEventListener('click', async ()=>{
         if(!IS_ADMIN) return alert('هذه المنطقة خاصة بالأدمِن فقط.');
-        if(!CURRENT_DAY_KEY) return;
+        if(!CURRENT_DAY_KEY && !CURRENT_DAILY_ID) return;
         const title = (dailyTitle.value||'').trim();
         const dayDate = (dailyDate.value||'').trim();
         const description = (dailyDesc.value||'').trim();
         if(!title) return alert('اكتب عنوان للتاسك اليومي.');
 
+        const baseFields = {
+          dayKey: CURRENT_DAY_KEY,
+          dayLabel: CURRENT_DAY_LABEL || dayLabelFromKey(CURRENT_DAY_KEY),
+          title,
+          dayDate: dayDate || null,
+          description: description || null
+        };
+
         try{
-          await addDoc(collection(db,'dailyTasks'), {
-            dayKey: CURRENT_DAY_KEY,
-            dayLabel: CURRENT_DAY_LABEL,
-            title,
-            dayDate: dayDate || null,
-            description: description || null,
-            createdAt: serverTimestamp(),
-            createdBy: CURRENT_USER?.uid || null,
-            active: true
-          });
+          if(CURRENT_DAILY_ID){
+            // تعديل
+            await updateDoc(doc(db,'dailyTasks', CURRENT_DAILY_ID), {
+              ...baseFields,
+              updatedAt: serverTimestamp()
+            });
+          }else{
+            // إنشاء جديد
+            await addDoc(collection(db,'dailyTasks'), {
+              ...baseFields,
+              createdAt: serverTimestamp(),
+              createdBy: CURRENT_USER?.uid || null,
+              active: true
+            });
+          }
           closeDailyModal();
         }catch(e){
           console.error(e);
@@ -566,24 +649,27 @@
       });
     }
 
+    if(btnDailyDelete){
+      btnDailyDelete.addEventListener('click', async ()=>{
+        if(!IS_ADMIN || !CURRENT_DAILY_ID) return;
+        if(!confirm('تأكيد حذف هذا التاسك اليومي؟')) return;
+        try{
+          await deleteDoc(doc(db,'dailyTasks', CURRENT_DAILY_ID));
+          closeDailyModal();
+        }catch(e){
+          console.error(e);
+          alert('⚠️ تعذر حذف التاسك اليومي: '+(e?.message||e));
+        }
+      });
+    }
+
     if(dailyBoardEl){
-      dailyBoardEl.addEventListener('click', async (e)=>{
+      dailyBoardEl.addEventListener('click', (e)=>{
         const addBtn = e.target.closest('[data-act="add-day-task"]');
         if(addBtn){
           const key = addBtn.dataset.dayKey;
           const label = addBtn.dataset.dayLabel;
           return openDailyModal(key,label);
-        }
-        const card = e.target.closest('.daily-card');
-        if(card && IS_ADMIN){
-          const id = card.dataset.id;
-          const t = DAILY_TASKS.find(x=>x.id===id);
-          if(!t) return;
-          const info = `${t.title||'-'}\n${t.dayDate||''}\n\n${t.description||''}`;
-          const doDelete = confirm(info + '\n\nهل تريد حذف هذا التاسك اليومي؟');
-          if(doDelete){
-            try{ await deleteDoc(doc(db,'dailyTasks', id)); }catch(err){ alert('⚠️ تعذر الحذف: '+(err?.message||err)); }
-          }
         }
       });
     }

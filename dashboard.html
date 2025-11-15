@@ -52,6 +52,14 @@
     }
     .btn:hover{filter:brightness(1.05); transform:translateY(-1px)}
 
+    .chip{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:4px 8px;border-radius:999px;font-size:12px;
+      background:#f3e5dc;color:var(--brown)
+    }
+    .chip.warn{background:#fef3c7;color:#b45309}
+    .chip.danger{background:#fee2e2;color:#b91c1c}
+
     /* KPI tiles */
     .kpis{display:grid;gap:12px}
     @media(min-width:900px){ .kpis{grid-template-columns:repeat(5,1fr)} }
@@ -171,12 +179,28 @@
       </div>
     </section>
 
+    <!-- Daily Task Monthly Summary -->
+    <section class="panel">
+      <div class="head">
+        <strong>Daily Task — ملخص شهري</strong>
+        <span class="muted">يعتمد على Space: "Daily Task - المهام اليومية"</span>
+      </div>
+      <div class="body" id="dailyMonthlyWrap">
+        <div class="empty">جارِ تحميل بيانات Daily Task ...</div>
+      </div>
+    </section>
+
     <!-- Columns counters -->
     <section class="panel">
       <div class="head">
         <div style="display:flex;align-items:center;gap:10px">
           <strong>عداد الأعمدة</strong>
-          <span class="chip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="#3e2420" stroke-width="2" stroke-linecap="round"/></svg> ريل مواصفات / ريل قصير / تصميم صور / يوتيوب ...</span>
+          <span class="chip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M3 6h18M3 12h18M3 18h18" stroke="#3e2420" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            ريل مواصفات / ريل قصير / تصميم صور / يوتيوب ...
+          </span>
         </div>
       </div>
       <div class="body"><div class="cols" id="cols"></div></div>
@@ -266,7 +290,7 @@
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
     import {
       getFirestore, collection, doc, getDoc, onSnapshot,
-      query, where
+      query, where, getDocs
     } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
     /* Firebase Config */
@@ -288,6 +312,7 @@
     const btnExport   = document.getElementById('btnExportPdf');
     const todayChip   = document.getElementById('todayChip');
     const todayInfo   = document.getElementById('todayInfo');
+    const dailyMonthlyWrap = document.getElementById('dailyMonthlyWrap');
 
     // KPI refs
     const kTotal=document.getElementById('k_total');
@@ -317,6 +342,10 @@
     let unsubTasks=null;
     let TASKS=[];
 
+    // Daily Task space watcher
+    let DAILY_SPACE_ID=null;
+    let unsubDaily=null;
+
     /* Utils */
     const fmtDate = (ymd)=> {
       if(!ymd) return '';
@@ -327,7 +356,7 @@
     const todayYMD = ()=>{
       const d=new Date();
       const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0');
-      return `${y}-${m}-${da}`;
+      return ${y}-${m}-${da};
     };
     const toMillis = (v)=>{
       if(!v) return null;
@@ -363,7 +392,7 @@
       const node = document.getElementById('reportRoot');
       const opt = {
         margin: [6,6,6,6],
-        filename: `dashboard_${new Date().toISOString().slice(0,10)}.pdf`,
+        filename: dashboard_${new Date().toISOString().slice(0,10)}.pdf,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
@@ -384,7 +413,7 @@
       const name = u.exists()? (u.data().name||user.email) : (user.email||'User');
       const role = u.exists()? (u.data().role||'member') : 'member';
       IS_ADMIN = role === 'admin';
-      whoEl.textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
+      whoEl.textContent = ${name} — ${IS_ADMIN?'مدير':'عضو'};
 
       todayChip.innerHTML = `<span class="chip">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="#1e90ff" stroke-width="1.5"/><path d="M3 10h18" stroke="#1e90ff" stroke-width="1.5"/><path d="M8 3v4M16 3v4" stroke="#1e90ff" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -398,9 +427,10 @@
         return;
       }
       bootSpaces();
+      bootDailyTasksWatcher();
     });
 
-    // Spaces list
+    // Spaces list (main dashboard space selector)
     async function bootSpaces(){
       onSnapshot(collection(db,'spaces'), (snap)=>{
         const items=[];
@@ -438,6 +468,7 @@
       });
     }
 
+    // Watch tasks for CURRENT_SPACE (لوحة التحكم الرئيسية)
     function listenTasks(){
       if(unsubTasks){ unsubTasks(); unsubTasks=null; }
       if(!CURRENT_SPACE) return;
@@ -446,6 +477,113 @@
         TASKS=[]; snap.forEach(d=> TASKS.push({ id:d.id, ...(d.data()||{}) }));
         renderAll();
       }, (err)=>{ console.error(err); });
+    }
+
+    // Watch Daily Task space and summarize per month
+    async function bootDailyTasksWatcher(){
+      try{
+        const qSpaces = query(collection(db,'spaces'), where('name','==','Daily Task - المهام اليومية'));
+        const snap = await getDocs(qSpaces);
+        if(snap.empty){
+          if(dailyMonthlyWrap){
+            dailyMonthlyWrap.innerHTML = <div class="empty">لم يتم العثور على Space باسم "Daily Task - المهام اليومية".</div>;
+          }
+          return;
+        }
+        const sDoc = snap.docs[0];
+        DAILY_SPACE_ID = sDoc.id;
+
+        if(unsubDaily){ unsubDaily(); unsubDaily=null; }
+        const qTasks = query(collection(db,'tasks'), where('spaceId','==', DAILY_SPACE_ID));
+        unsubDaily = onSnapshot(qTasks, (snapTasks)=>{
+          const list=[];
+          snapTasks.forEach(d=> list.push({ id:d.id, ...(d.data()||{}) }));
+          renderDailyMonthly(list);
+        }, (err)=>{
+          console.error(err);
+          if(dailyMonthlyWrap){
+            dailyMonthlyWrap.innerHTML = <div class="empty">حدث خطأ أثناء تحميل بيانات Daily Task.</div>;
+          }
+        });
+      }catch(err){
+        console.error(err);
+        if(dailyMonthlyWrap){
+          dailyMonthlyWrap.innerHTML = <div class="empty">حدث خطأ أثناء تحميل بيانات Daily Task.</div>;
+        }
+      }
+    }
+
+    function renderDailyMonthly(tasks){
+      if(!dailyMonthlyWrap) return;
+      if(!tasks || !tasks.length){
+        dailyMonthlyWrap.innerHTML = <div class="empty">لا توجد مهام في Daily Task حاليًا.</div>;
+        return;
+      }
+
+      const monthsMap = {};
+      tasks.forEach(t=>{
+        let dObj=null;
+
+        if(t.due && typeof t.due === 'string'){
+          const parts = t.due.split('-').map(Number);
+          if(parts.length>=2 && parts[0] && parts[1]){
+            const [y,m] = parts;
+            dObj = new Date(y, m-1, 1);
+          }
+        } else {
+          const ms = toMillis(t.createdAt);
+          if(ms){
+            const dt = new Date(ms);
+            dObj = new Date(dt.getFullYear(), dt.getMonth(), 1);
+          }
+        }
+
+        if(!dObj) return;
+        const key = ${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')};
+        if(!monthsMap[key]) monthsMap[key]={ total:0, done:0, remaining:0 };
+        monthsMap[key].total++;
+        if(isDone(t)) monthsMap[key].done++; else monthsMap[key].remaining++;
+      });
+
+      const keys = Object.keys(monthsMap).sort().reverse(); // الأحدث أولاً
+      if(!keys.length){
+        dailyMonthlyWrap.innerHTML = <div class="empty">لا توجد بيانات شهور لعرضها.</div>;
+        return;
+      }
+
+      const monthsNames=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+      dailyMonthlyWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>الشهر</th>
+              <th>إجمالي المهام</th>
+              <th>تم الانتهاء</th>
+              <th>متبقّي</th>
+              <th>نسبة الإنهاء</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${keys.map(k=>{
+              const [yStr,mStr] = k.split('-');
+              const y = Number(yStr), m = Number(mStr);
+              const label = \${monthsNames[m-1]} ${y}\;
+              const data = monthsMap[k];
+              const pct = data.total ? Math.round(data.done/data.total*100) : 0;
+              return `
+                <tr>
+                  <td><strong>${label}</strong></td>
+                  <td>${data.total}</td>
+                  <td style="color:var(--ok);font-weight:700">${data.done}</td>
+                  <td style="color:var(--danger);font-weight:700">${data.remaining}</td>
+                  <td>${pct}%</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
     }
 
     function renderAll(){
@@ -462,7 +600,7 @@
       countUp(kRev, review);
       countUp(kUnas, unas);
 
-      todayInfo.textContent = `Today: ${new Date().toLocaleDateString('en-GB')}`;
+      todayInfo.textContent = Today: ${new Date().toLocaleDateString('en-GB')};
 
       // Column counters
       colsBox.innerHTML='';
@@ -488,14 +626,14 @@
             ${soon.map(t=>`
               <tr>
                 <td>${t.name||'-'}</td>
-                <td>${t.assignee?`<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>`:'—'}</td>
+                <td>${t.assignee?<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>:'—'}</td>
                 <td>${fmtDate(t.due)||'—'}</td>
                 <td>${t.status||'—'}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
-      ` : `<div class="empty">لا توجد تواريخ قريبة حاليًا.</div>`;
+      ` : <div class="empty">لا توجد تواريخ قريبة حاليًا.</div>;
 
       // Assignees distribution (top 10)
       const mapAss={};
@@ -508,10 +646,10 @@
         <table>
           <thead><tr><th>العضو</th><th>عدد المهام</th></tr></thead>
           <tbody>
-            ${rows.map(([n,c])=> `<tr><td>${n}</td><td>${c}</td></tr>`).join('')}
+            ${rows.map(([n,c])=> <tr><td>${n}</td><td>${c}</td></tr>).join('')}
           </tbody>
         </table>
-      ` : `<div class="empty">لا مهام مسندة بعد.</div>`;
+      ` : <div class="empty">لا مهام مسندة بعد.</div>;
 
       // ======= Per-member details =======
       const perMember = new Map();     // name -> {total, done, review, remaining}
@@ -555,7 +693,7 @@
             }).join('')}
           </tbody>
         </table>
-      ` : `<div class="empty">لا توجد بيانات أعضاء لعرضها.</div>`;
+      ` : <div class="empty">لا توجد بيانات أعضاء لعرضها.</div>;
 
       // ======= Charts: Per member / Status mix =======
       const labelsUser = ordered.map(([n])=>n);
@@ -628,7 +766,7 @@
         },
         options:{
           responsive:true, maintainAspectRatio:false,
-          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true} },
+          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true } },
           scales:{ y:{ ticks:{ precision:0 } } }
         }
       });
@@ -651,7 +789,7 @@
         data:{ labels: tpLabels, datasets:[{ label:'Completed / Week', data: tpVals, backgroundColor:'#16a34a' }] },
         options:{
           responsive:true, maintainAspectRatio:false,
-          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true} },
+          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true } },
           scales:{ y:{ ticks:{ precision:0 } } }
         }
       });
@@ -708,7 +846,7 @@
         options:{
           responsive:true, maintainAspectRatio:false,
           scales:{ x:{ stacked:true }, y:{ stacked:true, ticks:{precision:0} } },
-          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true} }
+          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true } }
         }
       });
 
@@ -727,7 +865,7 @@
               return `
                 <tr>
                   <td>${t.name||'-'}</td>
-                  <td>${t.assignee?`<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>`:'—'}</td>
+                  <td>${t.assignee?<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>:'—'}</td>
                   <td>${t.status||'—'}</td>
                   <td>${created}</td>
                   <td>${linksCount}</td>
@@ -735,7 +873,7 @@
             }).join('')}
           </tbody>
         </table>
-      ` : `<div class="empty">لا نشاط حديث.</div>`;
+      ` : <div class="empty">لا نشاط حديث.</div>;
     }
 
     // Helpers: week key + median + heatmap render
@@ -746,7 +884,7 @@
       date.setUTCDate(date.getUTCDate() + 4 - dayNum);
       const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
       const weekNo = Math.ceil((((date - yearStart)/86400000)+1)/7);
-      return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
+      return ${date.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')};
     }
     function median(arr){
       const a = arr.slice().filter(x=>isFinite(x)).sort((x,y)=>x-y);

@@ -388,7 +388,6 @@
       const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       const y = d.getFullYear();
       const m = d.getMonth();
-      const firstOfMonth = new Date(y, m, 1);
 
       // أول سبت في الشهر
       let firstSat = new Date(y, m, 1);
@@ -396,15 +395,14 @@
         firstSat.setDate(firstSat.getDate()+1);
       }
 
-      // لو اليوم قبل أول سبت نحسبه مع الأسبوع الأول (عشان ما يضيعش)
+      // لو اليوم قبل أول سبت نحسبه مع الأسبوع الأول
       if(d < firstSat){
         return 1;
       }
 
       const diffDays = Math.floor((d - firstSat) / 86400000);
-      let idx = Math.floor(diffDays / 7) + 1; // يبدأ من 1
+      let idx = Math.floor(diffDays / 7) + 1;
 
-      // تثبيت على 4 أسابيع فقط
       if(idx < 1) idx = 1;
       if(idx > 4) idx = 4;
       return idx;
@@ -531,7 +529,7 @@
       }
     }
 
-    // Daily Task: group by month + 4 weeks (Sat–Thu)
+    // Daily Task: أحدث شهر فقط + 4 أسابيع (سبت–خميس)
     function renderDailyMonthly(tasks){
       if(!tasks || !tasks.length){
         dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد مهام في Daily Task حاليًا.</div>`;
@@ -558,7 +556,6 @@
         const m = d.getMonth()+1;
         const ymKey = `${y}-${String(m).padStart(2,'0')}`;
 
-        // الأسبوع 1–4 بناءً على سبت–خميس
         const weekIndex = weekIndexSatThu(d); // 1..4 فقط
 
         if(!monthsMap[ymKey]) monthsMap[ymKey] = {
@@ -576,48 +573,61 @@
         if(isDone(t)) wb.done++; else wb.remaining++;
       });
 
-      const keys = Object.keys(monthsMap).sort().reverse();
+      const keys = Object.keys(monthsMap).sort(); // تصاعدي
       if(!keys.length){
         dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد بيانات شهور لعرضها.</div>`;
         return;
       }
 
-      let rows = '';
-      keys.forEach(key=>{
-        const mData = monthsMap[key];
-        const label = `${monthsNames[mData.month-1]} ${mData.year}`;
-        const monthPct = mData.total ? Math.round(mData.done/mData.total*100) : 0;
+      // نختار أحدث شهر (آخر واحد في الترتيب)
+      const latestKey = keys[keys.length-1];
+      const mData = monthsMap[latestKey];
 
-        // سطر إجمالي الشهر
+      const monthLabel = `${monthsNames[mData.month-1]} ${mData.year}`;
+      const monthPct = mData.total ? Math.round(mData.done/mData.total*100) : 0;
+
+      // هيدر يشبه صفحة Daily Task
+      const headerLine = `
+        <div style="margin-bottom:10px;font-weight:700;color:var(--brown);font-size:15px;">
+          ${monthLabel}
+          <span style="margin-inline-start:12px;font-weight:500;color:var(--muted);">
+            مهام قيد العمل: ${mData.remaining} | تم التنفيذ: ${mData.done}
+          </span>
+          <span style="margin-inline-start:12px;font-weight:500;color:var(--muted);">
+            نسبة الإنهاء: ${monthPct}%
+          </span>
+        </div>
+      `;
+
+      let rows = `
+        <tr style="background:#fffaf5">
+          <td><strong>${monthLabel}</strong> (إجمالي الشهر)</td>
+          <td>${mData.total}</td>
+          <td style="color:var(--ok);font-weight:700">${mData.done}</td>
+          <td style="color:var(--danger);font-weight:700">${mData.remaining}</td>
+          <td>${monthPct}%</td>
+        </tr>
+      `;
+
+      // أسابيع الشهر (1 إلى 4)
+      const weekKeys = [1,2,3,4];
+      weekKeys.forEach(wk=>{
+        const w = mData.weeks[wk];
+        if(!w) return;
+        const wPct = w.total ? Math.round(w.done/w.total*100) : 0;
         rows += `
-          <tr style="background:#fffaf5">
-            <td><strong>${label}</strong> (إجمالي الشهر)</td>
-            <td>${mData.total}</td>
-            <td style="color:var(--ok);font-weight:700">${mData.done}</td>
-            <td style="color:var(--danger);font-weight:700">${mData.remaining}</td>
-            <td>${monthPct}%</td>
+          <tr>
+            <td style="padding-right:24px;">الأسبوع ${wk} (سبت–خميس)</td>
+            <td>${w.total}</td>
+            <td style="color:var(--ok);font-weight:700">${w.done}</td>
+            <td style="color:var(--danger);font-weight:700">${w.remaining}</td>
+            <td>${wPct}%</td>
           </tr>
         `;
-
-        // أسابيع الشهر (1 إلى 4 فقط)
-        const weekKeys = [1,2,3,4];
-        weekKeys.forEach(wk=>{
-          const w = mData.weeks[wk];
-          if(!w) return; // لو مفيش مهام في الأسبوع ده نعديه
-          const wPct = w.total ? Math.round(w.done/w.total*100) : 0;
-          rows += `
-            <tr>
-              <td style="padding-right:24px;">الأسبوع ${wk} (سبت–خميس)</td>
-              <td>${w.total}</td>
-              <td style="color:var(--ok);font-weight:700">${w.done}</td>
-              <td style="color:var(--danger);font-weight:700">${w.remaining}</td>
-              <td>${wPct}%</td>
-            </tr>
-          `;
-        });
       });
 
       dailyMonthlyWrap.innerHTML = `
+        ${headerLine}
         <table>
           <thead>
             <tr>
@@ -648,7 +658,7 @@
       countUp(kOver, overdue);
       countUp(kToday, dueToday);
       countUp(kRev, review);
-      countUp(kUnas, unas);
+      countUp(kUnas, umas);
 
       todayInfo.textContent = `Today: ${new Date().toLocaleDateString('en-GB')}`;
 

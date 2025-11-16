@@ -39,6 +39,12 @@
     .muted{color:var(--muted)}
     .hint{font-size:12px;color:var(--muted)}
 
+    /* حالة الأجندة */
+    .agenda-status{margin-top:4px;font-size:12px;font-weight:500}
+    .agenda-ok{color:#15803d}
+    .agenda-miss{color:#b91c1c}
+    .agenda-loading{color:var(--muted)}
+
     /* Board عام */
     .board{display:grid;gap:14px;grid-template-columns:repeat(5,1fr)}
     @media(max-width:1400px){.board{grid-template-columns:repeat(3,1fr)}}
@@ -227,8 +233,8 @@
           </div>
         </div>
 
-        <!-- حالة وجود السيارة في الأجندة -->
-        <div id="carAgendaStatus" class="hint" style="margin-top:4px;padding:6px 8px;border-radius:8px;display:none;border:1px dashed #e5e7eb;background:#fffdf7;"></div>
+        <!-- حالة السيارة في الأجندة -->
+        <div id="agendaStatus" class="agenda-status"></div>
 
         <div class="grid2" style="margin-top:4px">
           <div>
@@ -663,104 +669,11 @@
       "نيسان": ["اكس تريل","ماجنايت","كيكس","صني","اكس تيرا","التيما"]
     };
 
-    const carBrand       = document.getElementById('carBrand');
-    const carModel       = document.getElementById('carModel');
-    const carTrim        = document.getElementById('carTrim');
-    const carEngine      = document.getElementById('carEngine');
-    const carAgendaStatus= document.getElementById('carAgendaStatus');
-
-    /* ===== دوال التشييك على وجود السيارة داخل الأجندة ===== */
-
-    function buildCarKey(){
-      const brand  = (carBrand?.value||'').trim();
-      const model  = (carModel?.value||'').trim();
-      const trim   = (carTrim?.value||'').trim();
-      const engine = (carEngine?.value||'').trim();
-      const parts = [brand,model,trim,engine].filter(Boolean);
-      if(!parts.length) return '';
-      return parts.join('|').toLowerCase();
-    }
-
-    function resetAgendaStatus(){
-      if(!carAgendaStatus) return;
-      carAgendaStatus.style.display='none';
-      carAgendaStatus.textContent='';
-      carAgendaStatus.style.background='#fffdf7';
-      carAgendaStatus.style.borderColor='#e5e7eb';
-      carAgendaStatus.style.color='#6b7280';
-    }
-
-    function setAgendaStatus(mode, msg){
-      if(!carAgendaStatus) return;
-      carAgendaStatus.style.display='block';
-      carAgendaStatus.textContent = msg;
-      if(mode==='checking'){
-        carAgendaStatus.style.background='#fef3c7';
-        carAgendaStatus.style.borderColor='#facc15';
-        carAgendaStatus.style.color='#92400e';
-      }else if(mode==='found'){
-        carAgendaStatus.style.background='#ecfdf5';
-        carAgendaStatus.style.borderColor='#bbf7d0';
-        carAgendaStatus.style.color='#166534';
-      }else if(mode==='notfound'){
-        carAgendaStatus.style.background='#fef2f2';
-        carAgendaStatus.style.borderColor='#fecaca';
-        carAgendaStatus.style.color='#b91c1c';
-      }else{
-        resetAgendaStatus();
-      }
-    }
-
-    let agendaCheckTimer=null;
-    function scheduleAgendaCheck(){
-      const carKey = buildCarKey();
-      const nameKey = (tName?.value||'').trim();
-      if(!carKey && !nameKey){
-        resetAgendaStatus();
-        return;
-      }
-      setAgendaStatus('checking','⏳ جاري التحقق من وجود تاسك مشابه في الأجندة…');
-      if(agendaCheckTimer) clearTimeout(agendaCheckTimer);
-      agendaCheckTimer = setTimeout(checkAgendaForCar, 600);
-    }
-
-    async function checkAgendaForCar(){
-      try{
-        const carKey = buildCarKey();
-        const nameVal = (tName?.value||'').trim();
-        let total = 0;
-        let inCurrent = 0;
-
-        if(carKey){
-          const qy = query(collection(db,'tasks'), where('carKey','==', carKey));
-          const snap = await getDocs(qy);
-          snap.forEach(d=>{
-            const data = d.data()||{};
-            total++;
-            if(data.spaceId === CURRENT_SPACE) inCurrent++;
-          });
-        }else if(nameVal){
-          const qy = query(collection(db,'tasks'), where('name','==', nameVal));
-          const snap = await getDocs(qy);
-          snap.forEach(d=>{
-            const data = d.data()||{};
-            total++;
-            if(data.spaceId === CURRENT_SPACE) inCurrent++;
-          });
-        }
-
-        if(total>0){
-          const msg = `✅ يوجد ${total} تاسك بنفس بيانات السيارة/الاسم داخل الأجندة (منهم ${inCurrent} داخل الـSpace الحالي).`;
-          setAgendaStatus('found', msg);
-        }else{
-          const msg = '⚠️ لا يوجد أي تاسك بنفس بيانات السيارة/الاسم في الأجندة — ممتاز لإنشاء مهمة جديدة.';
-          setAgendaStatus('notfound', msg);
-        }
-      }catch(err){
-        console.error(err);
-        setAgendaStatus('notfound','⚠️ تعذر التحقق من الأجندة حالياً، جرّب مرة أخرى لاحقاً.');
-      }
-    }
+    const carBrand  = document.getElementById('carBrand');
+    const carModel  = document.getElementById('carModel');
+    const carTrim   = document.getElementById('carTrim');
+    const carEngine = document.getElementById('carEngine');
+    const agendaStatus = document.getElementById('agendaStatus');
 
     function fillBrands(){
       carBrand.innerHTML = '<option value="">— اختر الماركة —</option>';
@@ -786,6 +699,83 @@
       const auto = parts.join(' ').replace(/\s+/g,' ').trim();
       if(auto) tName.value = auto;
     }
+
+    /* === التحقق من الأجندة === */
+    let agendaCheckTimer = null;
+    let agendaCheckSeq   = 0;
+
+    function resetAgendaStatus(){
+      if(!agendaStatus) return;
+      agendaStatus.textContent = '';
+      agendaStatus.className = 'agenda-status';
+    }
+
+    function scheduleAgendaCheck(){
+      if(!agendaStatus) return;
+      if(agendaCheckTimer) clearTimeout(agendaCheckTimer);
+      agendaCheckTimer = setTimeout(checkAgendaForCar, 400);
+    }
+
+    async function checkAgendaForCar(){
+      agendaCheckTimer = null;
+      if(!agendaStatus) return;
+
+      const brand  = (carBrand?.value||'').trim();
+      const model  = (carModel?.value||'').trim();
+      const trim   = (carTrim?.value||'').trim();
+      const engine = (carEngine?.value||'').trim();
+
+      // لازم على الأقل ماركة + موديل علشان نعمل بحث
+      if(!brand || !model){
+        resetAgendaStatus();
+        return;
+      }
+
+      const seq = ++agendaCheckSeq;
+
+      agendaStatus.textContent = '⏳ جاري التحقق من وجود السيارة في الأجندة…';
+      agendaStatus.className = 'agenda-status agenda-loading';
+
+      try{
+        const constraints = [
+          where('brand','==', brand),
+          where('model','==', model)
+        ];
+        if(trim)   constraints.push(where('trim','==', trim));
+        if(engine) constraints.push(where('engine','==', engine));
+
+        // 👇 لو عندك اسم كولكشن مختلف غيّر "agenda" هنا
+        const qy = query(collection(db,'agenda'), ...constraints);
+        const snap = await getDocs(qy);
+
+        // لو في تشيك أحدث، تجاهل النتيجة دي
+        if(seq < agendaCheckSeq) return;
+
+        if(!snap.empty){
+          const colorsSet = new Set();
+          snap.forEach(d=>{
+            const data = d.data() || {};
+            const c = data.color || data.colorName || data.colour;
+            if(c) colorsSet.add(c);
+          });
+          const colorsText = colorsSet.size
+            ? `الألوان المسجّلة: ${[...colorsSet].join(' / ')}`
+            : 'بدون ألوان محددة في الأجندة';
+
+          agendaStatus.textContent = `✅ السيارة موجودة في الأجندة. ${colorsText}`;
+          agendaStatus.className = 'agenda-status agenda-ok';
+        }else{
+          agendaStatus.textContent = '❌ حتى الآن السيارة غير مدخلة في الأجندة.';
+          agendaStatus.className = 'agenda-status agenda-miss';
+        }
+      }catch(err){
+        if(seq < agendaCheckSeq) return;
+        console.error(err);
+        agendaStatus.textContent = '⚠️ تعذّر التحقق من الأجندة، حاول لاحقًا.';
+        agendaStatus.className = 'agenda-status agenda-miss';
+      }
+    }
+
     carBrand?.addEventListener('change', ()=>{
       fillModels(carBrand.value);
       buildAutoTaskName();
@@ -802,6 +792,7 @@
       });
     });
     tName?.addEventListener('input', ()=>{
+      // ممكن بعدين تستخدم الاسم في بحث الأجندة لو عندك حقل مطابق
       scheduleAgendaCheck();
     });
 
@@ -840,7 +831,6 @@
       assigneeChip.innerHTML=''; SELECTED_ASSIGNEE=null; tColor.value='#bc8f74';
       fillGroupSelect();
       initCarSelectors();
-      resetAgendaStatus();
     }
 
     function renderAssigneeMenu(filter){
@@ -1172,9 +1162,6 @@
         engine: carEngine?.value?.trim() || null
       };
 
-      const carKey = buildCarKey();
-      const nameKey = name.toLowerCase();
-
       try{
         if(assigneeUid){
           await setDoc(doc(db,'users', assigneeUid), { color }, { merge:true });
@@ -1184,8 +1171,6 @@
         const payload = {
           spaceId: targetSpaceId, name, description, due, status,
           car,
-          carKey: carKey || null,
-          nameKey,
           assignee: assigneeUid ? { uid:assigneeUid, name:assigneeName, color } : null,
           links: [],
           createdBy: CURRENT_USER?.uid || null,

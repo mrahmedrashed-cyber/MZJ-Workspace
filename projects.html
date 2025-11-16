@@ -321,35 +321,16 @@
         <strong id="dailyModalTitle">تاسك يومي</strong>
       </div>
       <div class="body">
-        <label>عنوان المهمة اليومية</label>
-        <input id="dailyTitle" placeholder="مثال: مراجعة محتوى إنستجرام">
+        <label>عنوان المهمة اليومية / الملاحظة</label>
+        <input id="dailyTitle" placeholder="مثال: مراجعة محتوى إنستجرام أو ملاحظة عامة">
         <label>الوصف / التفاصيل</label>
-        <textarea id="dailyDesc" placeholder="اكتب تفاصيل مختصرة للمهمة…"></textarea>
-        <p class="hint">* سيتم ربط المهمة باليوم الذي اخترته من الجدول، ويمكنك نقلها لأي يوم آخر بالسحب والإفلات.</p>
+        <textarea id="dailyDesc" placeholder="اكتب تفاصيل مختصرة للمهمة أو الملاحظة…"></textarea>
+        <p class="hint">* سيتم ربط المهمة أو الملاحظة بالشهر الحالي، ويمكنك نقل المهام بين الأيام بالسحب والإفلات.</p>
       </div>
       <div class="footer">
         <button class="btn secondary" id="btnDailyCancel">إلغاء</button>
         <button class="btn danger" id="btnDailyDelete" style="display:none">حذف</button>
         <button class="btn" id="btnDailySave">حفظ</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- مودال الملاحظات الشهرية -->
-  <div class="modal" id="noteModal">
-    <div class="sheet">
-      <div class="head">
-        <strong id="noteModalTitle">ملاحظة</strong>
-      </div>
-      <div class="body">
-        <label>نص الملاحظة</label>
-        <textarea id="noteText" placeholder="اكتب الملاحظة هنا…"></textarea>
-        <p class="hint">* الملاحظات ترتبط بالشهر المختار، وليست مرتبطة بيوم معين.</p>
-      </div>
-      <div class="footer">
-        <button class="btn secondary" id="btnNoteCancel">إلغاء</button>
-        <button class="btn danger" id="btnNoteDelete" style="display:none">حذف</button>
-        <button class="btn" id="btnNoteSave">حفظ الملاحظة</button>
       </div>
     </div>
   </div>
@@ -1385,24 +1366,12 @@
     const btnDailyCancel   = document.getElementById('btnDailyCancel');
     const btnDailyDelete   = document.getElementById('btnDailyDelete');
 
-    // ملاحظات شهرية
-    const noteModal        = document.getElementById('noteModal');
-    const noteModalTitle   = document.getElementById('noteModalTitle');
-    const noteText         = document.getElementById('noteText');
-    const btnNoteSave      = document.getElementById('btnNoteSave');
-    const btnNoteCancel    = document.getElementById('btnNoteCancel');
-    const btnNoteDelete    = document.getElementById('btnNoteDelete');
-
     let DAILY_MONTH_KEY = null;
     let DAILY_TASKS = [];
     let unsubDailyTasks = null;
     let CURRENT_DAILY_EDIT = null;
     let CURRENT_DAILY_WEEK = null;
     let CURRENT_DAILY_DAY  = null;
-
-    let DAILY_NOTES = [];
-    let unsubDailyNotes = null;
-    let CURRENT_NOTE_ID = null;
 
     function currentMonthKey(){
       const d=new Date();
@@ -1433,10 +1402,9 @@
     function updateDailyMeta(){
       if(!dailyMeta) return;
       const label = dailyMonthSelect.options[dailyMonthSelect.selectedIndex]?.textContent || '';
-      const countMonth = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && !t.completed).length;
-      const countDone  = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && t.completed).length;
-      const notesCount = DAILY_NOTES.filter(n=>n.monthKey===DAILY_MONTH_KEY).length;
-      dailyMeta.textContent = `${label} — مهام قيد العمل: ${countMonth} | تم التنفيذ: ${countDone} | الملاحظات: ${notesCount}`;
+      const countMonth = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && !t.completed && t.dayKey!=='note').length;
+      const countDone  = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && t.completed && t.dayKey!=='note').length;
+      dailyMeta.textContent = `${label} — مهام قيد العمل: ${countMonth} | تم التنفيذ: ${countDone}`;
     }
 
     function listenDailyTasks(){
@@ -1448,18 +1416,6 @@
       },(err)=>{
         console.error(err);
         alert('⚠️ فشل قراءة المهام اليومية.');
-      });
-    }
-
-    function listenDailyNotes(){
-      if(unsubDailyNotes){ unsubDailyNotes(); unsubDailyNotes=null; }
-      unsubDailyNotes = onSnapshot(collection(db,'dailyNotes'), (snap)=>{
-        DAILY_NOTES=[];
-        snap.forEach(d=> DAILY_NOTES.push({ id:d.id, ...(d.data()||{}) }));
-        renderDailyBoard();
-      },(err)=>{
-        console.error(err);
-        alert('⚠️ فشل قراءة الملاحظات.');
       });
     }
 
@@ -1475,7 +1431,7 @@
         CURRENT_DAILY_EDIT = task.id;
         CURRENT_DAILY_WEEK = task.week;
         CURRENT_DAILY_DAY  = task.dayKey;
-        dailyModalTitle.textContent='تعديل تاسك يومي';
+        dailyModalTitle.textContent= task.dayKey === 'note' ? 'تعديل ملاحظة' : 'تعديل تاسك يومي';
         dailyTitleInput.value = task.title || '';
         dailyDescInput.value  = task.description || '';
         btnDailyDelete.style.display='';
@@ -1494,7 +1450,7 @@
       if(!IS_ADMIN) return alert('المهام اليومية خاصة بالأدمِن فقط.');
       const title = (dailyTitleInput.value||'').trim();
       const desc  = (dailyDescInput.value||'').trim() || null;
-      if(!title) return alert('اكتب عنوان المهمة اليومية.');
+      if(!title) return alert('اكتب عنوان المهمة أو الملاحظة.');
 
       try{
         if(CURRENT_DAILY_EDIT){
@@ -1527,72 +1483,13 @@
 
     btnDailyDelete.addEventListener('click', async ()=>{
       if(!IS_ADMIN || !CURRENT_DAILY_EDIT) return;
-      if(!confirm('تأكيد حذف المهمة اليومية؟')) return;
+      if(!confirm('تأكيد حذف المهمة / الملاحظة؟')) return;
       try{
         await deleteDoc(doc(db,'dailyTasks', CURRENT_DAILY_EDIT));
         closeDailyModal();
       }catch(err){
         console.error(err);
         alert('⚠️ تعذر حذف المهمة اليومية: '+(err?.message||err));
-      }
-    });
-
-    // ملاحظات: فتح/غلق المودال
-    function openNoteModal(note=null){
-      if(!IS_ADMIN) return;
-      if(note){
-        CURRENT_NOTE_ID = note.id;
-        noteModalTitle.textContent = 'تعديل ملاحظة';
-        noteText.value = note.text || '';
-        btnNoteDelete.style.display = '';
-      }else{
-        CURRENT_NOTE_ID = null;
-        noteModalTitle.textContent = 'ملاحظة جديدة';
-        noteText.value = '';
-        btnNoteDelete.style.display = 'none';
-      }
-      noteModal.classList.add('show');
-    }
-
-    function closeNoteModal(){
-      noteModal.classList.remove('show');
-    }
-
-    btnNoteCancel.addEventListener('click', ()=> closeNoteModal());
-    noteModal.addEventListener('click', (e)=>{ if(e.target===noteModal) closeNoteModal(); });
-
-    btnNoteSave.addEventListener('click', async ()=>{
-      if(!IS_ADMIN) return alert('الملاحظات للأدمِن فقط حالياً.');
-      const text = (noteText.value||'').trim();
-      if(!text) return alert('اكتب نص الملاحظة.');
-
-      try{
-        if(CURRENT_NOTE_ID){
-          await updateDoc(doc(db,'dailyNotes', CURRENT_NOTE_ID), { text });
-        }else{
-          await addDoc(collection(db,'dailyNotes'), {
-            monthKey: DAILY_MONTH_KEY,
-            text,
-            createdAt: serverTimestamp(),
-            createdBy: CURRENT_USER?.uid || null
-          });
-        }
-        closeNoteModal();
-      }catch(err){
-        console.error(err);
-        alert('⚠️ تعذر حفظ الملاحظة: '+(err?.message||err));
-      }
-    });
-
-    btnNoteDelete.addEventListener('click', async ()=>{
-      if(!IS_ADMIN || !CURRENT_NOTE_ID) return;
-      if(!confirm('تأكيد حذف الملاحظة؟')) return;
-      try{
-        await deleteDoc(doc(db,'dailyNotes', CURRENT_NOTE_ID));
-        closeNoteModal();
-      }catch(err){
-        console.error(err);
-        alert('⚠️ تعذر حذف الملاحظة: '+(err?.message||err));
       }
     });
 
@@ -1603,12 +1500,36 @@
         renderDailyBoard();
       });
       listenDailyTasks();
-      listenDailyNotes();
 
       if(dailyBoard){
         dailyBoard.addEventListener('click', async (e)=>{
           const addBtn = e.target.closest('.day-add');
-          if(addBtn && !addBtn.classList.contains('notes-add')){
+          const noteBtn = e.target.closest('.note-add');
+
+          if(noteBtn){
+            if(!IS_ADMIN) return alert('الملاحظات متاحة للأدمِن فقط حالياً.');
+            const text = prompt('اكتب الملاحظة:');
+            if(!text || !text.trim()) return;
+            try{
+              await addDoc(collection(db,'dailyTasks'), {
+                monthKey: DAILY_MONTH_KEY,
+                week: 0,
+                dayKey: 'note',
+                title: text.trim(),
+                description: null,
+                completed:false,
+                createdAt: serverTimestamp(),
+                createdBy: CURRENT_USER?.uid || null,
+                type: 'note'
+              });
+            }catch(err){
+              console.error(err);
+              alert('⚠️ تعذر حفظ الملاحظة: '+(err?.message||err));
+            }
+            return;
+          }
+
+          if(addBtn && !addBtn.classList.contains('note-add')){
             if(!IS_ADMIN) return alert('المهام اليومية خاصة بالأدمِن فقط حالياً.');
             const week = parseInt(addBtn.dataset.week,10);
             const dayKey = addBtn.dataset.day;
@@ -1616,13 +1537,6 @@
             CURRENT_DAILY_WEEK = week;
             CURRENT_DAILY_DAY  = dayKey;
             openDailyModal('new');
-            return;
-          }
-
-          const noteAddBtn = e.target.closest('.notes-add');
-          if(noteAddBtn){
-            if(!IS_ADMIN) return alert('الملاحظات للأدمِن فقط حالياً.');
-            openNoteModal(null);
             return;
           }
 
@@ -1653,14 +1567,6 @@
               CURRENT_DAILY_DAY  = task.dayKey;
               openDailyModal('edit', task);
             }
-          }
-
-          const noteCard = e.target.closest('.note-card');
-          if(noteCard){
-            if(!IS_ADMIN) return;
-            const nid = noteCard.dataset.id;
-            const note = DAILY_NOTES.find(n=>n.id===nid);
-            if(note) openNoteModal(note);
           }
         });
       }
@@ -1706,16 +1612,17 @@
         dailyBoard.appendChild(sec);
       });
 
-      // عمود الملاحظات (جنب الأسبوع الرابع)
+      // عمود "الملاحظات"
       const notesCol=document.createElement('section');
       notesCol.className='col';
+      notesCol.dataset.week='notes';
       notesCol.innerHTML=`
         <div class="col-head" style="cursor:default">
           <span class="col-title">الملاحظات</span>
-          ${IS_ADMIN?'<button class="day-add notes-add">➕</button>':''}
+          ${IS_ADMIN?`<button class="day-add note-add">➕</button>`:''}
         </div>
         <div class="col-body">
-          <div class="daily-notes" id="dailyNotesZone"></div>
+          <div class="daily-drop" data-week="notes" data-day="note"></div>
         </div>
       `;
       dailyBoard.appendChild(notesCol);
@@ -1733,8 +1640,9 @@
       `;
       dailyBoard.appendChild(doneCol);
 
-      const activeTasks = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && !t.completed);
-      const doneTasks   = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && t.completed);
+      const activeTasks = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && !t.completed && t.dayKey!=='note');
+      const notesTasks  = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && t.dayKey==='note');
+      const doneTasks   = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && t.completed && t.dayKey!=='note');
 
       activeTasks.forEach(t=>{
         const zone = dailyBoard.querySelector(`.daily-drop[data-week="${t.week}"][data-day="${t.dayKey}"]`);
@@ -1743,32 +1651,24 @@
         zone.appendChild(card);
       });
 
-      const doneZone = dailyBoard.querySelector(`.daily-drop[data-week="done"][data-day="done"]`);
+      const notesZone = dailyBoard.querySelector('.daily-drop[data-week="notes"][data-day="note"]');
+      notesTasks.forEach(t=>{
+        if(!notesZone) return;
+        const card = buildNoteCard(t);
+        notesZone.appendChild(card);
+      });
+
+      const doneZone = dailyBoard.querySelector('.daily-drop[data-week="done"][data-day="done"]');
       doneTasks.forEach(t=>{
+        if(!doneZone) return;
         const card = buildDailyCard(t,true);
         doneZone.appendChild(card);
       });
 
-      // ملاحظات الشهر الحالي
-      const notesZone = dailyBoard.querySelector('#dailyNotesZone');
-      if(notesZone){
-        const monthNotes = DAILY_NOTES.filter(n=>n.monthKey===DAILY_MONTH_KEY);
-        monthNotes.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
-        monthNotes.forEach(n=>{
-          const card = document.createElement('article');
-          card.className = 'card note-card';
-          card.dataset.id = n.id;
-          card.style.cursor = IS_ADMIN ? 'pointer' : 'default';
-          card.innerHTML = `
-            <div class="small" style="white-space:pre-wrap;line-height:1.5">${n.text||''}</div>
-          `;
-          notesZone.appendChild(card);
-        });
-      }
-
-      // سحب وإفلات للمهام اليومية (بدون الملاحظات)
+      // سحب وإفلات
       dailyBoard.querySelectorAll('.daily-drop').forEach(zone=>{
         zone.addEventListener('dragover', e=>{
+          if(zone.dataset.week==='notes') return; // الملاحظات مش Drop target
           if(e.dataTransfer.types.includes(MIME_DAILY)){
             e.preventDefault();
             zone.classList.add('drag');
@@ -1776,6 +1676,7 @@
         });
         zone.addEventListener('dragleave', ()=> zone.classList.remove('drag'));
         zone.addEventListener('drop', async (e)=>{
+          if(zone.dataset.week==='notes') return; // منع الإفلات في عمود الملاحظات
           if(!e.dataTransfer.types.includes(MIME_DAILY)) return;
           e.preventDefault();
           zone.classList.remove('drag');
@@ -1844,6 +1745,22 @@
         e.dataTransfer.setData(MIME_DAILY, t.id);
       });
 
+      return card;
+    }
+
+    function buildNoteCard(t){
+      const card=document.createElement('article');
+      card.className='card daily-card';
+      card.dataset.id=t.id;
+
+      const title = t.title || '-';
+      const desc  = t.description || '';
+
+      card.innerHTML = `
+        <p class="daily-card-title">${title}</p>
+        ${desc?`<p class="daily-card-desc">${desc}</p>`:''}
+      `;
+      // بدون drag للـ note علشان ما تتحركش بالغلط
       return card;
     }
   </script>

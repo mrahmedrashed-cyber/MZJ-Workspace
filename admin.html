@@ -4,182 +4,452 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>الحملات | MZJ Workspace</title>
+
+  <!-- Tajawal Font -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+  <!-- Quill Editor CSS -->
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+
   <style>
-    :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px }
+    :root{
+      --brown:#3e2420;
+      --beige:#bc8f74;
+      --cream:#fff8ef;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --radius:14px;
+    }
+
     *{box-sizing:border-box}
-    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal",system-ui,Arial;line-height:1.75}
+    body{
+      margin:0;
+      background:var(--cream);
+      color:var(--text);
+      font-family:"Tajawal",system-ui,Arial;
+      line-height:1.75
+    }
     a{color:inherit;text-decoration:none}
 
-    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--brown);color:#fff;box-shadow:0 6px 20px rgba(62,36,32,.2);position:sticky;top:0;z-index:10}
+    /* Topbar */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 18px;
+      background:var(--brown);
+      color:#fff;
+      box-shadow:0 6px 20px rgba(62,36,32,.2);
+      position:sticky;
+      top:0;
+      z-index:10
+    }
     .brand{display:flex;align-items:center;gap:10px}
-    .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
+    .brand-badge{
+      inline-size:28px;
+      block-size:28px;
+      border-radius:8px;
+      background:linear-gradient(135deg,var(--beige),#d9b39a)
+    }
     .nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .nav a{padding:8px 12px;border-radius:10px;color:#fff}
+    .nav a{
+      padding:8px 12px;
+      border-radius:10px;
+      color:#fff
+    }
     .nav a:hover{background:rgba(255,255,255,.14)}
 
     .page{padding:18px;display:grid;gap:16px}
-    .panel{background:#fff;border-radius:var(--radius);box-shadow:0 12px 30px rgba(62,36,32,.12)}
-    .panel .head{padding:12px 14px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+
+    /* Panels */
+    .panel{
+      background:#fff;
+      border-radius:var(--radius);
+      box-shadow:0 12px 30px rgba(62,36,32,.12)
+    }
+    .panel .head{
+      padding:12px 14px;
+      border-bottom:1px solid #eee;
+      display:flex;
+      gap:10px;
+      justify-content:space-between;
+      align-items:center;
+      flex-wrap:wrap
+    }
     .panel .body{padding:12px 14px}
+
     .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .select,.input{padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
-    .btn{padding:10px 12px;border-radius:12px;border:0;background:var(--brown);color:#fff;cursor:pointer;font-weight:800}
-    .btn.secondary{background:#fff;color:var(--brown);border:1px solid var(--brown)}
+    .select,.input{
+      padding:10px 12px;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      background:#fff
+    }
+    .btn{
+      padding:10px 12px;
+      border-radius:12px;
+      border:0;
+      background:var(--brown);
+      color:#fff;
+      cursor:pointer;
+      font-weight:800
+    }
+    .btn.secondary{
+      background:#fff;
+      color:var(--brown);
+      border:1px solid var(--brown)
+    }
     .btn.danger{background:#b91c1c;color:#fff}
     .muted{color:var(--muted)}
-    .hint{font-size:12px;color:var(--muted)}
 
     /* Board */
     .board{display:grid;gap:14px;grid-template-columns:repeat(4,1fr)}
     @media(max-width:1400px){.board{grid-template-columns:repeat(3,1fr)}}
     @media(max-width:980px){.board{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:640px){.board{grid-template-columns:1fr}}
-    .col{background:#fff;border-radius:14px;display:flex;flex-direction:column;min-height:260px;position:relative}
-    .col-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #f2e7df;background:#fff8ef;border-top-left-radius:14px;border-top-right-radius:14px}
+
+    .col{
+      background:#fff;
+      border-radius:14px;
+      display:flex;
+      flex-direction:column;
+      min-height:260px;
+      position:relative
+    }
+
+    .col-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:12px 14px;
+      border-bottom:1px solid #f2e7df;
+      background:#fff8ef;
+      border-top-left-radius:14px;
+      border-top-right-radius:14px
+    }
+
     .col-title{color:var(--brown);font-weight:800}
     .col-actions{display:flex;gap:6px}
-    .col-actions .icon{cursor:pointer;font-size:13px;padding:6px 8px;border:1px solid #e9d8cc;border-radius:10px;background:#fff}
-    .grip{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#6b7280;user-select:none}
-    .grip .dots{letter-spacing:2px;font-weight:700}
-    .col-body{padding:10px;display:grid;gap:10px}
-    .dropzone{min-height:140px;border:2px dashed transparent;border-radius:12px;transition:.15s}
-    .dropzone.drag{border-color:#e5d2c6;background:#fffaf5}
+    .col-actions .icon{
+      cursor:pointer;
+      font-size:13px;
+      padding:6px 8px;
+      border:1px solid #e9d8cc;
+      border-radius:10px;
+      background:#fff
+    }
 
-    /* Cards */
-    .card{background:#fff;border:1px solid #eee;border-radius:12px;padding:8px;box-shadow:0 8px 20px rgba(62,36,32,.06);cursor:grab}
-    .card h4{margin:0;color:var(--brown);font-size:15px;line-height:1.4}
+    .grip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:13px;
+      color:#6b7280;
+      user-select:none
+    }
+    .grip .dots{letter-spacing:2px;font-weight:700}
+
+    .col-body{padding:10px;display:grid;gap:10px}
+    .dropzone{
+      min-height:140px;
+      border:2px dashed transparent;
+      border-radius:12px;
+      transition:.15s
+    }
+    .dropzone.drag{
+      border-color:#e5d2c6;
+      background:#fffaf5
+    }
+
+    /* Task Cards */
+    .card{
+      background:#fff;
+      border:1px solid #eee;
+      border-radius:12px;
+      padding:8px;
+      box-shadow:0 8px 20px rgba(62,36,32,.06);
+      cursor:grab
+    }
+    .card h4{
+      margin:0;
+      color:var(--brown);
+      font-size:15px;
+      line-height:1.4
+    }
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);display:inline-flex;align-items:center;gap:6px}
-    .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
+    .badge{
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:12px;
+      background:#f7e9e0;
+      color:var(--brown);
+      display:inline-flex;
+      align-items:center;
+      gap:6px
+    }
+    .badge .dot{
+      inline-size:8px;
+      block-size:8px;
+      border-radius:999px;
+      background:#bc8f74
+    }
+
     .small{font-size:12px;color:var(--muted)}
 
-    /* Modal */
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;place-items:center;padding:16px;z-index:99}
-    .modal.show{display:grid}
-    .sheet{background:#fff;border-radius:16px;max-width:820px;width:100%;box-shadow:0 30px 80px rgba(62,36,32,.25);display:flex;flex-direction:column;max-height:90vh}
-    .sheet .head{padding:10px 12px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center}
-    .sheet .body{padding:12px;display:grid;gap:10px;flex:1;overflow:auto}
-    .sheet .footer{padding:10px 12px;border-top:1px solid #eee;background:#fff8ef;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;position:sticky;bottom:0}
+    /* Modal Base (shared) */
+    .modal-campaign{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      display:none;
+      place-items:center;
+      padding:18px;
+      z-index:999;
+    }
+    .modal-campaign.show{display:grid}
 
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media(max-width:900px){.grid2{grid-template-columns:1fr}}
-    label{display:block;margin:4px 0 4px;font-weight:700;color:var(--brown);font-size:13px}
-    input,select,textarea{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font-family:inherit;font-size:14px}
-    textarea{min-height:90px;resize:vertical}
-    input:focus,select:focus,textarea:focus{outline:3px solid rgba(188,143,116,.25);border-color:var(--beige)}
+    .campaign-sheet{
+      background:#fff;
+      border-radius:16px;
+      max-width:820px;
+      width:100%;
+      max-height:90vh;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      box-shadow:0 30px 80px rgba(62,36,32,.25);
+    }
 
-    .chips{display:flex;gap:8px;flex-wrap:wrap}
-    .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #eee;border-radius:999px;background:#fff}
-    .dropdown-menu{position:absolute;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);display:none;min-width:280px;max-height:260px;overflow:auto}
-    .dd-item{padding:10px 12px;border-bottom:1px solid #f3f3f3;cursor:pointer}
-    .dd-item:hover{background:#fff8ef}
+    .campaign-sheet .head{
+      padding:12px 16px;
+      border-bottom:1px solid #eee;
+      background:var(--cream);
+      font-weight:800;
+      font-size:18px;
+      color:var(--brown)
+    }
 
-    .footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19)}
+    .campaign-sheet .body{
+      padding:16px;
+      overflow-y:auto;
+      display:grid;
+      gap:14px
+    }
+
+    .campaign-sheet .footer{
+      padding:12px 16px;
+      border-top:1px solid #eee;
+      background:#fff8ef;
+      display:flex;
+      justify-content:flex-end;
+      gap:10px
+    }
+
+    /* Quill Editor Boxes */
+    #campaignDescEditor,
+    #editCampDescEditor{
+      height:230px;
+      border:1px solid #ddd;
+      border-radius:12px;
+      background:#fff;
+    }
+
   </style>
 </head>
+
 <body>
+  <!-- Top Navigation -->
   <header class="topbar">
     <div class="brand">
       <span class="brand-badge"></span>
       <strong>MZJ Workspace — الحملات</strong>
     </div>
+
     <nav class="nav">
       <a href="dashboard.html">لوحة التحكم</a>
       <a href="projects.html">المشاريع</a>
       <a href="members.html">الأعضاء</a>
       <a href="admin.html" style="background:rgba(255,255,255,.18)">الحملات</a>
-      <a href="javascript:void(0)" id="btnLogout">تسجيل الخروج</a>
       <a href="cars.html">متابعة السيارات</a>
       <a href="Whiteboard.html">وايت بورد</a>
+      <a href="javascript:void(0)" id="btnLogout">تسجيل الخروج</a>
     </nav>
   </header>
 
+  <!-- Main Content -->
   <main class="page">
+
+    <!-- Campaign Panel -->
     <section class="panel">
       <div class="head">
         <div class="controls">
           <select id="campaignSelect" class="select"></select>
+
           <button class="btn secondary" id="btnNewCampaign">حملة جديدة</button>
           <button class="btn secondary" id="btnRenameCampaign">إعادة تسمية</button>
+          <button class="btn secondary" id="btnEditCampDesc">تعديل الوصف</button>
+
           <button class="btn secondary" id="btnArchiveCampaign">أرشفة</button>
           <button class="btn danger" id="btnDeleteCampaign">حذف نهائي</button>
+
           <span class="muted" id="campaignDates">—</span>
         </div>
+
         <div class="muted" id="who"></div>
       </div>
+
       <div class="body">
+
+        <!-- ***** وصف الحملة يظهر هنا ***** -->
+        <div id="campaignDescriptionBox"
+          style="background:#fff; padding:18px; border-radius:14px;
+                 margin-bottom:16px; box-shadow:0 6px 20px rgba(62,36,32,.06)">
+          <em class="muted">لا يوجد وصف للحملة</em>
+        </div>
+
+        <!-- Campaign Dates -->
         <div class="grid2" style="margin-bottom:12px">
           <div>
             <label>تاريخ بداية الحملة</label>
             <input id="campStart" type="date">
           </div>
+
           <div>
             <label>تاريخ نهاية/تسليم الحملة</label>
             <input id="campDue" type="date">
           </div>
         </div>
+
         <div class="controls" style="margin-bottom:14px">
           <button class="btn" id="btnSaveDates">حفظ تواريخ الحملة</button>
           <button class="btn secondary" id="btnAddColumn">إضافة عمود</button>
         </div>
+
+        <!-- Board Columns -->
         <div class="board" id="board"></div>
+
       </div>
     </section>
   </main>
 
-  <!-- Task Modal -->
-  <div class="modal" id="taskModal">
-    <div class="sheet">
-      <div class="head"><strong id="taskModalTitle">تاسك جديد</strong></div>
+  <!-- ========= مودال إنشاء حملة جديدة ========= -->
+  <div class="modal-campaign" id="newCampaignModal">
+    <div class="campaign-sheet">
+
+      <div class="head">إنشاء حملة جديدة</div>
+
       <div class="body">
-        <div class="grid2">
-          <div>
-            <label>اسم التاسك</label>
-            <input id="tName" placeholder="مثال: ريل 30 ثانية — عرض الكاش">
-          </div>
-          <div>
-            <label>تاريخ التسليم</label>
-            <input id="tDue" type="date">
-          </div>
-        </div>
-        <label>الوصف (يدعم المنشن)</label>
-        <div style="position:relative">
-          <textarea id="tDesc" placeholder="اكتب تفاصيل المهمة… اكتب @ لذكر عضو."></textarea>
-          <div id="mentionMenu" class="dropdown-menu" style="right:0;top:64px;"></div>
+
+        <div>
+          <label>اسم الحملة</label>
+          <input id="newCampName" placeholder="مثال: حملة الجمعة البيضاء – نوفمبر 2025">
         </div>
 
-        <div class="grid2">
-          <div style="position:relative">
-            <label>المسؤول (منشن/تعيين)</label>
-            <input id="tAssigneeSearch" placeholder="ابحث باسم العضو…">
-            <div id="assigneeMenu" class="dropdown-menu" style="right:0;top:64px;"></div>
-            <div id="assigneeChip" class="chips"></div>
+        <div>
+          <label>وصف الحملة (يظهر لكل الأعضاء)</label>
+
+          <!-- Toolbar -->
+          <div id="campaignDescToolbar">
+            <span class="ql-formats">
+              <select class="ql-size"></select>
+              <select class="ql-header"></select>
+            </span>
+
+            <span class="ql-formats">
+              <button class="ql-bold"></button>
+              <button class="ql-italic"></button>
+              <button class="ql-underline"></button>
+            </span>
+
+            <span class="ql-formats">
+              <button class="ql-list" value="ordered"></button>
+              <button class="ql-list" value="bullet"></button>
+            </span>
+
+            <span class="ql-formats">
+              <select class="ql-align"></select>
+            </span>
+
+            <span class="ql-formats">
+              <button class="ql-link"></button>
+              <button class="ql-image"></button>
+            </span>
           </div>
-          <div>
-            <label>لون العضو</label>
-            <div class="row">
-              <input id="tColor" type="color" value="#bc8f74" style="width:70px;height:44px;padding:4px">
-              <span class="muted">يظهر على البطاقة ويحفظ للعضو</span>
-            </div>
-          </div>
+
+          <!-- Editor -->
+          <div id="campaignDescEditor"></div>
         </div>
+
       </div>
+
       <div class="footer">
-        <button class="btn secondary" id="btnCancelTask">إلغاء</button>
-        <button class="btn" id="btnSaveTask">حفظ</button>
+        <button class="btn secondary" id="cancelNewCamp">إلغاء</button>
+        <button class="btn" id="saveNewCamp">حفظ الحملة</button>
       </div>
     </div>
   </div>
 
-  <footer class="footer"><small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small></footer>
 
+  <!-- ========= مودال تعديل وصف الحملة ========= -->
+  <div class="modal-campaign" id="editCampDescModal">
+    <div class="campaign-sheet">
+
+      <div class="head">تعديل وصف الحملة</div>
+
+      <div class="body">
+
+        <label>وصف الحملة</label>
+
+        <!-- Toolbar -->
+        <div id="editDescToolbar">
+          <span class="ql-formats">
+            <select class="ql-size"></select>
+            <select class="ql-header"></select>
+          </span>
+
+          <span class="ql-formats">
+            <button class="ql-bold"></button>
+            <button class="ql-italic"></button>
+            <button class="ql-underline"></button>
+          </span>
+
+          <span class="ql-formats">
+            <button class="ql-list" value="ordered"></button>
+            <button class="ql-list" value="bullet"></button>
+          </span>
+
+          <span class="ql-formats">
+            <select class="ql-align"></select>
+          </span>
+
+          <span class="ql-formats">
+            <button class="ql-link"></button>
+            <button class="ql-image"></button>
+          </span>
+        </div>
+
+        <!-- Editor -->
+        <div id="editCampDescEditor"></div>
+
+      </div>
+
+      <div class="footer">
+        <button class="btn secondary" id="cancelEditDesc">إلغاء</button>
+        <button class="btn" id="saveEditCampDesc">حفظ</button>
+      </div>
+
+    </div>
+  </div>
+  <!-- Quill JS -->
+  <script src="https://cdn.quilljs.com/1.3.7/quill.js"></script>
+
+  <!-- Firebase + Workspace Logic -->
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
     import {
       getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
-      onSnapshot, query, where, orderBy, serverTimestamp, arrayUnion, Timestamp, writeBatch
+      onSnapshot, query, where, serverTimestamp, writeBatch
     } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
     /* Firebase */
@@ -191,27 +461,98 @@
       appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
     };
     if (!getApps().length) initializeApp(firebaseConfig);
-    const auth = getAuth(); const db = getFirestore();
+
+    const auth = getAuth();
+    const db   = getFirestore();
+
+    /* State */
+    let CURRENT_USER=null;
+    let CURRENT_ROLE='member';
+    let IS_ADMIN=false;
+
+    let USERS=[];
+    let CURRENT_CAMPAIGN=null;
+    let COLUMNS=[];
+    let TASKS=[];
+    let unsubTasks=null;
+
+    /* Quill editors */
+    let quill = null;
+    let quillEdit = null;
+
+    /* Elements */
+    const campaignSelect     = document.getElementById('campaignSelect');
+    const campStartEl        = document.getElementById('campStart');
+    const campDueEl          = document.getElementById('campDue');
+    const campaignDates      = document.getElementById('campaignDates');
+    const board              = document.getElementById('board');
+    const campaignDescBox    = document.getElementById('campaignDescriptionBox');
+
+    const btnNewCampaign     = document.getElementById('btnNewCampaign');
+    const btnRenameCampaign  = document.getElementById('btnRenameCampaign');
+    const btnEditCampDesc    = document.getElementById('btnEditCampDesc');
+    const btnArchiveCampaign = document.getElementById('btnArchiveCampaign');
+    const btnDeleteCampaign  = document.getElementById('btnDeleteCampaign');
+    const btnAddColumn       = document.getElementById('btnAddColumn');
+    const btnSaveDates       = document.getElementById('btnSaveDates');
+
+    /* Init Quill editors */
+    window.addEventListener('DOMContentLoaded', () => {
+      quill = new Quill('#campaignDescEditor', {
+        theme: 'snow',
+        modules: { toolbar: '#campaignDescToolbar' }
+      });
+
+      quillEdit = new Quill('#editCampDescEditor', {
+        theme: 'snow',
+        modules: { toolbar: '#editDescToolbar' }
+      });
+    });
 
     /* Auth */
-    let CURRENT_USER=null, CURRENT_ROLE='member', IS_ADMIN=false;
-    document.getElementById('btnLogout').onclick = async ()=>{ await signOut(auth); location.href="login.html"; };
+    document.getElementById('btnLogout').onclick = async ()=>{
+      await signOut(auth);
+      location.href = "login.html";
+    };
 
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.href="login.html"; return; }
+
       CURRENT_USER = user;
+
       const u = await getDoc(doc(db,"users", user.uid));
       const name = u.exists()? (u.data().name||user.email) : (user.email||'مستخدم');
       CURRENT_ROLE = u.exists()? (u.data().role||'member') : 'member';
-      IS_ADMIN = CURRENT_ROLE==='admin';
+      IS_ADMIN = (CURRENT_ROLE === 'admin');
+
       document.getElementById('who').textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
-      if(!IS_ADMIN){ alert('هذه الصفحة للأدمِن فقط'); location.href="projects.html"; return; }
+
+      if(!IS_ADMIN){
+        alert('هذه الصفحة مخصصة للأدمِن فقط');
+        location.href="projects.html";
+        return;
+      }
 
       await loadUsers();
       bootCampaigns();
     });
 
-    /* Campaign columns (defaults) */
+    /* Load Users */
+    async function loadUsers(){
+      const snap = await getDocs(collection(db,'users'));
+      USERS=[];
+      snap.forEach(d=>{
+        const u = d.data() || {};
+        USERS.push({
+          uid:d.id,
+          name:u.name || d.id,
+          role:u.role || 'member',
+          color:u.color || '#bc8f74'
+        });
+      });
+    }
+
+    /* Default Columns */
     const CAMPAIGN_DEFAULT_COLS = [
       "ريلز - كاش",
       "موشن - كاش",
@@ -222,455 +563,282 @@
       "اقساط شركات - سوشيال ميديا",
       "شركات - لينكد ان"
     ];
-    const CAMPAIGN_NAME_MAP = new Map([
-      ["ريل مواصفات","ريلز - كاش"],
-      ["ريل قصير","موشن - كاش"],
-      ["تصميم صور","جرافيك - كاش"],
-      ["يوتيوب","ريلز اقساط"],
-      ["وصل حديثًا","AI Generate - اقساط"],
-      ["وصل حديثا","AI Generate - اقساط"],
-      ["محتوى طويل","جرافيك اقساط"],
-      ["حملة ممولة","اقساط شركات - سوشيال ميديا"],
-      ["تحت المراجعة","شركات - لينكد ان"]
-    ]);
-    const MIME_TASK="application/x-mzj-task", MIME_COLUMN="application/x-mzj-column";
 
-    /* UI refs */
-    const campaignSelect   = document.getElementById('campaignSelect');
-    const board            = document.getElementById('board');
-    const campStartEl      = document.getElementById('campStart');
-    const campDueEl        = document.getElementById('campDue');
-    const campaignDates    = document.getElementById('campaignDates');
-    const btnNewCampaign   = document.getElementById('btnNewCampaign');
-    const btnRenameCampaign= document.getElementById('btnRenameCampaign');
-    const btnArchiveCampaign= document.getElementById('btnArchiveCampaign');
-    const btnDeleteCampaign= document.getElementById('btnDeleteCampaign');
-    const btnAddColumn     = document.getElementById('btnAddColumn');
-    const btnSaveDates     = document.getElementById('btnSaveDates');
-
-    /* Task modal refs */
-    const taskModal      = document.getElementById('taskModal');
-    const taskModalTitle = document.getElementById('taskModalTitle');
-    const btnCancelTask  = document.getElementById('btnCancelTask');
-    const btnSaveTask    = document.getElementById('btnSaveTask');
-    const tName          = document.getElementById('tName');
-    const tDue           = document.getElementById('tDue');
-    const tDesc          = document.getElementById('tDesc');
-    const mentionMenu    = document.getElementById('mentionMenu');
-    const tAssigneeSearch= document.getElementById('tAssigneeSearch');
-    const assigneeMenu   = document.getElementById('assigneeMenu');
-    const assigneeChip   = document.getElementById('assigneeChip');
-    const tColor         = document.getElementById('tColor');
-
-    /* State */
-    let USERS=[];  // {uid,name,role,color}
-    let CURRENT_CAMPAIGN=null;
-    let COLUMNS = CAMPAIGN_DEFAULT_COLS.slice();
-    let TASKS=[]; let unsubTasks=null;
-    let SELECTED_ASSIGNEE=null;
-    let EDITING_TASK=null;
-    let PRESELECT_STATUS=null;
-
-    /* Users / mentions */
-    async function loadUsers(){
-      const snap = await getDocs(collection(db,'users'));
-      USERS=[]; snap.forEach(d=>{
-        const u=d.data()||{};
-        USERS.push({ uid:d.id, name:u.name||d.id.slice(0,6), role:u.role||'member', color:u.color||'#bc8f74' });
-      });
-    }
-    function renderAssigneeMenu(filter){
-      const f=(filter||'').toLowerCase();
-      assigneeMenu.innerHTML='';
-      USERS.filter(u=>u.name.toLowerCase().includes(f)).forEach(u=>{
-        const it=document.createElement('div'); it.className='dd-item';
-        it.innerHTML=`<span class="badge"><span class="dot" style="background:${u.color}"></span>${u.name}</span> <span class="muted">(${u.role})</span>`;
-        it.onclick=()=>{ SELECTED_ASSIGNEE={...u}; assigneeChip.innerHTML=`<span class="badge"><span class="dot" style="background:${u.color}"></span>${u.name}</span>`; tColor.value=u.color; assigneeMenu.style.display='none'; };
-        assigneeMenu.appendChild(it);
-      });
-      assigneeMenu.style.display='block';
-    }
-    tAssigneeSearch.addEventListener('input',(e)=> renderAssigneeMenu(e.target.value.trim()));
-    tAssigneeSearch.addEventListener('focus',()=> renderAssigneeMenu(tAssigneeSearch.value));
-    document.addEventListener('click',(e)=>{ if(!assigneeMenu.contains(e.target) && e.target!==tAssigneeSearch) assigneeMenu.style.display='none'; if(!mentionMenu.contains(e.target) && e.target!==tDesc) mentionMenu.style.display='none'; });
-
-    function atToken(text, caret){
-      const i=text.lastIndexOf('@', caret-1);
-      if(i===-1) return null;
-      const q=text.slice(i+1, caret);
-      if(q.includes(' ')||q.includes('\n')) return null;
-      return { start:i, query:q.trim() };
-    }
-    function renderMentionMenu(q){
-      const f=(q||'').toLowerCase();
-      mentionMenu.innerHTML='';
-      const results = USERS.filter(u=>u.name.toLowerCase().includes(f)).slice(0,8);
-      if(!results.length){ mentionMenu.style.display='none'; return; }
-      results.forEach(u=>{
-        const it=document.createElement('div'); it.className='dd-item';
-        it.textContent = `${u.name} (${u.role})`;
-        it.onclick=()=>{
-          const start=tDesc.selectionStart;
-          const tok=atToken(tDesc.value,start); if(!tok) return;
-          const before=tDesc.value.slice(0,tok.start);
-          const after=tDesc.value.slice(start);
-          const ins='@'+u.name+' ';
-          tDesc.value=before+ins+after;
-          const pos=before.length+ins.length;
-          tDesc.setSelectionRange(pos,pos); tDesc.focus();
-          mentionMenu.style.display='none';
-        };
-        mentionMenu.appendChild(it);
-      });
-      mentionMenu.style.display='block';
-    }
-    tDesc.addEventListener('input', ()=>{ const caret=tDesc.selectionStart; const tok=atToken(tDesc.value, caret); if(tok) renderMentionMenu(tok.query); else mentionMenu.style.display='none'; });
-    tDesc.addEventListener('keydown',(e)=>{ if(e.key==='Escape') mentionMenu.style.display='none'; });
-
-    /* Campaigns CRUD */
+    /* Campaigns */
     function bootCampaigns(){
-      onSnapshot(query(collection(db,'spaces'), where('type','==','campaign')), (snap)=>{
-        const items=[]; snap.forEach(d=>{ const x=d.data()||{}; if(x.active!==false) items.push({ id:d.id, ...x }); });
-        items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
-        campaignSelect.innerHTML='';
-        items.forEach(s=>{ const opt=document.createElement('option'); opt.value=s.id; opt.textContent=s.name; campaignSelect.appendChild(opt); });
-        if(!CURRENT_CAMPAIGN && items.length){ selectCampaign(items[0].id); }
-      });
-
-      campaignSelect.addEventListener('change', (e)=> selectCampaign(e.target.value));
-
-      btnNewCampaign.addEventListener('click', async ()=>{
-        const name = prompt('اسم الحملة (مثال: حملة نوفمبر 2025):'); if(!name) return;
-        const ref = await addDoc(collection(db,'spaces'), {
-          name, type:'campaign', columns: CAMPAIGN_DEFAULT_COLS, createdAt: serverTimestamp(), active:true,
-          start:null, due:null
-        });
-        CURRENT_CAMPAIGN = ref.id; COLUMNS = CAMPAIGN_DEFAULT_COLS.slice();
-        renderBoard(); listenTasks(true); syncDatesUI(null,null);
-      });
-
-      btnRenameCampaign.addEventListener('click', async ()=>{
-        if(!CURRENT_CAMPAIGN) return;
-        const nm = prompt('اسم جديد للحملة:'); if(!nm) return;
-        await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { name:nm });
-      });
-
-      btnArchiveCampaign.addEventListener('click', async ()=>{
-        if(!CURRENT_CAMPAIGN) return;
-        if(!confirm('أرشفة الحملة؟ ستظل موجودة بالأرشيف.')) return;
-        await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { active:false, archivedAt:serverTimestamp() });
-        CURRENT_CAMPAIGN=null; board.innerHTML=''; campaignDates.textContent='—';
-      });
-
-      // 🔥 حذف نهائي للحملة وكل المهام المتعلقة بها
-      btnDeleteCampaign.addEventListener('click', async ()=>{
-        if(!CURRENT_CAMPAIGN) return alert('اختر حملة أولاً');
-        const sure1 = confirm('تحذير: سيتم حذف الحملة وجميع المهام داخلها نهائيًا. هل أنت متأكد؟');
-        if(!sure1) return;
-        const sure2 = confirm('تأكيد أخير: لا يمكن التراجع بعد الحذف. متابعة؟');
-        if(!sure2) return;
-
-        try{
-          // احذف مهام الحملة بالـbatch
-          const qTasks = query(collection(db,'tasks'), where('spaceId','==', CURRENT_CAMPAIGN));
-          const snap = await getDocs(qTasks);
-          let batch = writeBatch(db);
-          let count = 0;
-
+      onSnapshot(
+        query(collection(db,'spaces'), where('type','==','campaign')),
+        (snap)=>{
+          const items=[];
           snap.forEach(d=>{
-            batch.delete(d.ref);
-            count++;
-            // التزام كل 400 عملية لتفادي حدود الـbatch
-            if(count % 400 === 0){
-              // NOTE: writeBatch().commit() يرجع Promise
+            const x=d.data()||{};
+            if(x.active !== false){
+              items.push({ id:d.id, ...x });
             }
           });
 
-          await batch.commit();
+          items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
 
-          // احذف وثيقة الحملة نفسها
-          await deleteDoc(doc(db,'spaces', CURRENT_CAMPAIGN));
+          campaignSelect.innerHTML='';
+          items.forEach(s=>{
+            const opt=document.createElement('option');
+            opt.value=s.id;
+            opt.textContent=s.name;
+            campaignSelect.appendChild(opt);
+          });
 
-          alert('✅ تم حذف الحملة وجميع مهامها نهائيًا');
-          CURRENT_CAMPAIGN=null;
-          campaignSelect.value='';
-          board.innerHTML='';
-          campaignDates.textContent='—';
-        }catch(e){
-          console.error(e);
-          alert('⚠️ تعذر الحذف النهائي: '+(e?.message||e));
+          if(!CURRENT_CAMPAIGN && items.length){
+            selectCampaign(items[0].id);
+          }
         }
-      });
+      );
 
-      btnAddColumn.addEventListener('click', async ()=>{
-        if(!CURRENT_CAMPAIGN) return;
-        const name=prompt('اسم عمود جديد:'); if(!name) return;
-        if(COLUMNS.includes(name)) return alert('الاسم موجود');
-        const cols=COLUMNS.concat([name]);
-        await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { columns: cols });
-        COLUMNS=cols; renderBoard(); renderTasks();
-      });
-
-      btnSaveDates.addEventListener('click', async ()=>{
-        if(!CURRENT_CAMPAIGN) return;
-        const start = campStartEl.value || null;
-        const due   = campDueEl.value || null;
-        await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { start, due });
-        syncDatesUI(start,due);
-        alert('✅ تم حفظ تواريخ الحملة');
+      campaignSelect.addEventListener('change', e=>{
+        selectCampaign(e.target.value);
       });
     }
 
+    /* Select Campaign */
     async function selectCampaign(id){
       CURRENT_CAMPAIGN=id;
+
       const d = await getDoc(doc(db,'spaces', id));
-      let cols = d.exists()? (Array.isArray(d.data().columns)? d.data().columns.slice() : []) : [];
-      if(!cols.length) cols = CAMPAIGN_DEFAULT_COLS.slice();
-      // تطبيع أسماء قديمة للجديدة
-      let changed=false;
-      cols = cols.map(c=>{ const m=CAMPAIGN_NAME_MAP.get(c)||c; if(m!==c) changed=true; return m; });
-      CAMPAIGN_DEFAULT_COLS.forEach(def=>{ if(!cols.includes(def)){ cols.push(def); changed=true; } });
-      if(changed) await updateDoc(doc(db,'spaces', id), { columns: cols });
-      COLUMNS=cols;
+      const data = d.data() || {};
 
-      const start = d.data()?.start || null;
-      const due   = d.data()?.due   || null;
-      syncDatesUI(start, due);
+      /* Load Columns */
+      COLUMNS = Array.isArray(data.columns) ? data.columns : CAMPAIGN_DEFAULT_COLS.slice();
 
+      /* Load Description */
+      const desc = data.description || "<em class='muted'>لا يوجد وصف للحملة</em>";
+      campaignDescBox.innerHTML = desc;
+
+      /* Campaign Dates */
+      const start = data.start || '';
+      const due   = data.due   || '';
+
+      campStartEl.value = start;
+      campDueEl.value   = due;
+      campaignDates.textContent = `📅 ${start||'—'} → ${due||'—'}`;
+
+      /* Render Board */
       renderBoard();
+
+      /* Load Tasks */
       listenTasks(true);
     }
 
-    function syncDatesUI(start, due){
-      campStartEl.value = start || '';
-      campDueEl.value   = due   || '';
-      const s = start || '—';
-      const e = due   || '—';
-      campaignDates.textContent = `📅 ${s} → ${e}`;
-    }
+    /* Create New Campaign */
+    btnNewCampaign.onclick = ()=>{
+      document.getElementById('newCampName').value="";
+      quill.setContents([]);
+      document.getElementById('newCampaignModal').classList.add('show');
+    };
 
-    /* Board & Tasks */
+    document.getElementById('cancelNewCamp').onclick = ()=>{
+      document.getElementById('newCampaignModal').classList.remove('show');
+    };
+
+    document.getElementById('saveNewCamp').onclick = async ()=>{
+      const name = document.getElementById('newCampName').value.trim();
+      if(!name) return alert("اكتب اسم الحملة");
+
+      const descriptionHTML = quill.root.innerHTML;
+
+      const ref = await addDoc(collection(db,'spaces'), {
+        name,
+        description: descriptionHTML,
+        type:'campaign',
+        columns: CAMPAIGN_DEFAULT_COLS,
+        createdAt: serverTimestamp(),
+        active:true,
+        start:null,
+        due:null
+      });
+
+      CURRENT_CAMPAIGN = ref.id;
+      COLUMNS = CAMPAIGN_DEFAULT_COLS.slice();
+
+      document.getElementById('newCampaignModal').classList.remove('show');
+      renderBoard();
+      listenTasks(true);
+      alert("تم إنشاء الحملة بنجاح");
+    };
+
+    /* Edit Campaign Description */
+    btnEditCampDesc.onclick = async ()=>{
+      if(!CURRENT_CAMPAIGN) return;
+
+      const d = await getDoc(doc(db,'spaces', CURRENT_CAMPAIGN));
+      const desc = d.data()?.description || "";
+
+      quillEdit.root.innerHTML = desc;
+      document.getElementById('editCampDescModal').classList.add('show');
+    };
+
+    document.getElementById('cancelEditDesc').onclick = ()=>{
+      document.getElementById('editCampDescModal').classList.remove('show');
+    };
+
+    document.getElementById('saveEditCampDesc').onclick = async ()=>{
+      if(!CURRENT_CAMPAIGN) return;
+
+      const newDesc = quillEdit.root.innerHTML;
+
+      await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), {
+        description:newDesc
+      });
+
+      campaignDescBox.innerHTML = newDesc;
+      document.getElementById('editCampDescModal').classList.remove('show');
+
+      alert("✔️ تم تحديث وصف الحملة");
+    };
+
+    /* Rename Campaign */
+    btnRenameCampaign.onclick = async ()=>{
+      if(!CURRENT_CAMPAIGN) return;
+
+      const nm = prompt("اسم جديد للحملة:");
+      if(!nm) return;
+
+      await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { name:nm });
+    };
+
+    /* Archive */
+    btnArchiveCampaign.onclick = async ()=>{
+      if(!CURRENT_CAMPAIGN) return;
+
+      if(!confirm("أرشفة الحملة؟")) return;
+
+      await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { active:false });
+      CURRENT_CAMPAIGN=null;
+      board.innerHTML='';
+      campaignDescBox.innerHTML="<em class='muted'>لا يوجد وصف</em>";
+    };
+
+    /* Delete Campaign */
+    btnDeleteCampaign.onclick = async ()=>{
+      if(!CURRENT_CAMPAIGN) return alert("اختر حملة");
+
+      if(!confirm("تحذير: حذف نهائي؟")) return;
+      if(!confirm("تأكيد أخير؟")) return;
+
+      const qTasks = query(collection(db,'tasks'), where('spaceId','==', CURRENT_CAMPAIGN));
+      const snap = await getDocs(qTasks);
+
+      const batch = writeBatch(db);
+      snap.forEach(d=> batch.delete(d.ref));
+
+      await batch.commit();
+      await deleteDoc(doc(db,'spaces', CURRENT_CAMPAIGN));
+
+      CURRENT_CAMPAIGN=null;
+      board.innerHTML="";
+      campaignDescBox.innerHTML="";
+      alert("تم حذف الحملة نهائيًا");
+    };
+
+    /* Save Campaign Dates */
+    btnSaveDates.onclick = async ()=>{
+      if(!CURRENT_CAMPAIGN) return;
+
+      const start = campStartEl.value || null;
+      const due   = campDueEl.value || null;
+
+      await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { start, due });
+
+      campaignDates.textContent = `📅 ${start||'—'} → ${due||'—'}`;
+      alert("تم حفظ التواريخ");
+    };
+
+    /* Render Board */
     function renderBoard(){
       board.innerHTML='';
+
       COLUMNS.forEach((col, index)=>{
         const sec=document.createElement('section');
         sec.className='col';
-        sec.dataset.status=col;
         sec.dataset.index=index;
+        sec.dataset.status=col;
 
-        sec.innerHTML=`
+        sec.innerHTML = `
           <div class="col-head">
             <span class="col-title">${col}</span>
-            <div class="grip"><span class="dots">⋮⋮</span> اسحب</div>
             <div class="col-actions">
-              <button class="icon" data-act="rename" title="إعادة تسمية">✏️</button>
-              <button class="icon" data-act="delete" title="حذف">🗑️</button>
-              <button class="icon" data-act="newtask" title="تاسك جديد">➕</button>
+              <button class="icon" data-act="rename">✏️</button>
+              <button class="icon" data-act="delete">🗑️</button>
+              <button class="icon" data-act="newtask">➕</button>
             </div>
           </div>
+
           <div class="col-body">
             <div class="dropzone" data-zone="${col}"></div>
           </div>
         `;
 
-        // ترتيب الأعمدة
-        const grip=sec.querySelector('.grip');
-        grip.setAttribute('draggable','true');
-        grip.addEventListener('dragstart',(e)=>{
-          e.dataTransfer.effectAllowed='move';
-          e.dataTransfer.setData(MIME_COLUMN, String(index));
-        });
-        sec.addEventListener('dragover',(e)=>{
-          if(e.dataTransfer.types.includes(MIME_COLUMN)){ e.preventDefault(); e.dataTransfer.dropEffect='move'; }
-        });
-        sec.addEventListener('drop', async (e)=>{
-          if(!e.dataTransfer.types.includes(MIME_COLUMN)) return;
-          e.preventDefault();
-          const from=parseInt(e.dataTransfer.getData(MIME_COLUMN),10);
-          const to=parseInt(sec.dataset.index,10);
-          if(isNaN(from)||isNaN(to)||from===to) return;
-          const newOrder=COLUMNS.slice();
-          const [moved]=newOrder.splice(from,1);
-          newOrder.splice(to,0,moved);
-          COLUMNS=newOrder;
-          await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { columns:newOrder });
-          renderBoard(); renderTasks();
-        });
-
-        // أزرار العمود
-        sec.querySelector('.col-actions').addEventListener('click', async (e)=>{
-          const act=e.target.dataset.act; if(!act) return;
-          if(act==='rename'){
-            const nn=prompt('اسم العمود الجديد:', col); if(!nn||nn===col) return;
-            COLUMNS=COLUMNS.map(c=>c===col?nn:c);
-            await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { columns:COLUMNS });
-            renderBoard(); renderTasks();
-          }else if(act==='delete'){
-            if(COLUMNS.length<=1) return alert('لا يمكن حذف آخر عمود.');
-            const target=prompt(`سيتم حذف "${col}". انقل المهام إلى: \n${COLUMNS.join(', ')}`);
-            if(!target || !COLUMNS.includes(target) || target===col) return;
-            const affected=TASKS.filter(t=>t.status===col);
-            for(const t of affected){ try{ await updateDoc(doc(db,'tasks', t.id), { status:target }); }catch{} }
-            const newCols=COLUMNS.filter(c=>c!==col);
-            await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { columns:newCols });
-            COLUMNS=newCols; renderBoard(); renderTasks();
-          }else if(act==='newtask'){
-            openTaskModal({ status: col });
-          }
-        });
-
         board.appendChild(sec);
       });
 
-      // drop tasks
-      board.querySelectorAll('.dropzone').forEach(zone=>{
-        zone.addEventListener('dragover',(e)=>{
-          if(e.dataTransfer.types.includes(MIME_TASK)){ e.preventDefault(); zone.classList.add('drag'); }
-        });
-        zone.addEventListener('dragleave',()=> zone.classList.remove('drag'));
-        zone.addEventListener('drop', async(e)=>{
-          if(!e.dataTransfer.types.includes(MIME_TASK)) return;
-          e.preventDefault(); zone.classList.remove('drag');
-          const id = e.dataTransfer.getData(MIME_TASK);
-          const newStatus = zone.dataset.zone;
-          try{ await updateDoc(doc(db,'tasks', id), { status:newStatus }); }catch(err){ alert('⚠️ تعذر النقل: '+err.message); }
-        });
+      renderTasks();
+    }
+
+    /* Listen Tasks */
+    function listenTasks(){
+      if(unsubTasks) unsubTasks();
+
+      if(!CURRENT_CAMPAIGN) return;
+
+      const qy=query(collection(db,'tasks'), where('spaceId','==', CURRENT_CAMPAIGN));
+
+      unsubTasks = onSnapshot(qy,(snap)=>{
+        TASKS=[];
+        snap.forEach(d=> TASKS.push({ id:d.id, ...(d.data()) }));
+        renderTasks();
       });
     }
 
+    /* Render Tasks */
     function renderTasks(){
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
-      const byStatus={}; COLUMNS.forEach(c=> byStatus[c]=[]);
-      TASKS.forEach(t=>{ (byStatus[t.status]||(byStatus[t.status]=[])).push(t); });
+
+      const grouped={};
+      COLUMNS.forEach(c=> grouped[c]=[]);
+
+      TASKS.forEach(t=>{
+        if(!grouped[t.status]) grouped[t.status]=[];
+        grouped[t.status].push(t);
+      });
 
       COLUMNS.forEach(status=>{
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
-        (byStatus[status]||[]).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)).forEach(t=>{
-          const card=document.createElement('article'); card.className='card'; card.dataset.id=t.id;
-          card.innerHTML = `
-            <h4>${t.name||'-'}</h4>
+        (grouped[status]||[]).forEach(t=>{
+          const card=document.createElement('article');
+          card.className='card';
+          card.dataset.id=t.id;
+
+          card.innerHTML=`
+            <h4>${t.name}</h4>
             <div class="row" style="margin-top:6px">
-              ${t.assignee?`<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>`:''}
-              ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
-            </div>`;
-          card.setAttribute('draggable','true');
-          card.addEventListener('dragstart',(e)=>{
-            e.dataTransfer.effectAllowed='move';
-            e.dataTransfer.setData(MIME_TASK, t.id);
-            e.dataTransfer.setData('text/plain', t.id);
-          });
-          card.addEventListener('click', ()=> openTaskModal({ edit:t }));
-          zone?.appendChild(card);
+              ${t.assignee ? `
+                <span class="badge">
+                  <span class="dot" style="background:${t.assignee.color}"></span>
+                  ${t.assignee.name}
+                </span>
+              `:''}
+              ${t.due ? `<span class="small">📅 ${t.due}</span>` : '' }
+            </div>
+          `;
+
+          zone.appendChild(card);
         });
       });
     }
 
-    function listenTasks(){
-      if(unsubTasks){ unsubTasks(); unsubTasks=null; }
-      if(!CURRENT_CAMPAIGN) return;
-      const qy=query(collection(db,'tasks'), where('spaceId','==', CURRENT_CAMPAIGN));
-      unsubTasks=onSnapshot(qy,(snap)=>{
-        TASKS=[]; snap.forEach(d=> TASKS.push({ id:d.id, ...(d.data()||{}) })); renderTasks();
-      });
-    }
-
-    /* Task Modal handlers */
-    function openTaskModal(opts={}){
-      SELECTED_ASSIGNEE=null; EDITING_TASK=null; PRESELECT_STATUS=null;
-      tName.value=''; tDue.value=''; tDesc.value=''; assigneeChip.innerHTML=''; tAssigneeSearch.value=''; tColor.value='#bc8f74';
-
-      if(opts.status) PRESELECT_STATUS=opts.status;
-      if(opts.edit){
-        const t=opts.edit; EDITING_TASK=t;
-        taskModalTitle.textContent='تعديل التاسك';
-        tName.value=t.name||''; tDue.value=t.due||''; tDesc.value=t.description||'';
-        if(t.assignee){
-          SELECTED_ASSIGNEE = { uid:t.assignee.uid, name:t.assignee.name, color:t.assignee.color||'#bc8f74' };
-          assigneeChip.innerHTML = `<span class="badge"><span class="dot" style="background:${SELECTED_ASSIGNEE.color}"></span>${SELECTED_ASSIGNEE.name}</span>`;
-          tColor.value = SELECTED_ASSIGNEE.color;
-        }
-      }else{
-        taskModalTitle.textContent='تاسك جديد';
-      }
-      taskModal.classList.add('show');
-    }
-    function closeTaskModal(){ taskModal.classList.remove('show'); }
-    btnCancelTask.addEventListener('click', closeTaskModal);
-    taskModal.addEventListener('click',(e)=>{ if(e.target===taskModal) closeTaskModal(); });
-
-    btnSaveTask.addEventListener('click', async ()=>{
-      if(!CURRENT_CAMPAIGN) return alert('اختر حملة أولاً');
-      const name=tName.value.trim(); if(!name) return alert('اكتب اسم التاسك');
-      const due=tDue.value||null; const description=tDesc.value||null;
-      const color=(tColor.value||'#bc8f74').trim();
-
-      if(SELECTED_ASSIGNEE){
-        await setDoc(doc(db,'users', SELECTED_ASSIGNEE.uid), { color }, { merge:true });
-      }
-
-      try{
-        if(EDITING_TASK){
-          const prev={...EDITING_TASK};
-          await updateDoc(doc(db,'tasks', EDITING_TASK.id), {
-            name, description, due,
-            assignee: SELECTED_ASSIGNEE ? { uid:SELECTED_ASSIGNEE.uid, name:SELECTED_ASSIGNEE.name, color } : null
-          });
-          if(SELECTED_ASSIGNEE && (!prev.assignee || prev.assignee.uid!==SELECTED_ASSIGNEE.uid)){
-            await addDoc(collection(db,'notifications'),{
-              userId: SELECTED_ASSIGNEE.uid, type:'mention',
-              title:`تم إسناد مهمة: ${name}`,
-              taskId: EDITING_TASK.id, spaceId: CURRENT_CAMPAIGN,
-              by: CURRENT_USER?.uid || null, createdAt: serverTimestamp(), read:false
-            });
-          }
-        }else{
-          const status = PRESELECT_STATUS || (COLUMNS[0]||'ريلز - كاش');
-          const ref = await addDoc(collection(db,'tasks'), {
-            spaceId: CURRENT_CAMPAIGN, name, description, due, status,
-            assignee: SELECTED_ASSIGNEE ? { uid:SELECTED_ASSIGNEE.uid, name:SELECTED_ASSIGNEE.name, color } : null,
-            createdBy: CURRENT_USER?.uid || null, createdAt: serverTimestamp(), links:[]
-          });
-          if(SELECTED_ASSIGNEE){
-            await addDoc(collection(db,'notifications'),{
-              userId: SELECTED_ASSIGNEE.uid, type:'mention',
-              title:`تم إسناد مهمة: ${name}`,
-              taskId: ref.id, spaceId: CURRENT_CAMPAIGN,
-              by: CURRENT_USER?.uid || null, createdAt: serverTimestamp(), read:false
-            });
-          }
-        }
-        closeTaskModal();
-      }catch(e){ alert('⚠️ فشل الحفظ: '+e.message); }
-    });
-
-    /* Select campaign helpers */
-    function renderTasksBoot(){ renderBoard(); listenTasks(); }
-    function renderBoardAndTasks(){ renderBoard(); renderTasks(); }
-
-    function renderBoardWrapper(){ renderBoard(); }
-    function renderTasksWrapper(){ renderTasks(); }
-
-    function listenTasksWrapper(){ listenTasks(); }
-
-    function renderBoardAndListen(){ renderBoard(); listenTasks(); }
-
-    function renderBoardRefresh(){ renderBoard(); }
-
-    function renderTasksRefresh(){ renderTasks(); }
-
-    function listenTasksRefresh(){ listenTasks(); }
-
-    function renderBoardInit(){ renderBoard(); }
-
-    function renderTasksInit(){ renderTasks(); }
-
-    function listenTasksInit(){ listenTasks(); }
-
-    function renderBoardFull(){ renderBoard(); }
-
-    function listenTasksFull(){ listenTasks(); }
-
-    // select campaign called earlier
   </script>
+
+  <footer class="footer">
+    <small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small>
+  </footer>
+
 </body>
 </html>

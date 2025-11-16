@@ -63,7 +63,8 @@
     .grip .dots{letter-spacing:2px;font-weight:700}
 
     /* Cards */
-    .card{background:#fff;border:1px solid #eee;border-radius:12px;padding:8px;box-shadow:0 8px 20px rgba(62,36,32,.06);cursor:grab}
+    .card{background:#fff;border:1px solid #eee;border-radius:12px;padding:8px;box-shadow:0 8px 20px rgba(62,36,32,.06);cursor:grab;transition:background .12s,transform .12s}
+    .card.drag-over{background:#fdf0e6;transform:scale(.99)}
     .card h4{margin:0;color:var(--brown);font-size:15px;line-height:1.4}
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .row.between{justify-content:space-between;align-items:flex-start}
@@ -396,6 +397,71 @@
     let CURRENT_USER=null, CURRENT_ROLE='member', IS_ADMIN=false;
     window.mzjLogout = async ()=>{ await signOut(auth); location.href="login.html"; };
 
+    /* Common helpers */
+    const MIME_TASK   = "application/x-mzj-task";
+    const MIME_COLUMN = "application/x-mzj-column";
+    const MIME_DAILY  = "application/x-mzj-daily";
+
+    // مفتاح الترتيب: يستخدم order لو موجود، وإلا createdAt
+    function taskSortKey(t){
+      if(typeof t.order === 'number') return t.order;
+      return t.createdAt?.seconds || 0;
+    }
+
+    function getNextOrderFor(list, status){
+      const col = list.filter(t=>t.status===status && typeof t.order === 'number');
+      if(!col.length) return 1;
+      return Math.max(...col.map(t=>t.order))+1;
+    }
+
+    async function ensureColumnOrders(list, status){
+      const colTasks = list.filter(t=>t.status===status);
+      if(!colTasks.length) return;
+      const needInit = colTasks.some(t=> typeof t.order !== 'number');
+      if(!needInit) return;
+
+      // لو مفيش order، نرتبهم حسب createdAt ونوزع أرقام
+      colTasks.sort((a,b)=> (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0));
+      await Promise.all(colTasks.map((t,idx)=>{
+        t.order = idx+1;
+        return updateDoc(doc(db,'tasks', t.id), { order: t.order }).catch(()=>{});
+      }));
+    }
+
+    async function swapTasksPositions(list, status, draggedId, targetId){
+      await ensureColumnOrders(list, status);
+      const colTasks = list.filter(t=>t.status===status);
+      const a = colTasks.find(t=>t.id===draggedId);
+      const b = colTasks.find(t=>t.id===targetId);
+      if(!a || !b) return;
+      const oa = typeof a.order==='number' ? a.order : taskSortKey(a);
+      const ob = typeof b.order==='number' ? b.order : taskSortKey(b);
+      a.order = ob;
+      b.order = oa;
+      await Promise.all([
+        updateDoc(doc(db,'tasks', a.id), { order: a.order }),
+        updateDoc(doc(db,'tasks', b.id), { order: b.order })
+      ]);
+    }
+
+    let USERS=[];
+    let CURRENT_SPACE=null; 
+    let SPACE_COLUMNS=[];
+    let TASKS_SPACES=[]; 
+    let unsubTasksSpaces=null; 
+    let OPEN_TASK=null;
+    let SPACES_CACHE = new Map(); // id -> name
+
+    let CURRENT_CAMPAIGN = null;
+    let CAMPAIGN_COLUMNS = [];
+    let TASKS_CAMPAIGNS  = [];
+    let unsubTasksCampaigns = null;
+    let CAMPAIGNS = [];
+
+    function canManageLinks(task){
+      return IS_ADMIN || (task?.assignee?.uid && task.assignee.uid === (CURRENT_USER?.uid||'')); 
+    }
+
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.href="login.html"; return; }
       CURRENT_USER = user;
@@ -427,12 +493,6 @@
       if(IS_ADMIN) bootDailyTasks(); // المهام اليومية للأدمِن فقط
     });
 
-    /* Common helpers */
-    const MIME_TASK   = "application/x-mzj-task";
-    const MIME_COLUMN = "application/x-mzj-column";
-    const MIME_DAILY  = "application/x-mzj-daily";
-
-    let USERS=[];
     async function loadUsers(){
       const snap = await getDocs(collection(db,'users'));
       USERS=[];
@@ -440,10 +500,6 @@
         const u=d.data()||{};
         USERS.push({ uid:d.id, name:u.name||d.id.slice(0,6), role:u.role||'member', color:u.color||'#bc8f74' });
       });
-    }
-
-    function canManageLinks(task){
-      return IS_ADMIN || (task?.assignee?.uid && task.assignee.uid === (CURRENT_USER?.uid||'')); 
     }
 
     /* ===== Spaces logic ===== */
@@ -456,10 +512,6 @@
     const btnSpaceManage  = document.getElementById('btnSpaceManage');
     const boardSpaces     = document.getElementById('boardSpaces');
     const btnExportSpace  = document.getElementById('btnExportSpace');
-
-    let CURRENT_SPACE=null; let SPACE_COLUMNS=DEFAULT_COLUMNS.slice();
-    let TASKS_SPACES=[]; let unsubTasksSpaces=null; let OPEN_TASK=null;
-    let SPACES_CACHE = new Map(); // id -> name
 
     async function ensureReviewColumn(){
       if (!CURRENT_SPACE) return;
@@ -792,7 +844,6 @@
       });
     });
     tName?.addEventListener('input', ()=>{
-      // ممكن بعدين تستخدم الاسم في بحث الأجندة لو عندك حقل مطابق
       scheduleAgendaCheck();
     });
 
@@ -870,12 +921,6 @@
     const btnNewCampaignTask = document.getElementById('btnNewCampaignTask');
     const btnNewCampaign     = document.getElementById('btnNewCampaign');
     const campaignDates      = document.getElementById('campaignDates');
-
-    let CURRENT_CAMPAIGN = null;
-    let CAMPAIGN_COLUMNS = CAMPAIGN_DEFAULT_COLS.slice();
-    let TASKS_CAMPAIGNS  = [];
-    let unsubTasksCampaigns = null;
-    let CAMPAIGNS = [];
 
     function fillCampaignDropdown(list, selectedId){
       campaignSelect.innerHTML='';
@@ -1052,7 +1097,8 @@
           const cardId = e.dataTransfer.getData(MIME_TASK);
           const newStatus = zone.dataset.zone;
           try{
-            await updateDoc(doc(db,'tasks', cardId), { status:newStatus });
+            const nextOrder = getNextOrderFor(TASKS_CAMPAIGNS, newStatus);
+            await updateDoc(doc(db,'tasks', cardId), { status:newStatus, order: nextOrder });
           }catch(err){
             alert('⚠️ تعذر النقل: '+err.message);
           }
@@ -1074,7 +1120,7 @@
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
         if(!zone) return;
         const list = byStatus[status]||[];
-        list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+        list.sort((a,b)=> taskSortKey(a)-taskSortKey(b));
         list.forEach(t=>{
           const card=document.createElement('article'); 
           card.className='card'; 
@@ -1109,12 +1155,38 @@
 
           card.appendChild(footer);
 
+          // Drag start
           card.setAttribute('draggable','true');
           card.addEventListener('dragstart', e=>{
             e.dataTransfer.effectAllowed='move';
             e.dataTransfer.setData(MIME_TASK, t.id);
             e.dataTransfer.setData('text/plain', t.id);
           });
+
+          // Swap داخل نفس العمود
+          card.addEventListener('dragover', e=>{
+            if(e.dataTransfer.types.includes(MIME_TASK)){
+              e.preventDefault();
+              card.classList.add('drag-over');
+            }
+          });
+          card.addEventListener('dragleave', ()=>{
+            card.classList.remove('drag-over');
+          });
+          card.addEventListener('drop', async e=>{
+            if(!e.dataTransfer.types.includes(MIME_TASK)) return;
+            e.preventDefault();
+            card.classList.remove('drag-over');
+            const draggedId = e.dataTransfer.getData(MIME_TASK);
+            if(draggedId === t.id) return;
+            try{
+              await swapTasksPositions(TASKS_CAMPAIGNS, status, draggedId, t.id);
+            }catch(err){
+              console.error(err);
+              alert('⚠️ تعذر تبديل ترتيب المهام: '+(err?.message||err));
+            }
+          });
+
           card.addEventListener('click', (e)=>{
             if(e.target.closest('.campaign-done-btn')) return;
             openDetail(t);
@@ -1168,6 +1240,10 @@
           const idx=USERS.findIndex(u=>u.uid===assigneeUid);
           if(idx>-1) USERS[idx].color=color;
         }
+        // ترتيب مبدئي جديد
+        const baseList = isCampaignTab ? TASKS_CAMPAIGNS : TASKS_SPACES;
+        const nextOrder = getNextOrderFor(baseList, status);
+
         const payload = {
           spaceId: targetSpaceId, name, description, due, status,
           car,
@@ -1175,7 +1251,8 @@
           links: [],
           createdBy: CURRENT_USER?.uid || null,
           createdAt: serverTimestamp(),
-          active:true
+          active:true,
+          order: nextOrder
         };
         await addDoc(collection(db,'tasks'), payload);
         alert('✅ تم حفظ التاسك');
@@ -1292,8 +1369,10 @@
           e.preventDefault(); zone.classList.remove('drag');
           const cardId = e.dataTransfer.getData(MIME_TASK);
           const newStatus = zone.dataset.zone;
-          try{ await updateDoc(doc(db,'tasks', cardId), { status:newStatus }); }
-          catch(err){ alert('⚠️ تحديث الحالة يحتاج صلاحية كافية.'); }
+          try{
+            const nextOrder = getNextOrderFor(TASKS_SPACES, newStatus);
+            await updateDoc(doc(db,'tasks', cardId), { status:newStatus, order: nextOrder });
+          }catch(err){ alert('⚠️ تحديث الحالة يحتاج صلاحية كافية.'); }
         });
       });
     }
@@ -1310,7 +1389,7 @@
       (SPACE_COLUMNS||[]).forEach(status=>{
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
         const list = byStatus[status]||[];
-        list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+        list.sort((a,b)=> taskSortKey(a)-taskSortKey(b));
         list.forEach(t=>{
           const card=document.createElement('article'); 
           card.className='card'; 
@@ -1325,11 +1404,38 @@
               ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
             </div>`;
           card.setAttribute('draggable','true');
+
+          // Drag start
           card.addEventListener('dragstart', e=>{
             e.dataTransfer.effectAllowed='move';
             e.dataTransfer.setData(MIME_TASK, t.id);
             e.dataTransfer.setData('text/plain', t.id);
           });
+
+          // Swap داخل نفس العمود
+          card.addEventListener('dragover', e=>{
+            if(e.dataTransfer.types.includes(MIME_TASK)){
+              e.preventDefault();
+              card.classList.add('drag-over');
+            }
+          });
+          card.addEventListener('dragleave', ()=>{
+            card.classList.remove('drag-over');
+          });
+          card.addEventListener('drop', async e=>{
+            if(!e.dataTransfer.types.includes(MIME_TASK)) return;
+            e.preventDefault();
+            card.classList.remove('drag-over');
+            const draggedId = e.dataTransfer.getData(MIME_TASK);
+            if(draggedId === t.id) return;
+            try{
+              await swapTasksPositions(TASKS_SPACES, status, draggedId, t.id);
+            }catch(err){
+              console.error(err);
+              alert('⚠️ تعذر تبديل ترتيب المهام: '+(err?.message||err));
+            }
+          });
+
           card.addEventListener('click', ()=> openDetail(t));
           zone?.appendChild(card);
         });

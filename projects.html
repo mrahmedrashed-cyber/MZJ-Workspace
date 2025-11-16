@@ -227,6 +227,9 @@
           </div>
         </div>
 
+        <!-- حالة وجود السيارة في الأجندة -->
+        <div id="carAgendaStatus" class="hint" style="margin-top:4px;padding:6px 8px;border-radius:8px;display:none;border:1px dashed #e5e7eb;background:#fffdf7;"></div>
+
         <div class="grid2" style="margin-top:4px">
           <div>
             <label>اسم التاسك</label>
@@ -660,10 +663,104 @@
       "نيسان": ["اكس تريل","ماجنايت","كيكس","صني","اكس تيرا","التيما"]
     };
 
-    const carBrand  = document.getElementById('carBrand');
-    const carModel  = document.getElementById('carModel');
-    const carTrim   = document.getElementById('carTrim');
-    const carEngine = document.getElementById('carEngine');
+    const carBrand       = document.getElementById('carBrand');
+    const carModel       = document.getElementById('carModel');
+    const carTrim        = document.getElementById('carTrim');
+    const carEngine      = document.getElementById('carEngine');
+    const carAgendaStatus= document.getElementById('carAgendaStatus');
+
+    /* ===== دوال التشييك على وجود السيارة داخل الأجندة ===== */
+
+    function buildCarKey(){
+      const brand  = (carBrand?.value||'').trim();
+      const model  = (carModel?.value||'').trim();
+      const trim   = (carTrim?.value||'').trim();
+      const engine = (carEngine?.value||'').trim();
+      const parts = [brand,model,trim,engine].filter(Boolean);
+      if(!parts.length) return '';
+      return parts.join('|').toLowerCase();
+    }
+
+    function resetAgendaStatus(){
+      if(!carAgendaStatus) return;
+      carAgendaStatus.style.display='none';
+      carAgendaStatus.textContent='';
+      carAgendaStatus.style.background='#fffdf7';
+      carAgendaStatus.style.borderColor='#e5e7eb';
+      carAgendaStatus.style.color='#6b7280';
+    }
+
+    function setAgendaStatus(mode, msg){
+      if(!carAgendaStatus) return;
+      carAgendaStatus.style.display='block';
+      carAgendaStatus.textContent = msg;
+      if(mode==='checking'){
+        carAgendaStatus.style.background='#fef3c7';
+        carAgendaStatus.style.borderColor='#facc15';
+        carAgendaStatus.style.color='#92400e';
+      }else if(mode==='found'){
+        carAgendaStatus.style.background='#ecfdf5';
+        carAgendaStatus.style.borderColor='#bbf7d0';
+        carAgendaStatus.style.color='#166534';
+      }else if(mode==='notfound'){
+        carAgendaStatus.style.background='#fef2f2';
+        carAgendaStatus.style.borderColor='#fecaca';
+        carAgendaStatus.style.color='#b91c1c';
+      }else{
+        resetAgendaStatus();
+      }
+    }
+
+    let agendaCheckTimer=null;
+    function scheduleAgendaCheck(){
+      const carKey = buildCarKey();
+      const nameKey = (tName?.value||'').trim();
+      if(!carKey && !nameKey){
+        resetAgendaStatus();
+        return;
+      }
+      setAgendaStatus('checking','⏳ جاري التحقق من وجود تاسك مشابه في الأجندة…');
+      if(agendaCheckTimer) clearTimeout(agendaCheckTimer);
+      agendaCheckTimer = setTimeout(checkAgendaForCar, 600);
+    }
+
+    async function checkAgendaForCar(){
+      try{
+        const carKey = buildCarKey();
+        const nameVal = (tName?.value||'').trim();
+        let total = 0;
+        let inCurrent = 0;
+
+        if(carKey){
+          const qy = query(collection(db,'tasks'), where('carKey','==', carKey));
+          const snap = await getDocs(qy);
+          snap.forEach(d=>{
+            const data = d.data()||{};
+            total++;
+            if(data.spaceId === CURRENT_SPACE) inCurrent++;
+          });
+        }else if(nameVal){
+          const qy = query(collection(db,'tasks'), where('name','==', nameVal));
+          const snap = await getDocs(qy);
+          snap.forEach(d=>{
+            const data = d.data()||{};
+            total++;
+            if(data.spaceId === CURRENT_SPACE) inCurrent++;
+          });
+        }
+
+        if(total>0){
+          const msg = `✅ يوجد ${total} تاسك بنفس بيانات السيارة/الاسم داخل الأجندة (منهم ${inCurrent} داخل الـSpace الحالي).`;
+          setAgendaStatus('found', msg);
+        }else{
+          const msg = '⚠️ لا يوجد أي تاسك بنفس بيانات السيارة/الاسم في الأجندة — ممتاز لإنشاء مهمة جديدة.';
+          setAgendaStatus('notfound', msg);
+        }
+      }catch(err){
+        console.error(err);
+        setAgendaStatus('notfound','⚠️ تعذر التحقق من الأجندة حالياً، جرّب مرة أخرى لاحقاً.');
+      }
+    }
 
     function fillBrands(){
       carBrand.innerHTML = '<option value="">— اختر الماركة —</option>';
@@ -692,15 +789,27 @@
     carBrand?.addEventListener('change', ()=>{
       fillModels(carBrand.value);
       buildAutoTaskName();
+      scheduleAgendaCheck();
     });
     [carModel, carTrim, carEngine].forEach(el=>{
-      el?.addEventListener('input', buildAutoTaskName);
-      el?.addEventListener('change', buildAutoTaskName);
+      el?.addEventListener('input', ()=>{
+        buildAutoTaskName();
+        scheduleAgendaCheck();
+      });
+      el?.addEventListener('change', ()=>{
+        buildAutoTaskName();
+        scheduleAgendaCheck();
+      });
     });
+    tName?.addEventListener('input', ()=>{
+      scheduleAgendaCheck();
+    });
+
     function initCarSelectors(){
       fillBrands();
       fillModels(carBrand.value||'');
       carTrim.value=''; carEngine.value='';
+      resetAgendaStatus();
     }
 
     function fillGroupSelect(cols=SPACE_COLUMNS){
@@ -731,6 +840,7 @@
       assigneeChip.innerHTML=''; SELECTED_ASSIGNEE=null; tColor.value='#bc8f74';
       fillGroupSelect();
       initCarSelectors();
+      resetAgendaStatus();
     }
 
     function renderAssigneeMenu(filter){
@@ -1062,6 +1172,9 @@
         engine: carEngine?.value?.trim() || null
       };
 
+      const carKey = buildCarKey();
+      const nameKey = name.toLowerCase();
+
       try{
         if(assigneeUid){
           await setDoc(doc(db,'users', assigneeUid), { color }, { merge:true });
@@ -1071,6 +1184,8 @@
         const payload = {
           spaceId: targetSpaceId, name, description, due, status,
           car,
+          carKey: carKey || null,
+          nameKey,
           assignee: assigneeUid ? { uid:assigneeUid, name:assigneeName, color } : null,
           links: [],
           createdBy: CURRENT_USER?.uid || null,

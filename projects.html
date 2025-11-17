@@ -712,15 +712,14 @@
       const tags = extractMentions(text);
       let recipients = [];
 
-      // أولاً: لو في منشن مكتوب بـ @ في الاسم أو الوصف نستخدمه
+      // أولاً: لو في منشن مكتوب باستخدام @ في الاسم أو الوصف
       if(tags.length){
         recipients = resolveMentionRecipients(tags).filter(u=> u.uid !== (CURRENT_USER?.uid||''));
-      }
-      // ثانياً: لو مافيهش @ منشن، نستخدم أعضاء المهمة المختارين كـ ريسيفرز
-      else if(Array.isArray(assignees) && assignees.length){
+      }else if(Array.isArray(assignees) && assignees.length){
+        // ثانياً: لو مافيش @ منشن، نستخدم أعضاء المهمة كمستلمين
         recipients = assignees
-          .map(a => USERS.find(u => u.uid === a.uid))
-          .filter(u => u && u.uid !== (CURRENT_USER?.uid||''));
+          .map(a=> USERS.find(u=> u.uid === (a.uid || a.id || a)))
+          .filter(u=> u && u.uid !== (CURRENT_USER?.uid||''));
       }
 
       if(!recipients.length) return;

@@ -139,16 +139,6 @@
       background:#fff
     }
 
-    .grip{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      font-size:13px;
-      color:#6b7280;
-      user-select:none
-    }
-    .grip .dots{letter-spacing:2px;font-weight:700}
-
     .col-body{padding:10px;display:grid;gap:10px}
     .dropzone{
       min-height:140px;
@@ -168,7 +158,12 @@
       border-radius:12px;
       padding:8px;
       box-shadow:0 8px 20px rgba(62,36,32,.06);
-      cursor:grab
+      cursor:pointer;
+      transition:.12s transform, .12s box-shadow;
+    }
+    .card:hover{
+      transform:translateY(-2px);
+      box-shadow:0 10px 24px rgba(62,36,32,.12);
     }
     .card h4{
       margin:0;
@@ -193,10 +188,9 @@
       border-radius:999px;
       background:#bc8f74
     }
-
     .small{font-size:12px;color:var(--muted)}
 
-    /* Modal Base (shared) */
+    /* Modal Base (campaign) */
     .modal-campaign{
       position:fixed;
       inset:0;
@@ -254,6 +248,154 @@
       background:#fff;
     }
 
+    /* Generic form styles (task modal + dates) */
+    .grid2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    @media(max-width:900px){
+      .grid2{grid-template-columns:1fr}
+    }
+    label{
+      display:block;
+      margin:4px 0 4px;
+      font-weight:700;
+      color:var(--brown);
+      font-size:13px;
+    }
+    input,select,textarea{
+      width:100%;
+      padding:10px;
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      background:#fff;
+      font-family:inherit;
+      font-size:14px;
+    }
+    textarea{min-height:90px;resize:vertical}
+    input:focus,select:focus,textarea:focus{
+      outline:3px solid rgba(188,143,116,.25);
+      border-color:var(--beige);
+    }
+
+    /* Dates styling */
+    .dates-grid .date-field{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .date-input-wrap{
+      display:flex;
+      align-items:center;
+      border-radius:12px;
+      border:1px solid #e5e7eb;
+      background:#fff;
+      padding-inline:6px;
+      transition:.15s border-color, .15s box-shadow, .15s background;
+    }
+    .date-input-wrap:focus-within{
+      border-color:var(--beige);
+      box-shadow:0 0 0 3px rgba(188,143,116,.15);
+      background:#fffbf7;
+    }
+    .date-input-wrap input{
+      border:0;
+      background:transparent;
+      padding:8px 6px;
+    }
+    .date-input-wrap input:focus{
+      outline:none;
+      box-shadow:none;
+    }
+    .date-icon{
+      font-size:15px;
+      color:var(--muted);
+      padding-inline:4px;
+    }
+    .date-helper{
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    /* Task Modal */
+    .modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.35);
+      display:none;
+      place-items:center;
+      padding:16px;
+      z-index:998;
+    }
+    .modal.show{display:grid}
+    .sheet{
+      background:#fff;
+      border-radius:16px;
+      max-width:780px;
+      width:100%;
+      max-height:90vh;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      box-shadow:0 28px 70px rgba(15,23,42,.35);
+    }
+    .sheet .head{
+      padding:10px 14px;
+      border-bottom:1px solid #eee;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:#fff8ef;
+      font-weight:800;
+      color:var(--brown);
+    }
+    .sheet .body{
+      padding:12px 14px;
+      display:grid;
+      gap:10px;
+      overflow:auto;
+    }
+    .sheet .footer{
+      padding:10px 14px;
+      border-top:1px solid #eee;
+      background:#fff8ef;
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #eee;border-radius:999px;background:#fff}
+    .dropdown-menu{
+      position:absolute;
+      background:#fff;
+      border:1px solid #eee;
+      border-radius:12px;
+      box-shadow:0 10px 30px rgba(62,36,32,.12);
+      display:none;
+      min-width:260px;
+      max-height:260px;
+      overflow:auto;
+      z-index:1000;
+    }
+    .dd-item{
+      padding:8px 10px;
+      border-bottom:1px solid #f3f3f3;
+      cursor:pointer;
+      font-size:13px;
+    }
+    .dd-item:hover{background:#fff8ef}
+
+    .footer-bar{
+      padding:16px 18px;
+      color:#fff;
+      background:linear-gradient(180deg,var(--brown),#2f1c19);
+      text-align:center;
+      font-size:13px;
+    }
   </style>
 </head>
 
@@ -300,7 +442,7 @@
 
       <div class="body">
 
-        <!-- ***** وصف الحملة يظهر هنا ***** -->
+        <!-- وصف الحملة -->
         <div id="campaignDescriptionBox"
           style="background:#fff; padding:18px; border-radius:14px;
                  margin-bottom:16px; box-shadow:0 6px 20px rgba(62,36,32,.06)">
@@ -308,15 +450,23 @@
         </div>
 
         <!-- Campaign Dates -->
-        <div class="grid2" style="margin-bottom:12px">
-          <div>
+        <div class="grid2 dates-grid" style="margin-bottom:12px">
+          <div class="date-field">
             <label>تاريخ بداية الحملة</label>
-            <input id="campStart" type="date">
+            <div class="date-input-wrap">
+              <span class="date-icon">📅</span>
+              <input id="campStart" type="date">
+            </div>
+            <div class="date-helper">حدد تاريخ انطلاق تنفيذ المهام في الحملة.</div>
           </div>
 
-          <div>
+          <div class="date-field">
             <label>تاريخ نهاية/تسليم الحملة</label>
-            <input id="campDue" type="date">
+            <div class="date-input-wrap">
+              <span class="date-icon">📅</span>
+              <input id="campDue" type="date">
+            </div>
+            <div class="date-helper">آخر يوم متوقع لتسليم كل محتوى الحملة.</div>
           </div>
         </div>
 
@@ -389,7 +539,6 @@
     </div>
   </div>
 
-
   <!-- ========= مودال تعديل وصف الحملة ========= -->
   <div class="modal-campaign" id="editCampDescModal">
     <div class="campaign-sheet">
@@ -397,7 +546,6 @@
       <div class="head">تعديل وصف الحملة</div>
 
       <div class="body">
-
         <label>وصف الحملة</label>
 
         <!-- Toolbar -->
@@ -430,7 +578,6 @@
 
         <!-- Editor -->
         <div id="editCampDescEditor"></div>
-
       </div>
 
       <div class="footer">
@@ -440,6 +587,53 @@
 
     </div>
   </div>
+
+  <!-- ========= مودال تاسك ========= -->
+  <div class="modal" id="taskModal">
+    <div class="sheet">
+      <div class="head">
+        <strong id="taskModalTitle">تاسك جديد</strong>
+      </div>
+      <div class="body">
+        <div class="grid2">
+          <div>
+            <label>اسم التاسك</label>
+            <input id="tName" placeholder="مثال: ريل 30 ثانية — عرض الكاش">
+          </div>
+          <div>
+            <label>تاريخ التسليم</label>
+            <input id="tDue" type="date">
+          </div>
+        </div>
+
+        <div>
+          <label>الوصف (اختياري)</label>
+          <textarea id="tDesc" placeholder="اكتب تفاصيل المهمة…"></textarea>
+        </div>
+
+        <div class="grid2">
+          <div style="position:relative">
+            <label>المسؤول</label>
+            <input id="tAssigneeSearch" placeholder="ابحث باسم العضو…">
+            <div id="assigneeMenu" class="dropdown-menu" style="right:0;top:64px;"></div>
+            <div id="assigneeChip" class="chips"></div>
+          </div>
+          <div>
+            <label>لون العضو</label>
+            <div class="row">
+              <input id="tColor" type="color" value="#bc8f74" style="width:70px;height:44px;padding:4px">
+              <span class="muted" style="font-size:12px">يظهر على البطاقة ويحفظ للعضو</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sheet footer">
+        <button class="btn secondary" id="btnCancelTask">إلغاء</button>
+        <button class="btn" id="btnSaveTask">حفظ</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Quill JS -->
   <script src="https://cdn.quilljs.com/1.3.7/quill.js"></script>
 
@@ -448,7 +642,7 @@
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
     import {
-      getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
+      getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
       onSnapshot, query, where, serverTimestamp, writeBatch
     } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
@@ -480,6 +674,11 @@
     let quill = null;
     let quillEdit = null;
 
+    /* Task modal state */
+    let SELECTED_ASSIGNEE=null;
+    let EDITING_TASK=null;
+    let PRESELECT_STATUS=null;
+
     /* Elements */
     const campaignSelect     = document.getElementById('campaignSelect');
     const campStartEl        = document.getElementById('campStart');
@@ -495,6 +694,19 @@
     const btnDeleteCampaign  = document.getElementById('btnDeleteCampaign');
     const btnAddColumn       = document.getElementById('btnAddColumn');
     const btnSaveDates       = document.getElementById('btnSaveDates');
+
+    /* Task modal refs */
+    const taskModal      = document.getElementById('taskModal');
+    const taskModalTitle = document.getElementById('taskModalTitle');
+    const btnCancelTask  = document.getElementById('btnCancelTask');
+    const btnSaveTask    = document.getElementById('btnSaveTask');
+    const tName          = document.getElementById('tName');
+    const tDue           = document.getElementById('tDue');
+    const tDesc          = document.getElementById('tDesc');
+    const tAssigneeSearch= document.getElementById('tAssigneeSearch');
+    const assigneeMenu   = document.getElementById('assigneeMenu');
+    const assigneeChip   = document.getElementById('assigneeChip');
+    const tColor         = document.getElementById('tColor');
 
     /* Init Quill editors */
     window.addEventListener('DOMContentLoaded', () => {
@@ -624,7 +836,7 @@
       renderBoard();
 
       /* Load Tasks */
-      listenTasks(true);
+      listenTasks();
     }
 
     /* Create New Campaign */
@@ -660,7 +872,7 @@
 
       document.getElementById('newCampaignModal').classList.remove('show');
       renderBoard();
-      listenTasks(true);
+      listenTasks();
       alert("تم إنشاء الحملة بنجاح");
     };
 
@@ -765,9 +977,9 @@
           <div class="col-head">
             <span class="col-title">${col}</span>
             <div class="col-actions">
-              <button class="icon" data-act="rename">✏️</button>
-              <button class="icon" data-act="delete">🗑️</button>
-              <button class="icon" data-act="newtask">➕</button>
+              <button class="icon" data-act="rename" title="إعادة تسمية">✏️</button>
+              <button class="icon" data-act="delete" title="حذف العمود">🗑️</button>
+              <button class="icon" data-act="newtask" title="تاسك جديد">➕</button>
             </div>
           </div>
 
@@ -779,7 +991,46 @@
         board.appendChild(sec);
       });
 
+      attachColumnActions();
       renderTasks();
+    }
+
+    /* Column actions (rename / delete / newtask) */
+    function attachColumnActions(){
+      board.querySelectorAll('.col').forEach(colEl=>{
+        const status = colEl.dataset.status;
+        const actions = colEl.querySelector('.col-actions');
+        if(!actions) return;
+
+        actions.onclick = async (e)=>{
+          const btn = e.target.closest('.icon');
+          if(!btn) return;
+          const act = btn.dataset.act;
+          if(!act) return;
+
+          if(act === 'newtask'){
+            openTaskModal({ status });
+          }else if(act === 'rename'){
+            const nn = prompt("اسم العمود الجديد:", status);
+            if(!nn || nn === status) return;
+            COLUMNS = COLUMNS.map(c=> c===status ? nn : c);
+            await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { columns:COLUMNS });
+            // مبدئيًا لن نعدل حالة المهام القديمة (هتظهر باسم الحالة القديمة لو رجعناها)
+            renderBoard();
+            renderTasks();
+          }else if(act === 'delete'){
+            if(COLUMNS.length <= 1){
+              alert("لا يمكن حذف آخر عمود.");
+              return;
+            }
+            if(!confirm(`سيتم حذف العمود "${status}"، هل أنت متأكد؟`)) return;
+            COLUMNS = COLUMNS.filter(c=> c!==status);
+            await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { columns:COLUMNS });
+            renderBoard();
+            renderTasks();
+          }
+        };
+      });
     }
 
     /* Listen Tasks */
@@ -811,32 +1062,182 @@
 
       COLUMNS.forEach(status=>{
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
+        if(!zone) return;
         (grouped[status]||[]).forEach(t=>{
           const card=document.createElement('article');
           card.className='card';
           card.dataset.id=t.id;
 
           card.innerHTML=`
-            <h4>${t.name}</h4>
+            <h4>${t.name || '-'}</h4>
             <div class="row" style="margin-top:6px">
               ${t.assignee ? `
                 <span class="badge">
-                  <span class="dot" style="background:${t.assignee.color}"></span>
-                  ${t.assignee.name}
+                  <span class="dot" style="background:${t.assignee.color || '#bc8f74'}"></span>
+                  ${t.assignee.name || ''}
                 </span>
               `:''}
               ${t.due ? `<span class="small">📅 ${t.due}</span>` : '' }
             </div>
           `;
 
+          card.onclick = ()=> openTaskModal({ edit:t });
           zone.appendChild(card);
         });
       });
     }
 
+    /* Assignee menu */
+    function renderAssigneeMenu(filter){
+      const f=(filter||'').toLowerCase();
+      assigneeMenu.innerHTML='';
+      const list = USERS.filter(u=> u.name.toLowerCase().includes(f));
+      if(!list.length){
+        assigneeMenu.style.display='none';
+        return;
+      }
+      list.forEach(u=>{
+        const it=document.createElement('div');
+        it.className='dd-item';
+        it.innerHTML = `
+          <span class="badge">
+            <span class="dot" style="background:${u.color}"></span>
+            ${u.name}
+          </span>
+          <span class="small">(${u.role})</span>
+        `;
+        it.onclick = ()=>{
+          SELECTED_ASSIGNEE = {...u};
+          assigneeChip.innerHTML = `
+            <span class="badge">
+              <span class="dot" style="background:${u.color}"></span>
+              ${u.name}
+            </span>
+          `;
+          tColor.value = u.color;
+          assigneeMenu.style.display='none';
+        };
+        assigneeMenu.appendChild(it);
+      });
+      assigneeMenu.style.display='block';
+    }
+
+    tAssigneeSearch.addEventListener('input', (e)=>{
+      const v = e.target.value.trim();
+      renderAssigneeMenu(v);
+    });
+    tAssigneeSearch.addEventListener('focus', ()=>{
+      renderAssigneeMenu(tAssigneeSearch.value.trim());
+    });
+    document.addEventListener('click', (e)=>{
+      if(!assigneeMenu.contains(e.target) && e.target !== tAssigneeSearch){
+        assigneeMenu.style.display='none';
+      }
+    });
+
+    /* Task modal handlers */
+    function openTaskModal(opts={}){
+      SELECTED_ASSIGNEE=null;
+      EDITING_TASK=null;
+      PRESELECT_STATUS=null;
+
+      tName.value='';
+      tDue.value='';
+      tDesc.value='';
+      assigneeChip.innerHTML='';
+      tAssigneeSearch.value='';
+      tColor.value='#bc8f74';
+
+      if(opts.status) PRESELECT_STATUS = opts.status;
+
+      if(opts.edit){
+        const t = opts.edit;
+        EDITING_TASK = t;
+        taskModalTitle.textContent = 'تعديل التاسك';
+        tName.value = t.name || '';
+        tDue.value  = t.due  || '';
+        tDesc.value = t.description || '';
+        if(t.assignee){
+          SELECTED_ASSIGNEE = {
+            uid:t.assignee.uid,
+            name:t.assignee.name,
+            color:t.assignee.color || '#bc8f74'
+          };
+          assigneeChip.innerHTML = `
+            <span class="badge">
+              <span class="dot" style="background:${SELECTED_ASSIGNEE.color}"></span>
+              ${SELECTED_ASSIGNEE.name}
+            </span>
+          `;
+          tColor.value = SELECTED_ASSIGNEE.color;
+        }
+      }else{
+        taskModalTitle.textContent = 'تاسك جديد';
+      }
+
+      taskModal.classList.add('show');
+    }
+
+    function closeTaskModal(){
+      taskModal.classList.remove('show');
+    }
+
+    btnCancelTask.onclick = closeTaskModal;
+    taskModal.addEventListener('click', (e)=>{
+      if(e.target === taskModal) closeTaskModal();
+    });
+
+    btnSaveTask.onclick = async ()=>{
+      if(!CURRENT_CAMPAIGN) return alert('اختر حملة أولاً');
+      const name = tName.value.trim();
+      if(!name) return alert('اكتب اسم التاسك');
+
+      const due = tDue.value || null;
+      const description = tDesc.value || null;
+      const color = (tColor.value || '#bc8f74').trim();
+
+      if(SELECTED_ASSIGNEE){
+        await updateDoc(doc(db,'users', SELECTED_ASSIGNEE.uid), { color });
+      }
+
+      try{
+        if(EDITING_TASK){
+          await updateDoc(doc(db,'tasks', EDITING_TASK.id), {
+            name,
+            description,
+            due,
+            assignee: SELECTED_ASSIGNEE ? {
+              uid:SELECTED_ASSIGNEE.uid,
+              name:SELECTED_ASSIGNEE.name,
+              color
+            } : null
+          });
+        }else{
+          const status = PRESELECT_STATUS || (COLUMNS[0] || 'ريلز - كاش');
+          await addDoc(collection(db,'tasks'), {
+            spaceId: CURRENT_CAMPAIGN,
+            name,
+            description,
+            due,
+            status,
+            assignee: SELECTED_ASSIGNEE ? {
+              uid:SELECTED_ASSIGNEE.uid,
+              name:SELECTED_ASSIGNEE.name,
+              color
+            } : null,
+            createdBy: CURRENT_USER?.uid || null,
+            createdAt: serverTimestamp()
+          });
+        }
+        closeTaskModal();
+      }catch(e){
+        alert('⚠️ فشل حفظ التاسك: ' + e.message);
+      }
+    };
+
   </script>
 
-  <footer class="footer">
+  <footer class="footer-bar">
     <small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small>
   </footer>
 

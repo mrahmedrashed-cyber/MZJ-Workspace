@@ -564,7 +564,6 @@
       const qy = query(
         notifCol,
         where('recipientUid','==', currentUser.uid),
-        orderBy('createdAt','desc'),
         limit(40)
       );
 
@@ -712,11 +711,11 @@
       const tags = extractMentions(text);
       let recipients = [];
 
-      // أولاً: لو في منشن مكتوب باستخدام @ في الاسم أو الوصف
+      // 1) لو في منشن باستخدام @ في اسم المهمة أو الوصف
       if(tags.length){
         recipients = resolveMentionRecipients(tags).filter(u=> u.uid !== (CURRENT_USER?.uid||''));
       }else if(Array.isArray(assignees) && assignees.length){
-        // ثانياً: لو مافيش @ منشن، نستخدم أعضاء المهمة كمستلمين
+        // 2) لو مافيش @، نستخدم أعضاء المهمة كمستلمين
         recipients = assignees
           .map(a=> USERS.find(u=> u.uid === (a.uid || a.id || a)))
           .filter(u=> u && u.uid !== (CURRENT_USER?.uid||''));

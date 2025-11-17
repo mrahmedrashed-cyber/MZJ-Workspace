@@ -718,7 +718,7 @@
       const senderName = CURRENT_USER_NAME || CURRENT_USER?.email || 'عضو الفريق';
 
       const promises = recipients.map(u=>{
-        const msg = `تم منشن @${u.tag||u.name} في تاسك: ${taskName||'-'}`;
+        const msg = `تم منشن ${u.tag||u.name} في تاسك: ${taskName||'-'}`;
         return addDoc(notifCol,{
           recipientUid: u.uid,
           recipientName: u.name,

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -263,7 +264,10 @@
         <div id="notifDropdown" class="notif-dropdown">
           <div class="notif-dropdown-header">
             <span>الإشعارات</span>
-            <button id="markAllReadBtn" type="button">تحديد الكل كمقروء</button>
+            <div>
+              <button id="markAllReadBtn" type="button">تحديد الكل كمقروء</button>
+              <button id="clearAllNotifBtn" type="button">مسح الكل</button>
+            </div>
           </div>
           <div id="notifList" class="notif-list"></div>
         </div>
@@ -542,6 +546,7 @@
       const list       = document.getElementById('notifList');
       const badge      = document.getElementById('notifBadge');
       const markAllBtn = document.getElementById('markAllReadBtn');
+      const clearBtn   = document.getElementById('clearAllNotifBtn');
       const soundEl    = document.getElementById('notifSound');
 
       if(!bell || !dropdown || !list || !badge) return;
@@ -579,7 +584,16 @@
           }
         });
 
-        snapshot.docs.forEach(docSnap=>{
+        // ترتيب الإشعارات بحيث الأحدث يظهر أولاً
+        const docsSorted = snapshot.docs.slice().sort((a,b)=>{
+          const ad = a.data()?.createdAt;
+          const bd = b.data()?.createdAt;
+          const at = (ad && ad.toDate) ? ad.toDate().getTime() : 0;
+          const bt = (bd && bd.toDate) ? bd.toDate().getTime() : 0;
+          return bt - at;
+        });
+
+        docsSorted.forEach(docSnap=>{
           const data = docSnap.data()||{};
           const id   = docSnap.id;
           const isUnread = data.read === false;
@@ -607,7 +621,50 @@
             if(isUnread){
               try{ await updateDoc(doc(db,'notifications', id), { read:true }); }catch{}
             }
-            // هنا ممكن تضيف تنقل لصفحة التاسك حسب taskId لو حابب
+
+            // فتح التاسك المرتبطة بالإشعار (إن وُجدت)
+            const taskId = data.taskId;
+            if(taskId){
+              let opened = false;
+              try{
+                if(Array.isArray(TASKS_SPACES)){
+                  const task = TASKS_SPACES.find(t=> t.id === taskId);
+                  if(task){
+                    openDetail(task);
+                    opened = true;
+                  }
+                }
+              }catch(e){
+                console.error('openDetail from cache error', e);
+              }
+
+              if(!opened){
+                try{
+                  const snapTask = await getDoc(doc(db,'tasks', taskId));
+                  if(snapTask.exists()){
+                    const tdata = snapTask.data()||{};
+                    const taskObj = {
+                      id: taskId,
+                      name: tdata.name||'تاسك',
+                      description: tdata.description||'',
+                      due: tdata.due||'',
+                      status: tdata.status||'',
+                      car: tdata.car||null,
+                      assignees: tdata.assignees||[],
+                      links: tdata.links||[]
+                    };
+                    openDetail(taskObj);
+                    opened = true;
+                  }
+                }catch(e){
+                  console.error('load task by notif error', e);
+                }
+              }
+
+              if(opened && dropdown){
+                dropdown.style.display='none';
+              }
+            }
           });
 
           list.appendChild(btn);
@@ -631,6 +688,19 @@
             if(data.read === false){
               promises.push(updateDoc(doc(db,'notifications', d.id), { read:true }));
             }
+          });
+          if(promises.length){
+            try{ await Promise.all(promises); }catch(e){ console.error(e); }
+          }
+        });
+      }
+
+      if(clearBtn){
+        clearBtn.addEventListener('click', async ()=>{
+          if(!lastDocs.length) return;
+          const promises = [];
+          lastDocs.forEach(d=>{
+            promises.push(deleteDoc(doc(db,'notifications', d.id)));
           });
           if(promises.length){
             try{ await Promise.all(promises); }catch(e){ console.error(e); }

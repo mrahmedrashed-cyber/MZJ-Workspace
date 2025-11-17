@@ -263,7 +263,10 @@
         <div id="notifDropdown" class="notif-dropdown">
           <div class="notif-dropdown-header">
             <span>الإشعارات</span>
-            <button id="markAllReadBtn" type="button">تحديد الكل كمقروء</button>
+            <div>
+              <button id="markAllReadBtn" type="button">تحديد الكل كمقروء</button>
+              <button id="clearAllNotifBtn" type="button">مسح الكل</button>
+            </div>
           </div>
           <div id="notifList" class="notif-list"></div>
         </div>
@@ -282,7 +285,7 @@
   </header>
 
   <!-- صوت الإشعار (ضع ملف notify.mp3 في نفس المجلد أو عدّل المسار) -->
-  <audio id="notifSound" src="notify.wav" preload="auto"></audio>
+  <audio id="notifSound" src="notify.mp3" preload="auto"></audio>
 
   <main class="page">
     <!-- Tabs -->
@@ -542,6 +545,7 @@
       const list       = document.getElementById('notifList');
       const badge      = document.getElementById('notifBadge');
       const markAllBtn = document.getElementById('markAllReadBtn');
+      const clearBtn   = document.getElementById('clearAllNotifBtn');
       const soundEl    = document.getElementById('notifSound');
 
       if(!bell || !dropdown || !list || !badge) return;
@@ -579,7 +583,15 @@
           }
         });
 
-        snapshot.docs.forEach(docSnap=>{
+        const docsSorted = snapshot.docs.slice().sort((a,b)=>{
+          const ad = a.data()?.createdAt;
+          const bd = b.data()?.createdAt;
+          const at = (ad && ad.toDate) ? ad.toDate().getTime() : 0;
+          const bt = (bd && bd.toDate) ? bd.toDate().getTime() : 0;
+          return bt - at; // الأحدث أولاً
+        });
+
+        docsSorted.forEach(docSnap=>{
           const data = docSnap.data()||{};
           const id   = docSnap.id;
           const isUnread = data.read === false;
@@ -608,43 +620,46 @@
               try{ await updateDoc(doc(db,'notifications', id), { read:true }); }catch{}
             }
 
-            // فتح التاسك المرتبطة بالإشعار (إن وُجدت)
             const taskId = data.taskId;
             if(taskId){
-              // نحاول نلاقي التاسك في اللوحة الحالية (Spaces)
-              if(Array.isArray(TASKS_SPACES)){
-                const task = TASKS_SPACES.find(t=> t.id === taskId);
-                if(task){
-                  try{
-                    openDetail(task);
-                    // إغلاق قائمة الإشعارات بعد الفتح
-                    if(typeof dropdown !== 'undefined' && dropdown) dropdown.style.display='none';
-                  }catch(e){
-                    console.error('openDetail error', e);
-                  }
-                  return;
-                }
-              }
-              // لو مش موجودة في الكاش، نجيبها من Firestore بشكل مبسط
+              let opened = false;
               try{
-                const snapTask = await getDoc(doc(db,'tasks', taskId));
-                if(snapTask.exists()){
-                  const tdata = snapTask.data()||{};
-                  const taskObj = {
-                    id: taskId,
-                    name: tdata.name||'تاسك',
-                    description: tdata.description||'',
-                    due: tdata.due||'',
-                    status: tdata.status||'',
-                    car: tdata.car||null,
-                    assignees: tdata.assignees||[],
-                    links: tdata.links||[]
-                  };
-                  openDetail(taskObj);
-                  if(typeof dropdown !== 'undefined' && dropdown) dropdown.style.display='none';
+                if(Array.isArray(TASKS_SPACES)){
+                  const task = TASKS_SPACES.find(t=> t.id === taskId);
+                  if(task){
+                    openDetail(task);
+                    opened = true;
+                  }
                 }
               }catch(e){
-                console.error('load task by notif error', e);
+                console.error('openDetail from cache error', e);
+              }
+
+              if(!opened){
+                try{
+                  const snapTask = await getDoc(doc(db,'tasks', taskId));
+                  if(snapTask.exists()){
+                    const tdata = snapTask.data()||{};
+                    const taskObj = {
+                      id: taskId,
+                      name: tdata.name||'تاسك',
+                      description: tdata.description||'',
+                      due: tdata.due||'',
+                      status: tdata.status||'',
+                      car: tdata.car||null,
+                      assignees: tdata.assignees||[],
+                      links: tdata.links||[]
+                    };
+                    openDetail(taskObj);
+                    opened = true;
+                  }
+                }catch(e){
+                  console.error('load task by notif error', e);
+                }
+              }
+
+              if(opened && dropdown){
+                dropdown.style.display='none';
               }
             }
           });
@@ -670,6 +685,19 @@
             if(data.read === false){
               promises.push(updateDoc(doc(db,'notifications', d.id), { read:true }));
             }
+          });
+          if(promises.length){
+            try{ await Promise.all(promises); }catch(e){ console.error(e); }
+          }
+        });
+      }
+
+      if(clearBtn){
+        clearBtn.addEventListener('click', async ()=>{
+          if(!lastDocs.length) return;
+          const promises=[];
+          lastDocs.forEach(d=>{
+            promises.push(deleteDoc(doc(db,'notifications', d.id)));
           });
           if(promises.length){
             try{ await Promise.all(promises); }catch(e){ console.error(e); }
@@ -745,21 +773,11 @@
     }
 
     // إنشاء إشعارات المنشن
-    async function createMentionNotifications({taskId, taskName, taskDescription, spaceId, status, assignees}){
+    async function createMentionNotifications({taskId, taskName, taskDescription, spaceId, status}){
       const text = `${taskName||''}\n${taskDescription||''}`;
       const tags = extractMentions(text);
-      let recipients = [];
-
-      // 1) لو في منشن باستخدام @ في اسم المهمة أو الوصف
-      if(tags.length){
-        recipients = resolveMentionRecipients(tags).filter(u=> u.uid !== (CURRENT_USER?.uid||''));
-      }else if(Array.isArray(assignees) && assignees.length){
-        // 2) لو مافيش @، نستخدم أعضاء المهمة كمستلمين
-        recipients = assignees
-          .map(a=> USERS.find(u=> u.uid === (a.uid || a.id || a)))
-          .filter(u=> u && u.uid !== (CURRENT_USER?.uid||''));
-      }
-
+      if(!tags.length) return;
+      const recipients = resolveMentionRecipients(tags).filter(u=> u.uid !== (CURRENT_USER?.uid||''));
       if(!recipients.length) return;
 
       const notifCol = collection(db,'notifications');
@@ -1692,8 +1710,7 @@
           taskName: name,
           taskDescription: description,
           spaceId: targetSpaceId,
-          status,
-          assignees: assigneesPayload
+          status
         });
 
         alert('✅ تم حفظ التاسك');

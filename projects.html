@@ -282,7 +282,7 @@
   </header>
 
   <!-- صوت الإشعار (ضع ملف notify.mp3 في نفس المجلد أو عدّل المسار) -->
-  <audio id="notifSound" src="notify.mp3" preload="auto"></audio>
+  <audio id="notifSound" src="notify.wav" preload="auto"></audio>
 
   <main class="page">
     <!-- Tabs -->
@@ -564,7 +564,6 @@
       const qy = query(
         notifCol,
         where('recipientUid','==', currentUser.uid),
-        orderBy('createdAt','desc'),
         limit(40)
       );
 
@@ -746,18 +745,28 @@
     }
 
     // إنشاء إشعارات المنشن
-    async function createMentionNotifications({taskId, taskName, taskDescription, spaceId, status}){
+    async function createMentionNotifications({taskId, taskName, taskDescription, spaceId, status, assignees}){
       const text = `${taskName||''}\n${taskDescription||''}`;
       const tags = extractMentions(text);
-      if(!tags.length) return;
-      const recipients = resolveMentionRecipients(tags).filter(u=> u.uid !== (CURRENT_USER?.uid||''));
+      let recipients = [];
+
+      // 1) لو في منشن باستخدام @ في اسم المهمة أو الوصف
+      if(tags.length){
+        recipients = resolveMentionRecipients(tags).filter(u=> u.uid !== (CURRENT_USER?.uid||''));
+      }else if(Array.isArray(assignees) && assignees.length){
+        // 2) لو مافيش @، نستخدم أعضاء المهمة كمستلمين
+        recipients = assignees
+          .map(a=> USERS.find(u=> u.uid === (a.uid || a.id || a)))
+          .filter(u=> u && u.uid !== (CURRENT_USER?.uid||''));
+      }
+
       if(!recipients.length) return;
 
       const notifCol = collection(db,'notifications');
       const senderName = CURRENT_USER_NAME || CURRENT_USER?.email || 'عضو الفريق';
 
       const promises = recipients.map(u=>{
-        const msg = `تم منشن @${u.tag||u.name} في تاسك: ${taskName||'-'}`;
+        const msg = `تم منشن ${u.tag||u.name} في تاسك: ${taskName||'-'}`;
         return addDoc(notifCol,{
           recipientUid: u.uid,
           recipientName: u.name,
@@ -1683,7 +1692,8 @@
           taskName: name,
           taskDescription: description,
           spaceId: targetSpaceId,
-          status
+          status,
+          assignees: assigneesPayload
         });
 
         alert('✅ تم حفظ التاسك');

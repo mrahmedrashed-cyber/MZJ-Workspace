@@ -106,8 +106,9 @@
     .board{display:grid;gap:14px;grid-template-columns:repeat(4,1fr)}
     @media(max-width:1400px){.board{grid-template-columns:repeat(3,1fr)}}
     @media(max-width:980px){.board{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:640px){.board{grid-template-columns:1fr}}
+    @media(max-width:640px){.board{grid-template-columns:1fr}*/
 
+    }
     .col{
       background:#fff;
       border-radius:14px;
@@ -290,6 +291,15 @@
       font-size:14px;
     }
     textarea{min-height:90px;resize:vertical}
+
+    /* مربع وصف التاسك أكبر */
+    #tDesc{
+      min-height:220px;
+      padding:14px;
+      font-size:14px;
+      line-height:1.8;
+    }
+
     input:focus,select:focus,textarea:focus{
       outline:3px solid rgba(188,143,116,.25);
       border-color:var(--beige);
@@ -687,7 +697,7 @@
       apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
       authDomain: "mzj-workspace.firebaseapp.com",
       projectId: "mzj-workspace",
-      storageBucket: "mzj-workspace.firebasestorage.app",
+      storageBucket: "mzj-workspacefirebasestorage.app",
       appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
     };
     if (!getApps().length) initializeApp(firebaseConfig);
@@ -711,7 +721,7 @@
     let quillEdit = null;
 
     /* Task modal state */
-    let SELECTED_ASSIGNEES=[];   // ← أكتر من عضو
+    let SELECTED_ASSIGNEES=[];
     let EDITING_TASK=null;
     let PRESELECT_STATUS=null;
 
@@ -1086,7 +1096,7 @@
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
 
       const grouped={};
-      COLUMNS.forEach(c=> grouped[c]=[]);
+      COLUMNS.forEach(c=> grouped[c]=[];
 
       TASKS.forEach(t=>{
         if(!grouped[t.status]) grouped[t.status]=[];
@@ -1187,7 +1197,6 @@
           const exists = SELECTED_ASSIGNEES.some(a=> a.uid === u.uid);
           if(!exists){
             SELECTED_ASSIGNEES.push({...u});
-            // أوّل عضو ياخد لون الـ input الحالي
             if(SELECTED_ASSIGNEES.length === 1){
               SELECTED_ASSIGNEES[0].color = (tColor.value || u.color || '#bc8f74');
             }
@@ -1246,7 +1255,6 @@
             name:a.name,
             color:a.color || '#bc8f74'
           }));
-          // لو في عضو رئيسي خليه ياخد لون input
           tColor.value = SELECTED_ASSIGNEES[0].color;
           renderAssigneeChips();
         }
@@ -1275,7 +1283,6 @@
       const description = tDesc.value || null;
       const mainColor = (tColor.value || '#bc8f74').trim();
 
-      // عدّل لون أول عضو في الليست على حسب الـ input
       if(SELECTED_ASSIGNEES.length){
         SELECTED_ASSIGNEES = SELECTED_ASSIGNEES.map((a,idx)=>({
           ...a,
@@ -1283,7 +1290,6 @@
         }));
       }
 
-      // حدّث ألوان المستخدمين في users
       for(const u of SELECTED_ASSIGNEES){
         try{
           await updateDoc(doc(db,'users', u.uid), { color:u.color || mainColor });

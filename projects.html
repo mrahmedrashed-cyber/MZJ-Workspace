@@ -18,6 +18,50 @@
     .nav a{padding:8px 12px;border-radius:10px;color:#fff}
     .nav a:hover{background:rgba(255,255,255,.14)}
 
+    /* Notifications */
+    .notif-wrapper{position:relative;margin-inline-start:4px}
+    .notif-bell{
+      background:none;border:none;cursor:pointer;
+      position:relative;padding:6px;border-radius:999px;
+      display:inline-flex;align-items:center;justify-content:center;
+      transition:background .15s;
+    }
+    .notif-bell:hover{background:rgba(255,255,255,.18)}
+    .notif-badge{
+      position:absolute;top:-2px;left:-2px;
+      min-width:16px;height:16px;border-radius:999px;
+      background:#ef4444;color:#fff;font-size:10px;
+      display:none;align-items:center;justify-content:center;
+      padding:0 4px;
+    }
+    .notif-dropdown{
+      position:absolute;top:130%;inset-inline-end:0;
+      width:320px;max-height:360px;overflow-y:auto;
+      background:#fff;border-radius:12px;
+      border:1px solid #e5e7eb;
+      box-shadow:0 18px 40px rgba(0,0,0,.18);
+      padding:8px 0;z-index:40;display:none;
+    }
+    .notif-dropdown-header{
+      padding:8px 14px;border-bottom:1px solid #e5e7eb;
+      display:flex;align-items:center;justify-content:space-between;
+      font-size:13px;color:var(--brown);font-weight:700;
+    }
+    .notif-dropdown-header button{
+      background:none;border:none;color:var(--muted);
+      font-size:11px;cursor:pointer;
+    }
+    .notif-list{max-height:300px;overflow-y:auto}
+    .notif-item{
+      width:100%;text-align:right;background:none;border:0;
+      padding:8px 14px;cursor:pointer;
+      display:flex;flex-direction:column;gap:4px;
+      border-bottom:1px solid #f3f4f6;
+    }
+    .notif-item.unread{background:#fff8ef}
+    .notif-item-message{font-size:13px;color:var(--text)}
+    .notif-item-meta{font-size:11px;color:var(--muted)}
+
     .page{padding:18px;display:grid;gap:16px}
 
     /* Tabs */
@@ -209,16 +253,36 @@
       <span class="brand-badge"></span>
       <strong>MZJ Workspace — المشاريع</strong>
     </div>
-    <nav class="nav">
-      <a id="navDashboard" href="dashboard.html">لوحة التحكم</a>
-      <a id="navProjects"  href="projects.html" style="background:rgba(255,255,255,.18)">المشاريع</a>
-      <a id="navMembers"   href="members.html">الأعضاء</a>
-      <a id="navAdmin"     href="admin.html">الحملات</a>
-      <a href="cars.html">متابعة السيارات</a>
-      <a href="Whiteboard.html">وايت بورد</a>
-      <a href="javascript:void(0)" onclick="mzjLogout()">تسجيل الخروج</a>
-    </nav>
+    <div style="display:flex;align-items:center;gap:10px">
+      <!-- Notifications Bell -->
+      <div class="notif-wrapper">
+        <button id="notifBell" class="notif-bell" title="الإشعارات">
+          <span style="font-size:18px">🔔</span>
+          <span id="notifBadge" class="notif-badge">0</span>
+        </button>
+        <div id="notifDropdown" class="notif-dropdown">
+          <div class="notif-dropdown-header">
+            <span>الإشعارات</span>
+            <button id="markAllReadBtn" type="button">تحديد الكل كمقروء</button>
+          </div>
+          <div id="notifList" class="notif-list"></div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a id="navDashboard" href="dashboard.html">لوحة التحكم</a>
+        <a id="navProjects"  href="projects.html" style="background:rgba(255,255,255,.18)">المشاريع</a>
+        <a id="navMembers"   href="members.html">الأعضاء</a>
+        <a id="navAdmin"     href="admin.html">الحملات</a>
+        <a href="cars.html">متابعة السيارات</a>
+        <a href="Whiteboard.html">وايت بورد</a>
+        <a href="javascript:void(0)" onclick="mzjLogout()">تسجيل الخروج</a>
+      </nav>
+    </div>
   </header>
+
+  <!-- صوت الإشعار (ضع ملف notify.mp3 في نفس المجلد أو عدّل المسار) -->
+  <audio id="notifSound" src="notify.mp3" preload="auto"></audio>
 
   <main class="page">
     <!-- Tabs -->
@@ -321,7 +385,7 @@
         </div>
 
         <label>الوصف</label>
-        <textarea id="tDesc" placeholder="اكتب تفاصيل المهمة…"></textarea>
+        <textarea id="tDesc" placeholder="اكتب تفاصيل المهمة… مثال: منشن للأعضاء @ahmed @karim"></textarea>
 
         <div class="grid2">
           <div style="position:relative">
@@ -428,7 +492,7 @@
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
     import {
       getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
-      onSnapshot, query, where, serverTimestamp, arrayUnion, Timestamp
+      onSnapshot, query, where, serverTimestamp, arrayUnion, Timestamp, orderBy, limit
     } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
     /* Firebase */
@@ -468,7 +532,210 @@
 
     /* Auth / Roles */
     let CURRENT_USER=null, CURRENT_ROLE='member', IS_ADMIN=false;
+    let CURRENT_USER_NAME='';
     window.mzjLogout = async ()=>{ await signOut(auth); location.href="login.html"; };
+
+    /* ===== Notifications helpers ===== */
+    function initNotifications(currentUser){
+      const bell       = document.getElementById('notifBell');
+      const dropdown   = document.getElementById('notifDropdown');
+      const list       = document.getElementById('notifList');
+      const badge      = document.getElementById('notifBadge');
+      const markAllBtn = document.getElementById('markAllReadBtn');
+      const soundEl    = document.getElementById('notifSound');
+
+      if(!bell || !dropdown || !list || !badge) return;
+
+      let lastDocs = [];
+
+      bell.addEventListener('click',(e)=>{
+        e.stopPropagation();
+        const open = dropdown.style.display === 'block';
+        dropdown.style.display = open ? 'none' : 'block';
+      });
+
+      document.addEventListener('click',(e)=>{
+        if(!dropdown.contains(e.target) && e.target!==bell && !bell.contains(e.target)){
+          dropdown.style.display='none';
+        }
+      });
+
+      const notifCol = collection(db,'notifications');
+      const qy = query(
+        notifCol,
+        where('recipientUid','==', currentUser.uid),
+        orderBy('createdAt','desc'),
+        limit(40)
+      );
+
+      onSnapshot(qy,(snapshot)=>{
+        lastDocs = snapshot.docs;
+        list.innerHTML='';
+        let unreadCount=0;
+
+        snapshot.docChanges().forEach(change=>{
+          const data = change.doc.data()||{};
+          if(change.type==='added' && data.read === false && soundEl){
+            soundEl.play().catch(()=>{});
+          }
+        });
+
+        snapshot.docs.forEach(docSnap=>{
+          const data = docSnap.data()||{};
+          const id   = docSnap.id;
+          const isUnread = data.read === false;
+          if(isUnread) unreadCount++;
+
+          const btn = document.createElement('button');
+          btn.type='button';
+          btn.className='notif-item'+(isUnread?' unread':'');
+
+          const from = data.senderName || 'نظام المشاريع';
+          let timeStr='';
+          try{
+            if(data.createdAt && data.createdAt.toDate){
+              const d = data.createdAt.toDate();
+              timeStr = d.toLocaleString('ar-SA',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+            }
+          }catch{}
+
+          btn.innerHTML = `
+            <span class="notif-item-message">${data.message||''}</span>
+            <span class="notif-item-meta">${from}${timeStr ? ' • '+timeStr : ''}</span>
+          `;
+
+          btn.addEventListener('click', async ()=>{
+            if(isUnread){
+              try{ await updateDoc(doc(db,'notifications', id), { read:true }); }catch{}
+            }
+            // هنا ممكن تضيف تنقل لصفحة التاسك حسب taskId لو حابب
+          });
+
+          list.appendChild(btn);
+        });
+
+        if(unreadCount>0){
+          badge.style.display='flex';
+          badge.textContent = unreadCount>99?'99+':String(unreadCount);
+        }else{
+          badge.style.display='none';
+        }
+      },(err)=>{
+        console.error('notifications error', err);
+      });
+
+      if(markAllBtn){
+        markAllBtn.addEventListener('click', async ()=>{
+          const promises=[];
+          lastDocs.forEach(d=>{
+            const data = d.data()||{};
+            if(data.read === false){
+              promises.push(updateDoc(doc(db,'notifications', d.id), { read:true }));
+            }
+          });
+          if(promises.length){
+            try{ await Promise.all(promises); }catch(e){ console.error(e); }
+          }
+        });
+      }
+    }
+
+    /* Common helpers */
+    const MIME_TASK   = "application/x-mzj-task";
+    const MIME_COLUMN = "application/x-mzj-column";
+    const MIME_DAILY  = "application/x-mzj-daily";
+
+    let USERS=[];
+    async function loadUsers(){
+      const snap = await getDocs(collection(db,'users'));
+      USERS=[];
+      snap.forEach(d=>{
+        const u=d.data()||{};
+        const tag = (u.tag || u.username || (u.name ? u.name.split(' ')[0] : d.id.slice(0,6))).toLowerCase();
+        USERS.push({
+          uid: d.id,
+          name: u.name||d.id.slice(0,6),
+          role: u.role||'member',
+          color: u.color||'#bc8f74',
+          email: u.email || u.mail || null,
+          tag
+        });
+      });
+    }
+
+    function taskMembersArray(task){
+      if(Array.isArray(task.assignees) && task.assignees.length) return task.assignees;
+      if(task.assignee) return [task.assignee];
+      return [];
+    }
+
+    function canManageLinks(task){
+      if(IS_ADMIN) return true;
+      const members = taskMembersArray(task);
+      const myUid = CURRENT_USER?.uid || '';
+      return members.some(m=>m.uid === myUid);
+    }
+
+    // استخراج المنشن من النص @tag
+    function extractMentions(text){
+      if(!text) return [];
+      const regex = /@([\u0600-\u06FF\w_.-]+)/g;
+      const tags = [];
+      let m;
+      while((m = regex.exec(text)) !== null){
+        tags.push(m[1]);
+      }
+      return [...new Set(tags)];
+    }
+
+    // تحويل المنشن إلى مستخدمين فعليين من USERS
+    function resolveMentionRecipients(tags){
+      const unique = [...new Set((tags||[]).map(t=>t.toLowerCase()))];
+      const recipients=[];
+      unique.forEach(tag=>{
+        const found = USERS.find(u=>{
+          const tagField  = (u.tag||'').toLowerCase();
+          const nameFirst = (u.name||'').split(' ')[0].toLowerCase();
+          const emailUser = (u.email||'').split('@')[0].toLowerCase();
+          return tagField===tag || nameFirst===tag || emailUser===tag;
+        });
+        if(found && !recipients.find(r=>r.uid===found.uid)){
+          recipients.push(found);
+        }
+      });
+      return recipients;
+    }
+
+    // إنشاء إشعارات المنشن
+    async function createMentionNotifications({taskId, taskName, taskDescription, spaceId, status}){
+      const text = `${taskName||''}\n${taskDescription||''}`;
+      const tags = extractMentions(text);
+      if(!tags.length) return;
+      const recipients = resolveMentionRecipients(tags).filter(u=> u.uid !== (CURRENT_USER?.uid||''));
+      if(!recipients.length) return;
+
+      const notifCol = collection(db,'notifications');
+      const senderName = CURRENT_USER_NAME || CURRENT_USER?.email || 'عضو الفريق';
+
+      const promises = recipients.map(u=>{
+        const msg = `تم منشن @${u.tag||u.name} في تاسك: ${taskName||'-'}`;
+        return addDoc(notifCol,{
+          recipientUid: u.uid,
+          recipientName: u.name,
+          senderUid: CURRENT_USER?.uid || null,
+          senderName,
+          spaceId: spaceId || null,
+          taskId,
+          status: status || null,
+          message: msg,
+          type: 'mention',
+          createdAt: serverTimestamp(),
+          read: false
+        });
+      });
+
+      try{ await Promise.all(promises); }catch(e){ console.error('mention notifications error', e); }
+    }
 
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.href="login.html"; return; }
@@ -477,6 +744,8 @@
       const name = u.exists()? (u.data().name||user.email) : (user.email||'مستخدم');
       CURRENT_ROLE = u.exists()? (u.data().role||'member') : 'member';
       IS_ADMIN = CURRENT_ROLE==='admin';
+      CURRENT_USER_NAME = name;
+
       document.getElementById('who').textContent  = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
       document.getElementById('who2') && (document.getElementById('who2').textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`);
 
@@ -496,38 +765,11 @@
       }
 
       await loadUsers();
+      initNotifications(user);
       bootSpaces();
       bootCampaigns();
       if(IS_ADMIN) bootDailyTasks(); // المهام اليومية للأدمِن فقط
     });
-
-    /* Common helpers */
-    const MIME_TASK   = "application/x-mzj-task";
-    const MIME_COLUMN = "application/x-mzj-column";
-    const MIME_DAILY  = "application/x-mzj-daily";
-
-    let USERS=[];
-    async function loadUsers(){
-      const snap = await getDocs(collection(db,'users'));
-      USERS=[];
-      snap.forEach(d=>{
-        const u=d.data()||{};
-        USERS.push({ uid:d.id, name:u.name||d.id.slice(0,6), role:u.role||'member', color:u.color||'#bc8f74' });
-      });
-    }
-
-    function taskMembersArray(task){
-      if(Array.isArray(task.assignees) && task.assignees.length) return task.assignees;
-      if(task.assignee) return [task.assignee];
-      return [];
-    }
-
-    function canManageLinks(task){
-      if(IS_ADMIN) return true;
-      const members = taskMembersArray(task);
-      const myUid = CURRENT_USER?.uid || '';
-      return members.some(m=>m.uid === myUid);
-    }
 
     /* ===== Spaces logic ===== */
     const DEFAULT_COLUMNS = ["ريل مواصفات","ريل قصير","تصميم صور","يوتيوب"];
@@ -837,7 +1079,6 @@
 
     function openCreate(cols=SPACE_COLUMNS){
       if(IS_ADMIN){
-        // لو نحن في تبويب Campaign كبّر مربع الوصف
         const isCampaignTab = !panelCampaigns.classList.contains('hidden');
         if(isCampaignTab){
           tDesc.classList.add('campaign-full-desc');
@@ -887,7 +1128,6 @@
       if(!SELECTED_ASSIGNEES.find(u=>u.uid===user.uid)){
         SELECTED_ASSIGNEES.push({...user});
       }
-      // أول عضو يحدد اللون الافتراضي
       if(SELECTED_ASSIGNEES.length===1 && user.color){
         tColor.value = user.color;
       }
@@ -1000,9 +1240,6 @@
           SPACES_CACHE.set(d.id, data.name||d.id);
         });
 
-        // اختيار الحملة الافتراضية:
-        // 1) لو isDefault == true
-        // 2) لو مافيه isDefault يدور على اسم يحتوي "حملة ثابتة"
         let defaultCampaign =
           arr.find(c=>c.isDefault === true) ||
           arr.find(c=>(c.name||'').includes('حملة ثابتة'));
@@ -1028,7 +1265,6 @@
           return;
         }
 
-        // لو مافيش حملة مختارة أو الحملة القديمة اختفت من الليستة
         if(!CURRENT_CAMPAIGN || !CAMPAIGNS.find(c=>c.id===CURRENT_CAMPAIGN)){
           CURRENT_CAMPAIGN = defaultCampaign
             ? defaultCampaign.id
@@ -1087,7 +1323,7 @@
             columns: CAMPAIGN_DEFAULT_COLS,
             createdAt: serverTimestamp(),
             active: true,
-            isDefault: false // الحملة الجديدة ليست ثابتة إلا لو عدّلتها من Firestore
+            isDefault: false
           });
           CURRENT_CAMPAIGN = ref.id;
           CAMPAIGN_COLUMNS = CAMPAIGN_DEFAULT_COLS.slice();
@@ -1099,7 +1335,6 @@
         }
       });
 
-      // زر "تم" داخل كروت الحملة
       boardCampaigns.addEventListener('click', async (e)=>{
         const doneBtn = e.target.closest('.campaign-done-btn');
         if(!doneBtn) return;
@@ -1120,7 +1355,6 @@
       const board=boardCampaigns;
       board.innerHTML='';
 
-      // الأعمدة الأساسية للحملة
       (CAMPAIGN_COLUMNS||[]).forEach((col)=>{
         const sec=document.createElement('section');
         sec.className='col';
@@ -1145,7 +1379,6 @@
         });
       });
 
-      // عمود "تم التنفيذ"
       const doneCol = document.createElement('section');
       doneCol.className = 'col campaign-done-col';
       doneCol.dataset.status = 'تم التنفيذ';
@@ -1193,7 +1426,6 @@
       return firstTwo + `<span class="small">+${more}</span>`;
     }
 
-    /* === Helpers لترتيب مهام الحملات === */
     function taskOrderValue(t){
       if(typeof t.order === 'number') return t.order;
       if(t.createdAt?.seconds) return t.createdAt.seconds;
@@ -1268,7 +1500,6 @@
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
         if(!zone) return;
         const list = byStatus[status]||[];
-        // الترتيب حسب order ثم createdAt
         list.sort((a,b)=> taskOrderValue(a)-taskOrderValue(b));
         list.forEach(t=>{
           const card=document.createElement('article');
@@ -1311,7 +1542,6 @@
             e.dataTransfer.setData('text/plain', t.id);
           });
 
-          // إعادة ترتيب داخل العمود: إفلات على الكارت نفسه
           card.addEventListener('dragover', e=>{
             if(e.dataTransfer.types.includes(MIME_TASK)){
               e.preventDefault();
@@ -1357,9 +1587,9 @@
       },(err)=>{ console.error(err); alert('⚠️ فشل قراءة التاسكات (الحملات).'); });
     }
 
-    /* حفظ التاسك (Spaces / Campaign) */
+    /* حفظ التاسك (Spaces / Campaign) + إشعارات المنشن */
     btnSaveTask.addEventListener('click', async ()=>{
-      const isCampaignTab = !panelCampaigns.classList.contains('hidden'); // تبويب الحملات مفتوح؟
+      const isCampaignTab = !panelCampaigns.classList.contains('hidden');
       const targetSpaceId = isCampaignTab ? CURRENT_CAMPAIGN : CURRENT_SPACE;
       const targetCols    = isCampaignTab ? CAMPAIGN_COLUMNS : SPACE_COLUMNS;
 
@@ -1382,7 +1612,6 @@
         engine: carEngine?.value?.trim() || null
       };
 
-      // تجهيز الأعضاء
       const assigneesPayload = SELECTED_ASSIGNEES.map(u=>({
         uid: u.uid,
         name: u.name,
@@ -1390,7 +1619,6 @@
       }));
 
       try{
-        // تحديث لون كل عضو مختار
         for(const u of assigneesPayload){
           await setDoc(doc(db,'users', u.uid), { color }, { merge:true });
           const idx=USERS.findIndex(x=>x.uid===u.uid);
@@ -1401,15 +1629,24 @@
           spaceId: targetSpaceId, name, description, due, status,
           car,
           assignees: assigneesPayload.length ? assigneesPayload : null,
-          assignee: assigneesPayload.length ? assigneesPayload[0] : null, // للتوافق مع الصفحات القديمة
+          assignee: assigneesPayload.length ? assigneesPayload[0] : null,
           links: [],
           createdBy: CURRENT_USER?.uid || null,
           createdAt: serverTimestamp(),
           active:true,
-          // ترتيب مبدئي جديد
           order: Date.now()
         };
-        await addDoc(collection(db,'tasks'), payload);
+        const ref = await addDoc(collection(db,'tasks'), payload);
+
+        // 🔔 إشعارات المنشن
+        await createMentionNotifications({
+          taskId: ref.id,
+          taskName: name,
+          taskDescription: description,
+          spaceId: targetSpaceId,
+          status
+        });
+
         alert('✅ تم حفظ التاسك');
         closeCreate();
       }catch(e){ alert('حدث خطأ: '+(e?.message||e)); }
@@ -1927,7 +2164,6 @@
 
       dailyBoard.innerHTML='';
 
-      // ٤ أسابيع
       DAILY_WEEKS.forEach(week=>{
         const sec=document.createElement('section');
         sec.className='col';
@@ -1958,7 +2194,6 @@
         dailyBoard.appendChild(sec);
       });
 
-      // عمود "الملاحظات"
       const notesCol=document.createElement('section');
       notesCol.className='col';
       notesCol.dataset.week='notes';
@@ -1973,7 +2208,6 @@
       `;
       dailyBoard.appendChild(notesCol);
 
-      // كارت "تم التنفيذ"
       const doneCol=document.createElement('section');
       doneCol.className='col daily-done-col';
       doneCol.innerHTML=`
@@ -2011,10 +2245,9 @@
         doneZone.appendChild(card);
       });
 
-      // سحب وإفلات
       dailyBoard.querySelectorAll('.daily-drop').forEach(zone=>{
         zone.addEventListener('dragover', e=>{
-          if(zone.dataset.week==='notes') return; // الملاحظات مش Drop target
+          if(zone.dataset.week==='notes') return;
           if(e.dataTransfer.types.includes(MIME_DAILY)){
             e.preventDefault();
             zone.classList.add('drag');
@@ -2022,7 +2255,7 @@
         });
         zone.addEventListener('dragleave', ()=> zone.classList.remove('drag'));
         zone.addEventListener('drop', async (e)=>{
-          if(zone.dataset.week==='notes') return; // منع الإفلات في عمود الملاحظات
+          if(zone.dataset.week==='notes') return;
           if(!e.dataTransfer.types.includes(MIME_DAILY)) return;
           e.preventDefault();
           zone.classList.remove('drag');

@@ -80,14 +80,14 @@
     textarea{min-height:90px;resize:vertical}
     input:focus,select:focus,textarea:focus{outline:3px solid rgba(188,143,116,.25);border-color:var(--beige)}
 
-    .chips{display:flex;gap:8px;flex-wrap:wrap}
-    .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #eee;border-radius:999px;background:#fff}
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+    .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #eee;border-radius:999px;background:#fff;font-size:12px}
     .chip .chip-actions{display:inline-flex;gap:6px}
-    .chip button{border:0;background:#fff;padding:4px 6px;border-radius:8px;cursor:pointer}
+    .chip button{border:0;background:#fff;padding:4px 6px;border-radius:8px;cursor:pointer;font-size:11px}
     .chip button:hover{background:#fff8ef}
 
     .desc-box{background:#fff;border:1px solid #eee;border-radius:12px;padding:10px;max-height:32vh;overflow:auto;white-space:pre-wrap;line-height:1.6;font-size:14px}
-    .dropdown-menu{position:absolute;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);display:none;min-width:280px;max-height:260px;overflow:auto}
+    .dropdown-menu{position:absolute;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);display:none;min-width:280px;max-height:260px;overflow:auto;z-index:100}
 
     @media (max-width: 600px){
       .sheet{max-height:92vh}
@@ -243,16 +243,16 @@
 
         <div class="grid2">
           <div style="position:relative">
-            <label>المسؤول عن التاسك</label>
-            <input id="tAssigneeSearch" placeholder="اكتب اسم العضو…">
-            <div id="assigneeMenu" class="dropdown-menu" style="right:0;top:60px;"></div>
+            <label>أعضاء المهمة (يمكن إضافة أكثر من عضو)</label>
+            <input id="tAssigneeSearch" placeholder="اكتب اسم العضو ثم اختره من القائمة لإضافته">
+            <div id="assigneeMenu" class="dropdown-menu" style="right:0;top:76px;"></div>
             <div id="assigneeChip" class="chips"></div>
           </div>
           <div>
-            <label>لون العضو</label>
+            <label>لون العضو / المهمة</label>
             <div class="row">
               <input id="tColor" type="color" value="#bc8f74" style="width:70px;height:44px;padding:4px">
-              <span class="muted">يظهر على البطاقة ويحفظ للعضو</span>
+              <span class="muted">يظهر على البطاقات ويحفظ للعضو/الأعضاء</span>
             </div>
           </div>
         </div>
@@ -282,7 +282,7 @@
         <div id="dDesc" class="desc-box"></div>
 
         <div class="info" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-          <div><div class="small muted">المسؤول</div><div id="dAssignee"></div></div>
+          <div><div class="small muted">أعضاء المهمة</div><div id="dAssignee"></div></div>
           <div><div class="small muted">تاريخ التسليم</div><div id="dDue"></div></div>
           <div><div class="small muted">الحالة/العمود</div><div id="dStatus"></div></div>
         </div>
@@ -301,7 +301,7 @@
             <input id="dLinkUrl" class="input" placeholder="https://…">
             <button class="btn secondary" id="btnAddLink" style="margin-top:8px">حفظ الرابط</button>
           </div>
-          <p class="hint">* الصلاحية: الأدمِن أو المسؤول عن المهمة.</p>
+          <p class="hint">* الصلاحية: الأدمِن أو أحد أعضاء المهمة.</p>
         </div>
       </div>
       <div class="footer">
@@ -433,8 +433,17 @@
       });
     }
 
+    function taskMembersArray(task){
+      if(Array.isArray(task.assignees) && task.assignees.length) return task.assignees;
+      if(task.assignee) return [task.assignee];
+      return [];
+    }
+
     function canManageLinks(task){
-      return IS_ADMIN || (task?.assignee?.uid && task.assignee.uid === (CURRENT_USER?.uid||'')); 
+      if(IS_ADMIN) return true;
+      const members = taskMembersArray(task);
+      const myUid = CURRENT_USER?.uid || '';
+      return members.some(m=>m.uid === myUid);
     }
 
     /* ===== Spaces logic ===== */
@@ -574,15 +583,19 @@
         const data = TASKS_SPACES.map(t=>{
           const createdAt = t.createdAt?.seconds ? new Date(t.createdAt.seconds*1000) : null;
           const links = Array.isArray(t.links) ? t.links.map(l=> (l.title||l.url)+': '+l.url).join(' | ') : '';
+          const members = taskMembersArray(t);
+          const membersNames = members.map(m=>m.name).join(' | ');
+          const membersUids  = members.map(m=>m.uid).join(' | ');
+          const membersColors= members.map(m=>m.color).join(' | ');
           return {
             "Space": SPACES_CACHE.get(t.spaceId)||t.spaceId,
             "العمود/الحالة": t.status||'',
             "اسم التاسك": t.name||'',
             "تاريخ التسليم": t.due||'',
             "الوصف": t.description||'',
-            "العضو": t.assignee?.name||'',
-            "لون العضو": t.assignee?.color||'',
-            "UID العضو": t.assignee?.uid||'',
+            "أسماء الأعضاء": membersNames,
+            "ألوان الأعضاء": membersColors,
+            "UID الأعضاء": membersUids,
             "ماركة": t.car?.brand||'',
             "الموديل": t.car?.model||'',
             "الفئة": t.car?.trim||'',
@@ -639,7 +652,7 @@
     const assigneeChip   = document.getElementById('assigneeChip');
     const tColor         = document.getElementById('tColor');
     const tGroup         = document.getElementById('tGroup');
-    let SELECTED_ASSIGNEE=null;
+    let SELECTED_ASSIGNEES=[];
 
     /* === Car Selector Data === */
     const CAR_MAP = {
@@ -711,11 +724,39 @@
       });
     }
 
+    function renderAssigneeChips(){
+      assigneeChip.innerHTML = '';
+      if(!SELECTED_ASSIGNEES.length){
+        assigneeChip.innerHTML = '<span class="small muted">لم يتم اختيار أعضاء بعد</span>';
+        return;
+      }
+      SELECTED_ASSIGNEES.forEach(u=>{
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.dataset.uid = u.uid;
+        chip.innerHTML = `
+          <span class="badge">
+            <span class="dot" style="background:${u.color||'#bc8f74'}"></span>
+            ${u.name}
+          </span>
+          <span class="chip-actions">
+            <button type="button" class="chip-remove" title="إزالة">✕</button>
+          </span>
+        `;
+        chip.querySelector('.chip-remove').onclick = ()=>{
+          SELECTED_ASSIGNEES = SELECTED_ASSIGNEES.filter(a=>a.uid!==u.uid);
+          renderAssigneeChips();
+        };
+        assigneeChip.appendChild(chip);
+      });
+    }
+
     function openCreate(cols=SPACE_COLUMNS){
       if(IS_ADMIN){
         taskModal.classList.add('show');
         fillGroupSelect(cols);
         initCarSelectors();
+        renderAssigneeChips();
       }
     }
     function closeCreate(){ taskModal.classList.remove('show'); resetCreateForm(); }
@@ -728,7 +769,7 @@
     function resetCreateForm(){
       tName.value=''; tDesc.value=''; tDue.value='';
       tAssigneeSearch.value=''; assigneeMenu.innerHTML=''; assigneeMenu.style.display='none';
-      assigneeChip.innerHTML=''; SELECTED_ASSIGNEE=null; tColor.value='#bc8f74';
+      SELECTED_ASSIGNEES=[]; assigneeChip.innerHTML=''; tColor.value='#bc8f74';
       fillGroupSelect();
       initCarSelectors();
     }
@@ -740,17 +781,24 @@
         const it=document.createElement('div');
         it.className='dd-item';
         it.style.padding='8px 10px';
+        it.style.cursor='pointer';
         it.innerHTML=`<span class="row"><span class="color-dot" style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${u.color||'#bc8f74'}"></span> ${u.name} <span class="muted">(${u.role})</span></span>`;
         it.onclick=()=> selectAssignee(u);
         assigneeMenu.appendChild(it);
       });
-      assigneeMenu.style.display='block';
+      assigneeMenu.style.display= USERS.length && assigneeMenu.innerHTML ? 'block' : 'none';
     }
-    function selectAssignee(u){
-      SELECTED_ASSIGNEE = {...u};
-      assigneeChip.innerHTML = `<span class="badge"><span class="dot" style="background:${u.color}"></span>${u.name}</span>`;
-      tColor.value = u.color || '#bc8f74';
+    function selectAssignee(user){
+      if(!user) return;
+      if(!SELECTED_ASSIGNEES.find(u=>u.uid===user.uid)){
+        SELECTED_ASSIGNEES.push({...user});
+      }
+      // أول عضو يحدد اللون الافتراضي
+      if(SELECTED_ASSIGNEES.length===1 && user.color){
+        tColor.value = user.color;
+      }
       assigneeMenu.style.display='none';
+      renderAssigneeChips();
     }
     tAssigneeSearch.addEventListener('input', (e)=> renderAssigneeMenu(e.target.value.trim()));
     tAssigneeSearch.addEventListener('focus', ()=> renderAssigneeMenu(tAssigneeSearch.value));
@@ -800,6 +848,27 @@
       }
     }
 
+    function updateCampaignInfo(campaign){
+      if(!campaignDates) return;
+      if(!campaign){
+        campaignDates.textContent = "اختر حملة من القائمة أو أنشئ حملة جديدة.";
+        return;
+      }
+      const desc = campaign.description || campaign.desc || '';
+      const start = campaign.startDate || '';
+      const end   = campaign.endDate   || '';
+      let parts = [];
+      if(desc) parts.push(`وصف الحملة: ${desc}`);
+      if(start || end){
+        parts.push(`الفترة: ${start || '—'} إلى ${end || '—'}`);
+      }
+      if(!parts.length){
+        campaignDates.textContent = "لا يوجد وصف مسجل لهذه الحملة.";
+      }else{
+        campaignDates.textContent = parts.join(" — ");
+      }
+    }
+
     // استماع لحملات type="campaign"
     onSnapshot(
       query(collection(db,'spaces'), where('type','==','campaign')),
@@ -829,6 +898,7 @@
         CAMPAIGN_COLUMNS = found?.columns?.length ? found.columns : CAMPAIGN_DEFAULT_COLS.slice();
         renderBoardSkeletonCampaigns();
         listenTasksCampaigns();
+        updateCampaignInfo(found);
       },
       err=>{
         console.error(err);
@@ -845,6 +915,7 @@
         if(!id){
           boardCampaigns.innerHTML='';
           if(unsubTasksCampaigns){unsubTasksCampaigns();unsubTasksCampaigns=null;}
+          updateCampaignInfo(null);
           return;
         }
         const d = await getDoc(doc(db,'spaces', id));
@@ -852,6 +923,7 @@
         CAMPAIGN_COLUMNS = data.columns?.length ? data.columns : CAMPAIGN_DEFAULT_COLS.slice();
         renderBoardSkeletonCampaigns();
         listenTasksCampaigns();
+        updateCampaignInfo({ id, ...data });
       });
 
       btnNewCampaignTask?.addEventListener('click', ()=>{
@@ -960,6 +1032,24 @@
       });
     }
 
+    function renderMembersBadges(members){
+      if(!members.length) return '';
+      if(members.length<=2){
+        return members.map(m=>`
+          <span class="badge">
+            <span class="dot" style="background:${m.color||'#bc8f74'}"></span>${m.name||''}
+          </span>
+        `).join('');
+      }
+      const firstTwo = members.slice(0,2).map(m=>`
+        <span class="badge">
+          <span class="dot" style="background:${m.color||'#bc8f74'}"></span>${m.name||''}
+        </span>
+      `).join('');
+      const more = members.length-2;
+      return firstTwo + `<span class="small">+${more}</span>`;
+    }
+
     function renderTasksCampaigns(){
       const board=boardCampaigns;
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
@@ -979,7 +1069,7 @@
           const card=document.createElement('article'); 
           card.className='card'; 
           card.dataset.id=t.id;
-          const ass=t.assignee;
+          const members = taskMembersArray(t);
           const carLine = t.car ? [t.car.brand, t.car.model, t.car.trim, t.car.engine].filter(Boolean).join(' ') : '';
 
           card.innerHTML = `
@@ -991,7 +1081,7 @@
           footer.className = 'row between';
           const left = document.createElement('div');
           left.innerHTML = `
-            ${ass?`<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>`:''}
+            ${members.length? renderMembersBadges(members):''}
             ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
           `;
           footer.appendChild(left);
@@ -1050,8 +1140,6 @@
 
       const due=tDue.value||null;
       const description=tDesc.value||null;
-      const assigneeUid=SELECTED_ASSIGNEE?.uid||null;
-      const assigneeName=SELECTED_ASSIGNEE?.name||null;
       const color=(document.getElementById('tColor').value||'#bc8f74').trim();
       const status=tGroup.value || (targetCols[0]||'عمود');
 
@@ -1062,16 +1150,26 @@
         engine: carEngine?.value?.trim() || null
       };
 
+      // تجهيز الأعضاء
+      const assigneesPayload = SELECTED_ASSIGNEES.map(u=>({
+        uid: u.uid,
+        name: u.name,
+        color: color
+      }));
+
       try{
-        if(assigneeUid){
-          await setDoc(doc(db,'users', assigneeUid), { color }, { merge:true });
-          const idx=USERS.findIndex(u=>u.uid===assigneeUid);
+        // تحديث لون كل عضو مختار
+        for(const u of assigneesPayload){
+          await setDoc(doc(db,'users', u.uid), { color }, { merge:true });
+          const idx=USERS.findIndex(x=>x.uid===u.uid);
           if(idx>-1) USERS[idx].color=color;
         }
+
         const payload = {
           spaceId: targetSpaceId, name, description, due, status,
           car,
-          assignee: assigneeUid ? { uid:assigneeUid, name:assigneeName, color } : null,
+          assignees: assigneesPayload.length ? assigneesPayload : null,
+          assignee: assigneesPayload.length ? assigneesPayload[0] : null, // للتوافق مع الصفحات القديمة
           links: [],
           createdBy: CURRENT_USER?.uid || null,
           createdAt: serverTimestamp(),
@@ -1143,7 +1241,7 @@
         sec.innerHTML=`
           <div class="col-head">
             <span class="col-title">${col}</span>
-            <div class="grip"><span class="dots">⋮⋮</span> اسحب</div>
+            <span class="grip"><span class="dots">⋮⋮</span> اسحب</span>
             <div class="__actions"></div>
           </div>
           <div class="col-body"><div class="dropzone" data-zone="${col}"></div></div>
@@ -1215,13 +1313,13 @@
           const card=document.createElement('article'); 
           card.className='card'; 
           card.dataset.id=t.id;
-          const ass=t.assignee;
+          const members = taskMembersArray(t);
           const carLine = t.car ? [t.car.brand, t.car.model, t.car.trim, t.car.engine].filter(Boolean).join(' ') : '';
           card.innerHTML = `
             <h4>${t.name||'-'}</h4>
             ${carLine ? `<div class="small" style="margin-top:4px">🚗 ${carLine}</div>` : ''}
             <div class="row" style="margin-top:6px">
-              ${ass?`<span class="badge"><span class="dot" style="background:${ass.color||'#bc8f74'}"></span>${ass.name||''}</span>`:''}
+              ${members.length? renderMembersBadges(members):''}
               ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
             </div>`;
           card.setAttribute('draggable','true');
@@ -1252,13 +1350,27 @@
     }
 
     /* تفاصيل المهمة + روابط (مشتركة) */
+    function renderDetailAssignees(task){
+      const el = document.getElementById('dAssignee');
+      el.innerHTML = '';
+      const members = taskMembersArray(task);
+      if(!members.length){
+        el.innerHTML = '<span class="muted">—</span>';
+        return;
+      }
+      members.forEach(m=>{
+        const span = document.createElement('span');
+        span.className='badge';
+        span.innerHTML = `<span class="dot" style="background:${m.color||'#bc8f74'}"></span>${m.name||''}`;
+        el.appendChild(span);
+      });
+    }
+
     function openDetail(task){
       OPEN_TASK=task;
       document.getElementById('dTitle').textContent=task.name||'تفاصيل المهمة';
       document.getElementById('dDesc').textContent=task.description||'—';
-      document.getElementById('dAssignee').innerHTML = task.assignee
-        ? `<span class="badge"><span class="dot" style="background:${task.assignee.color||'#bc8f74'}"></span>${task.assignee.name||''}</span>`
-        : '<span class="muted">—</span>';
+      renderDetailAssignees(task);
       document.getElementById('dDue').textContent=task.due||'—';
       document.getElementById('dStatus').textContent=task.status||'—';
 
@@ -1316,7 +1428,7 @@
 
     document.getElementById('btnAddLink').addEventListener('click', async ()=>{
       if(!OPEN_TASK) return alert('افتح مهمة أولاً');
-      if(!canManageLinks(OPEN_TASK)) return alert('إدارة الروابط مسموحة للأدمِن أو المسؤول عن المهمة فقط');
+      if(!canManageLinks(OPEN_TASK)) return alert('إدارة الروابط مسموحة للأدمِن أو أحد أعضاء المهمة فقط');
       const title = (document.getElementById('dLinkTitle').value||'رابط').trim();
       const url   = (document.getElementById('dLinkUrl').value||'').trim();
       if(!url || !/^https?:\/\//i.test(url)) return alert('اكتب رابط يبدأ بـ http(s)://');
@@ -1385,7 +1497,6 @@
       dailyMonthSelect.innerHTML='';
       const now=new Date();
       const year=now.getFullYear();
-      // 12 شهر في السنة الحالية (تقويم ميلادي)
       for(let m=1;m<=12;m++){
         const key = `${year}-${String(m).padStart(2,'0')}`;
         const monthDate = new Date(year, m-1, 1);
@@ -1760,7 +1871,6 @@
         <p class="daily-card-title">${title}</p>
         ${desc?`<p class="daily-card-desc">${desc}</p>`:''}
       `;
-      // بدون drag للـ note علشان ما تتحركش بالغلط
       return card;
     }
   </script>

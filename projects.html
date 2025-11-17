@@ -263,10 +263,7 @@
         <div id="notifDropdown" class="notif-dropdown">
           <div class="notif-dropdown-header">
             <span>الإشعارات</span>
-            <div>
-              <button id="markAllReadBtn" type="button">تحديد الكل كمقروء</button>
-              <button id="clearAllNotifBtn" type="button">مسح الكل</button>
-            </div>
+            <button id="markAllReadBtn" type="button">تحديد الكل كمقروء</button>
           </div>
           <div id="notifList" class="notif-list"></div>
         </div>
@@ -545,7 +542,6 @@
       const list       = document.getElementById('notifList');
       const badge      = document.getElementById('notifBadge');
       const markAllBtn = document.getElementById('markAllReadBtn');
-      const clearBtn   = document.getElementById('clearAllNotifBtn');
       const soundEl    = document.getElementById('notifSound');
 
       if(!bell || !dropdown || !list || !badge) return;
@@ -568,7 +564,6 @@
       const qy = query(
         notifCol,
         where('recipientUid','==', currentUser.uid),
-        orderBy('createdAt','desc'),
         limit(40)
       );
 
@@ -636,19 +631,6 @@
             if(data.read === false){
               promises.push(updateDoc(doc(db,'notifications', d.id), { read:true }));
             }
-          });
-          if(promises.length){
-            try{ await Promise.all(promises); }catch(e){ console.error(e); }
-          }
-        });
-      }
-
-      if(clearBtn){
-        clearBtn.addEventListener('click', async ()=>{
-          if(!lastDocs.length) return;
-          const promises = [];
-          lastDocs.forEach(d=>{
-            promises.push(deleteDoc(doc(db,'notifications', d.id)));
           });
           if(promises.length){
             try{ await Promise.all(promises); }catch(e){ console.error(e); }
@@ -735,7 +717,7 @@
       const senderName = CURRENT_USER_NAME || CURRENT_USER?.email || 'عضو الفريق';
 
       const promises = recipients.map(u=>{
-        const msg = `تم منشن @${u.tag||u.name} في تاسك: ${taskName||'-'}`;
+        const msg = `تم منشن ${u.tag||u.name} في تاسك: ${taskName||'-'}`;
         return addDoc(notifCol,{
           recipientUid: u.uid,
           recipientName: u.name,

@@ -263,7 +263,7 @@
         <div id="notifDropdown" class="notif-dropdown">
           <div class="notif-dropdown-header">
             <span>الإشعارات</span>
-            <div class="notif-actions">
+            <div>
               <button id="markAllReadBtn" type="button">تحديد الكل كمقروء</button>
               <button id="clearAllNotifBtn" type="button">مسح الكل</button>
             </div>
@@ -584,15 +584,7 @@
           }
         });
 
-        const sortedDocs = snapshot.docs.slice().sort((a,b)=>{
-          const ad = a.data()?.createdAt;
-          const bd = b.data()?.createdAt;
-          const at = (ad && ad.toDate) ? ad.toDate().getTime() : 0;
-          const bt = (bd && bd.toDate) ? bd.toDate().getTime() : 0;
-          return bt - at; // الأحدث أولاً
-        });
-
-        sortedDocs.forEach(docSnap=>{
+        snapshot.docs.forEach(docSnap=>{
           const data = docSnap.data()||{};
           const id   = docSnap.id;
           const isUnread = data.read === false;
@@ -649,6 +641,7 @@
             try{ await Promise.all(promises); }catch(e){ console.error(e); }
           }
         });
+      }
 
       if(clearBtn){
         clearBtn.addEventListener('click', async ()=>{
@@ -661,7 +654,6 @@
             try{ await Promise.all(promises); }catch(e){ console.error(e); }
           }
         });
-      }
       }
     }
 

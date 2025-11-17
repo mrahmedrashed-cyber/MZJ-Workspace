@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -182,11 +181,11 @@
       font-size:13px;
       color:var(--muted);
       line-height:1.5;
-      display:-webkit-box;
-      -webkit-line-clamp:3;
-      -webkit-box-orient:vertical;
-      overflow:hidden;
-      word-wrap:break-word;
+      white-space:pre-wrap;
+      border:1px solid #f2e7df;
+      border-radius:8px;
+      padding:6px 8px;
+      background:#fffaf5;
     }
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
     .badge{
@@ -412,7 +411,7 @@
     }
 
     .dropdown-menu{
-      position:absolute;
+      position:fixed;
       background:#fff;
       border:1px solid #eee;
       border-radius:12px;
@@ -661,7 +660,7 @@
           <div style="position:relative">
             <label>المسؤولون (يمكن اختيار أكثر من عضو)</label>
             <input id="tAssigneeSearch" placeholder="ابحث باسم العضو…">
-            <div id="assigneeMenu" class="dropdown-menu" style="right:0;top:64px;"></div>
+            <div id="assigneeMenu" class="dropdown-menu"></div>
             <div id="assigneeChip" class="chips"></div>
           </div>
           <div>
@@ -1129,7 +1128,7 @@
             }
           }
 
-          const descText = (t.description || '').replace(/\s+/g,' ').trim();
+          const descText = (t.description || '').trim();
           const descHtml = descText
             ? `<p class="card-desc">${descText}</p>`
             : '';
@@ -1174,6 +1173,14 @@
       renderAssigneeChips();
     });
 
+    /* Position dropdown under the input (viewport based) */
+    function positionAssigneeMenu(){
+      const r = tAssigneeSearch.getBoundingClientRect();
+      assigneeMenu.style.top   = (r.bottom + 4) + 'px';
+      assigneeMenu.style.right = (window.innerWidth - r.right) + 'px';
+      assigneeMenu.style.minWidth = r.width + 'px';
+    }
+
     /* Assignee menu */
     function renderAssigneeMenu(filter){
       const f=(filter||'').toLowerCase();
@@ -1183,6 +1190,9 @@
         assigneeMenu.style.display='none';
         return;
       }
+
+      positionAssigneeMenu();
+
       list.forEach(u=>{
         const it=document.createElement('div');
         it.className='dd-item';
@@ -1219,6 +1229,11 @@
     document.addEventListener('click', (e)=>{
       if(!assigneeMenu.contains(e.target) && e.target !== tAssigneeSearch){
         assigneeMenu.style.display='none';
+      }
+    });
+    window.addEventListener('resize', ()=>{
+      if(assigneeMenu.style.display==='block'){
+        positionAssigneeMenu();
       }
     });
 
@@ -1267,6 +1282,7 @@
 
     function closeTaskModal(){
       taskModal.classList.remove('show');
+      assigneeMenu.style.display='none';
     }
 
     btnCancelTask.onclick = closeTaskModal;
@@ -1302,6 +1318,8 @@
         color:a.color || mainColor
       }));
       const singleAssignee = assigneesPayload[0] || null;
+      const assigneesNames = assigneesPayload.map(a=>a.name||'').filter(Boolean).join(', ');
+      const assigneesIds   = assigneesPayload.map(a=>a.uid);
 
       try{
         if(EDITING_TASK){
@@ -1310,7 +1328,9 @@
             description,
             due,
             assignees: assigneesPayload,
-            assignee: singleAssignee
+            assignee: singleAssignee,
+            assigneesNames,
+            assigneesIds
           });
         }else{
           const status = PRESELECT_STATUS || (COLUMNS[0] || 'ريلز - كاش');
@@ -1322,6 +1342,8 @@
             status,
             assignees: assigneesPayload,
             assignee: singleAssignee,
+            assigneesNames,
+            assigneesIds,
             createdBy: CURRENT_USER?.uid || null,
             createdAt: serverTimestamp()
           });
@@ -1340,4 +1362,3 @@
 
 </body>
 </html>
-```

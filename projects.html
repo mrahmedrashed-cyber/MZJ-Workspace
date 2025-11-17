@@ -86,36 +86,38 @@
     .chip button{border:0;background:#fff;padding:4px 6px;border-radius:8px;cursor:pointer;font-size:11px}
     .chip button:hover{background:#fff8ef}
 
-    /* مربع وصف المهمة (textarea) */
+    /* مربع وصف تفاصيل المهمة (detail) */
     .desc-box{
-  background:#fff;
-  border:1px solid #eee;
-  border-radius:12px;
-  padding:10px;
-  height:20px;     /* أو 350/400 حسب ما تحب */
-  overflow:auto;
-  white-space:pre-wrap;
-  line-height:1.6;
-  font-size:14px;
-  font-family:inherit;
-}
-    /* مربع وصف الحملة */
- .campaign-full-desc{
-  width: 100%;
-  min-height: 520px;
-  height: auto;
-  max-height: none;
-  resize: vertical;
-  padding: 14px;
-  font-size: 15px;
-  line-height: 1.8;
-  border: 1px solid #d8b9a4;
-  border-radius: 14px;
-  background: #fffdfa;
-  box-shadow: 0 4px 14px rgba(188,143,116,.25);
-  overflow-y: visible; 
-  white-space: pre-wrap;
-}
+      background:#fff;
+      border:1px solid #eee;
+      border-radius:12px;
+      padding:10px;
+      min-height:220px;
+      max-height:420px;
+      overflow:auto;
+      white-space:pre-wrap;
+      line-height:1.6;
+      font-size:14px;
+      font-family:inherit;
+    }
+
+    /* مربع وصف الحملة في مودال الإنشاء (Campaign Task) */
+    .campaign-full-desc{
+      width: 100%;
+      min-height: 520px;
+      height: auto;
+      max-height: none;
+      resize: vertical;
+      padding: 14px;
+      font-size: 15px;
+      line-height: 1.8;
+      border: 1px solid #d8b9a4;
+      border-radius: 14px;
+      background: #fffdfa;
+      box-shadow: 0 4px 14px rgba(188,143,116,.25);
+      overflow-y: visible;
+      white-space: pre-wrap;
+    }
 
     .campaign-desc-wrapper{
       flex:1;
@@ -157,7 +159,6 @@
       font-size:12px;
       padding:4px 10px;
     }
-
 
     .dropdown-menu{position:absolute;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);display:none;min-width:280px;max-height:260px;overflow:auto;z-index:100}
 
@@ -575,7 +576,7 @@
       spaceSelect.innerHTML='';
       list.forEach(s=>{
         if(s.type==='campaign') return;
-        const opt=document.createElement('option'); 
+        const opt=document.createElement('option');
         opt.value=s.id; opt.textContent=s.name;
         spaceSelect.appendChild(opt);
         SPACES_CACHE.set(s.id, s.name||s.id);
@@ -605,7 +606,7 @@
 
     document.getElementById('btnNewSpace')?.addEventListener('click', async ()=>{
       if(!IS_ADMIN) return;
-      const name = prompt('اسم الـSpace (مثال: نوفمبر 2025):'); 
+      const name = prompt('اسم الـSpace (مثال: نوفمبر 2025):');
       if(!name) return;
       const ref = await addDoc(collection(db,'spaces'), {
         name, columns:DEFAULT_COLUMNS, createdAt:serverTimestamp(), active:true
@@ -796,7 +797,7 @@
     function fillGroupSelect(cols=SPACE_COLUMNS){
       tGroup.innerHTML='';
       (cols||[]).forEach(col=>{
-        const opt=document.createElement('option'); opt.value=col; opt.textContent=col; 
+        const opt=document.createElement('option'); opt.value=col; opt.textContent=col;
         tGroup.appendChild(opt);
       });
     }
@@ -830,6 +831,14 @@
 
     function openCreate(cols=SPACE_COLUMNS){
       if(IS_ADMIN){
+        // لو نحن في تبويب Campaign كبّر مربع الوصف
+        const isCampaignTab = !panelCampaigns.classList.contains('hidden');
+        if(isCampaignTab){
+          tDesc.classList.add('campaign-full-desc');
+        }else{
+          tDesc.classList.remove('campaign-full-desc');
+        }
+
         taskModal.classList.add('show');
         fillGroupSelect(cols);
         initCarSelectors();
@@ -844,7 +853,9 @@
     taskModal.addEventListener('click', (e)=>{ if(e.target===taskModal) closeCreate(); });
 
     function resetCreateForm(){
-      tName.value=''; tDesc.value=''; tDue.value='';
+      tName.value=''; tDesc.value='';
+      tDesc.classList.remove('campaign-full-desc');
+      tDue.value='';
       tAssigneeSearch.value=''; assigneeMenu.innerHTML=''; assigneeMenu.style.display='none';
       SELECTED_ASSIGNEES=[]; assigneeChip.innerHTML=''; tColor.value='#bc8f74';
       fillGroupSelect();
@@ -1168,8 +1179,8 @@
         const list = byStatus[status]||[];
         list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
         list.forEach(t=>{
-          const card=document.createElement('article'); 
-          card.className='card'; 
+          const card=document.createElement('article');
+          card.className='card';
           card.dataset.id=t.id;
           const members = taskMembersArray(t);
           const carLine = t.car ? [t.car.brand, t.car.model, t.car.trim, t.car.engine].filter(Boolean).join(' ') : '';
@@ -1237,7 +1248,7 @@
       if(!IS_ADMIN) return alert('خاص بالأدمِن');
 
       if(!tName.value.trim()) buildAutoTaskName();
-      const name=tName.value.trim(); 
+      const name=tName.value.trim();
       if(!name) return alert('اكتب اسم التاسك');
 
       const due=tDue.value||null;
@@ -1295,7 +1306,7 @@
       btnRename.title='إعادة تسمية العمود';
       btnRename.onclick=async ()=>{
         if(!IS_ADMIN) return;
-        const nn=prompt('اسم العمود الجديد:', columnName); 
+        const nn=prompt('اسم العمود الجديد:', columnName);
         if(!nn||nn===columnName) return;
         const cols=SPACE_COLUMNS.map(c=>c===columnName?nn:c);
         await updateDoc(doc(db,'spaces', CURRENT_SPACE), { columns: cols });
@@ -1412,8 +1423,8 @@
         const list = byStatus[status]||[];
         list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
         list.forEach(t=>{
-          const card=document.createElement('article'); 
-          card.className='card'; 
+          const card=document.createElement('article');
+          card.className='card';
           card.dataset.id=t.id;
           const members = taskMembersArray(t);
           const carLine = t.car ? [t.car.brand, t.car.model, t.car.trim, t.car.engine].filter(Boolean).join(' ') : '';
@@ -1482,7 +1493,7 @@
       document.getElementById('btnEditTask').style.display = IS_ADMIN ? '' : 'none';
       document.getElementById('btnDeleteTask').style.display = IS_ADMIN ? '' : 'none';
 
-      const linksEl=document.getElementById('dLinks'); 
+      const linksEl=document.getElementById('dLinks');
       linksEl.innerHTML='';
       (task.links||[]).forEach((l, idx)=>{
         const chip=document.createElement('span'); chip.className='chip'; chip.dataset.idx=idx;

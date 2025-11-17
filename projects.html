@@ -86,7 +86,32 @@
     .chip button{border:0;background:#fff;padding:4px 6px;border-radius:8px;cursor:pointer;font-size:11px}
     .chip button:hover{background:#fff8ef}
 
-    .desc-box{background:#fff;border:1px solid #eee;border-radius:12px;padding:10px;max-height:32vh;overflow:auto;white-space:pre-wrap;line-height:1.6;font-size:14px}
+    /* مربع وصف المهمة (textarea) */
+    .desc-box{
+      background:#fff;
+      border:1px solid #eee;
+      border-radius:12px;
+      padding:10px;
+      max-height:32vh;
+      overflow:auto;
+      white-space:pre-wrap;
+      line-height:1.6;
+      font-size:14px;
+      font-family:inherit;
+    }
+
+    /* مربع وصف الحملة */
+    .campaign-desc{
+      background:#fff;
+      border:1px dashed #e5d2c6;
+      border-radius:12px;
+      padding:8px 10px;
+      font-size:13px;
+      line-height:1.6;
+      color:var(--muted);
+      min-width:260px;
+    }
+
     .dropdown-menu{position:absolute;background:#fff;border:1px solid #eee;border-radius:12px;box-shadow:0 10px 30px rgba(62,36,32,.12);display:none;min-width:280px;max-height:260px;overflow:auto;z-index:100}
 
     @media (max-width: 600px){
@@ -123,6 +148,7 @@
 
   <!-- SheetJS (للتصدير إلى Excel) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 </head>
 <body>
   <header class="topbar">
@@ -176,9 +202,9 @@
           <select id="campaignSelect" class="select"></select>
           <button class="btn" id="btnNewCampaignTask" style="display:none">تاسك جديد (حملة)</button>
           <button class="btn secondary" id="btnNewCampaign" style="display:none">حملة جديدة</button>
-          <span class="muted" id="campaignDates">—</span>
         </div>
-        <div class="muted" id="who2"></div>
+        <!-- وصف الحملة داخل مربع -->
+        <div id="campaignDates" class="campaign-desc">اختر حملة من القائمة أو أنشئ حملة جديدة.</div>
       </div>
       <div class="body">
         <div class="board" id="boardCampaigns"></div>
@@ -279,7 +305,8 @@
       <div class="head"><strong id="dTitle">تفاصيل المهمة</strong></div>
       <div class="body">
         <label class="small muted" style="margin-top:2px">الوصف</label>
-        <div id="dDesc" class="desc-box"></div>
+        <!-- مربع الوصف قابل للتحديد بـ Ctrl+A -->
+        <textarea id="dDesc" class="desc-box" readonly></textarea>
 
         <div class="info" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div><div class="small muted">أعضاء المهمة</div><div id="dAssignee"></div></div>
@@ -395,7 +422,7 @@
       CURRENT_ROLE = u.exists()? (u.data().role||'member') : 'member';
       IS_ADMIN = CURRENT_ROLE==='admin';
       document.getElementById('who').textContent  = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
-      document.getElementById('who2').textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
+      document.getElementById('who2') && (document.getElementById('who2').textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`);
 
       ['btnNewSpace','btnAddGroup','newGroupName','btnNewTask','btnSpaceManage','btnNewCampaignTask','btnNewCampaign'].forEach(id=>{
         const el=document.getElementById(id);
@@ -1369,7 +1396,8 @@
     function openDetail(task){
       OPEN_TASK=task;
       document.getElementById('dTitle').textContent=task.name||'تفاصيل المهمة';
-      document.getElementById('dDesc').textContent=task.description||'—';
+      const dDesc = document.getElementById('dDesc');
+      dDesc.value = task.description || '';
       renderDetailAssignees(task);
       document.getElementById('dDue').textContent=task.due||'—';
       document.getElementById('dStatus').textContent=task.status||'—';
@@ -1874,5 +1902,6 @@
       return card;
     }
   </script>
+
 </body>
 </html>

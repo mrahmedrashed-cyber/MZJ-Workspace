@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -156,37 +157,82 @@
       background:#fff;
       border:1px solid #eee;
       border-radius:12px;
-      padding:10px 10px 12px;
+      padding:8px 9px 10px;
       box-shadow:0 8px 20px rgba(62,36,32,.06);
       cursor:pointer;
       transition:.12s transform, .12s box-shadow;
-      min-height:120px;
+      min-height:80px;
       display:flex;
       flex-direction:column;
-      gap:6px;
+      gap:4px;
+      font-size:13px;
     }
     .card:hover{
       transform:translateY(-2px);
       box-shadow:0 10px 24px rgba(62,36,32,.12);
     }
+
+    .card-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:6px;
+    }
+
     .card h4{
       margin:0;
       color:var(--brown);
-      font-size:15px;
+      font-size:14px;
       line-height:1.4;
       font-weight:800;
     }
-    .card-desc{
-      margin:0;
-      font-size:13px;
-      color:var(--muted);
-      line-height:1.5;
-      white-space:pre-wrap;
-      border:1px solid #f2e7df;
-      border-radius:8px;
-      padding:6px 8px;
-      background:#fffaf5;
+
+    .card-actions{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      margin-inline-start:4px;
     }
+    .card-move{
+      border:1px solid #e5e7eb;
+      border-radius:6px;
+      background:#fff;
+      font-size:10px;
+      padding:2px 4px;
+      cursor:pointer;
+      line-height:1;
+    }
+    .card-move:hover{
+      background:#fff8ef;
+      border-color:#e5d2c6;
+    }
+
+    /* وصف الكارت لن نعرضه في الكارت نفسه – فقط تلميح صغير */
+    .card-hint{
+      margin:2px 0 0;
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    .links-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+      margin-top:2px;
+    }
+    .task-link{
+      font-size:11px;
+      padding:3px 6px;
+      border-radius:999px;
+      border:1px dashed #e5d2c6;
+      background:#fffaf5;
+      color:var(--brown);
+      text-decoration:none;
+    }
+    .task-link:hover{
+      background:#f7e9e0;
+    }
+
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
     .badge{
       padding:4px 8px;
@@ -291,12 +337,12 @@
     }
     textarea{min-height:90px;resize:vertical}
 
-    /* تكبير مربع وصف التاسك */
+    /* مربع وصف التاسك (مش كبير) */
     #tDesc{
-      min-height:220px;
-      padding:14px;
+      min-height:120px;
+      padding:10px;
       font-size:14px;
-      line-height:1.8;
+      line-height:1.6;
     }
 
     input:focus,select:focus,textarea:focus{
@@ -433,6 +479,42 @@
       gap:6px;
     }
     .dd-item:hover{background:#fff8ef}
+
+    /* رابطــات التاسك (داخل المودال) */
+    .links-form{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin-bottom:6px;
+    }
+    .link-row{
+      display:flex;
+      gap:6px;
+      align-items:center;
+    }
+    .link-row input{
+      flex:1;
+    }
+    .link-row .link-title{
+      max-width:190px;
+    }
+    .link-remove{
+      border:1px solid #e5e7eb;
+      background:#fff;
+      border-radius:8px;
+      padding:6px 8px;
+      cursor:pointer;
+      font-size:12px;
+    }
+    .link-remove:hover{
+      background:#fff8ef;
+      border-color:#e5d2c6;
+    }
+    .btn-link-add{
+      margin-top:4px;
+      padding:6px 10px;
+      font-size:12px;
+    }
 
     .footer-bar{
       padding:16px 18px;
@@ -656,6 +738,15 @@
           <textarea id="tDesc" placeholder="اكتب تفاصيل المهمة…"></textarea>
         </div>
 
+        <div>
+          <label>روابط مرتبطة (اختياري)</label>
+          <div id="linksContainer" class="links-form"></div>
+          <button type="button" class="btn secondary btn-link-add" id="btnAddLink">إضافة رابط</button>
+          <div class="date-helper">
+            مثال: روابط Google Drive، Trello، مجلدات الحملة… إلخ.
+          </div>
+        </div>
+
         <div class="grid2">
           <div style="position:relative">
             <label>المسؤولون (يمكن اختيار أكثر من عضو)</label>
@@ -715,6 +806,8 @@
     let TASKS=[];
     let unsubTasks=null;
 
+    let DRAG_TASK_ID = null; /* للسحب والإفلات */
+
     /* Quill editors */
     let quill = null;
     let quillEdit = null;
@@ -752,6 +845,8 @@
     const assigneeMenu   = document.getElementById('assigneeMenu');
     const assigneeChip   = document.getElementById('assigneeChip');
     const tColor         = document.getElementById('tColor');
+    const linksContainer = document.getElementById('linksContainer');
+    const btnAddLink     = document.getElementById('btnAddLink');
 
     /* Init Quill editors */
     window.addEventListener('DOMContentLoaded', () => {
@@ -765,6 +860,24 @@
         modules: { toolbar: '#editDescToolbar' }
       });
     });
+
+    /* Small helper for HTML escaping */
+    function escapeHtml(str){
+      return (str || '').replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
+
+    /* Sorting helper for tasks in a column */
+    function taskSort(a,b){
+      const ao = (typeof a.order === 'number')
+        ? a.order
+        : 999999 + (a.createdAt?.seconds || 0);
+      const bo = (typeof b.order === 'number')
+        ? b.order
+        : 999999 + (b.createdAt?.seconds || 0);
+      return ao - bo;
+    }
 
     /* Auth */
     document.getElementById('btnLogout').onclick = async ()=>{
@@ -873,8 +986,8 @@
       const start = data.start || '';
       const due   = data.due   || '';
 
-      campStartEl.value = start;
-      campDueEl.value   = due;
+      campStartEl.value = start || '';
+      campDueEl.value   = due   || '';
       campaignDates.textContent = `📅 ${start||'—'} → ${due||'—'}`;
 
       /* Render Board */
@@ -948,7 +1061,7 @@
       campaignDescBox.innerHTML = newDesc;
       document.getElementById('editCampDescModal').classList.remove('show');
 
-      alert("✔️ تم تحديث وصف الحملة");
+      alert("✔ تم تحديث وصف الحملة");
     };
 
     /* Rename Campaign */
@@ -1008,6 +1121,50 @@
       alert("تم حفظ التواريخ");
     };
 
+    /* Drag & Drop setup for columns */
+    function attachDragAndDrop(){
+      board.querySelectorAll('.dropzone').forEach(zone=>{
+        zone.addEventListener('dragover', (ev)=>{
+          ev.preventDefault();
+          ev.dataTransfer.dropEffect = 'move';
+          zone.classList.add('drag');
+        });
+        zone.addEventListener('dragleave', ()=>{
+          zone.classList.remove('drag');
+        });
+        zone.addEventListener('drop', async (ev)=>{
+          ev.preventDefault();
+          zone.classList.remove('drag');
+          const id = DRAG_TASK_ID || ev.dataTransfer.getData('text/plain');
+          if(!id) return;
+          const status = zone.dataset.zone;
+          const task = TASKS.find(t=> t.id === id);
+          if(!task) return;
+
+          /* لو نفس العمود، ننقله لآخر العمود (تغيير ترتيب) */
+          let newStatus = status;
+          let newOrder  = 1;
+
+          let maxOrder = 0;
+          TASKS.filter(t=> t.status === newStatus).forEach(t=>{
+            if(typeof t.order === 'number' && t.order > maxOrder){
+              maxOrder = t.order;
+            }
+          });
+          newOrder = maxOrder + 1 || 1;
+
+          try{
+            await updateDoc(doc(db,'tasks', id), {
+              status:newStatus,
+              order:newOrder
+            });
+          }catch(e){
+            console.error('drop move error', e);
+          }
+        });
+      });
+    }
+
     /* Render Board */
     function renderBoard(){
       board.innerHTML='';
@@ -1022,8 +1179,8 @@
           <div class="col-head">
             <span class="col-title">${col}</span>
             <div class="col-actions">
-              <button class="icon" data-act="rename" title="إعادة تسمية">✏️</button>
-              <button class="icon" data-act="delete" title="حذف العمود">🗑️</button>
+              <button class="icon" data-act="rename" title="إعادة تسمية">✏</button>
+              <button class="icon" data-act="delete" title="حذف العمود">🗑</button>
               <button class="icon" data-act="newtask" title="تاسك جديد">➕</button>
             </div>
           </div>
@@ -1037,6 +1194,7 @@
       });
 
       attachColumnActions();
+      attachDragAndDrop();
       renderTasks();
     }
 
@@ -1090,6 +1248,35 @@
       });
     }
 
+    /* Move task up/down within same column */
+    async function moveTask(taskId, status, dir){
+      const colTasks = TASKS
+        .filter(t=> t.status === status)
+        .slice()
+        .sort(taskSort);
+
+      const idx = colTasks.findIndex(t=> t.id === taskId);
+      if(idx === -1) return;
+      if(dir === 'up' && idx === 0) return;
+      if(dir === 'down' && idx === colTasks.length - 1) return;
+
+      const otherIdx = dir === 'up' ? idx - 1 : idx + 1;
+      const cur   = colTasks[idx];
+      const other = colTasks[otherIdx];
+
+      const curOrder   = (typeof cur.order === 'number') ? cur.order : (idx+1);
+      const otherOrder = (typeof other.order === 'number') ? other.order : (otherIdx+1);
+
+      try{
+        await Promise.all([
+          updateDoc(doc(db,'tasks', cur.id),   { order: otherOrder }),
+          updateDoc(doc(db,'tasks', other.id), { order: curOrder })
+        ]);
+      }catch(e){
+        console.error('moveTask error', e);
+      }
+    }
+
     /* Render Tasks */
     function renderTasks(){
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
@@ -1105,10 +1292,14 @@
       COLUMNS.forEach(status=>{
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
         if(!zone) return;
-        (grouped[status]||[]).forEach(t=>{
+
+        const list = (grouped[status] || []).slice().sort(taskSort);
+
+        list.forEach(t=>{
           const card=document.createElement('article');
           card.className='card';
           card.dataset.id=t.id;
+          card.draggable = true;
 
           const assignees = Array.isArray(t.assignees) && t.assignees.length
             ? t.assignees
@@ -1120,7 +1311,7 @@
             assigneesHtml = shown.map(a=>`
               <span class="badge">
                 <span class="dot" style="background:${a.color || '#bc8f74'}"></span>
-                ${a.name || ''}
+                ${escapeHtml(a.name || '')}
               </span>
             `).join('');
             if(assignees.length > 3){
@@ -1129,20 +1320,74 @@
           }
 
           const descText = (t.description || '').trim();
-          const descHtml = descText
-            ? `<p class="card-desc">${descText}</p>`
-            : '';
+
+          /* Links: يمكن أن تكون array of strings أو array of {title,url} */
+          let linksHtml = '';
+          if(Array.isArray(t.links) && t.links.length){
+            const limited = t.links.slice(0,3);
+            linksHtml = `
+              <div class="links-row">
+                ${limited.map((l,idx)=>{
+                  let title = '';
+                  let url   = '';
+                  if(typeof l === 'string'){
+                    url = l;
+                    title = `رابط ${idx+1}`;
+                  }else{
+                    url = l.url || '';
+                    title = l.title || `رابط ${idx+1}`;
+                  }
+                  if(!url) return '';
+                  return `
+                    <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="task-link">
+                      🔗 ${escapeHtml(title)}
+                    </a>
+                  `;
+                }).join('')}
+                ${t.links.length > 3 ? `<span class="small">+${t.links.length - 3}</span>` : ''}
+              </div>
+            `;
+          }
 
           card.innerHTML=`
-            <h4>${t.name || '-'}</h4>
-            ${descHtml}
+            <div class="card-top">
+              <h4>${escapeHtml(t.name || '-')}</h4>
+              <div class="card-actions">
+                <button class="card-move" data-dir="up" title="تحريك لأعلى">▲</button>
+                <button class="card-move" data-dir="down" title="تحريك لأسفل">▼</button>
+              </div>
+            </div>
+            ${linksHtml}
             <div class="row">
               ${assigneesHtml}
-              ${t.due ? `<span class="small">📅 ${t.due}</span>` : '' }
+              ${t.due ? `<span class="small">📅 ${escapeHtml(t.due)}</span>` : '' }
             </div>
+            ${descText ? `<div class="card-hint">اضغط لعرض تفاصيل التاسك</div>` : ''}
           `;
 
-          card.onclick = ()=> openTaskModal({ edit:t });
+          /* فتح المودال عند الضغط على الكارت */
+          card.addEventListener('click', ()=> openTaskModal({ edit:t }));
+
+          /* سحب الكارت */
+          card.addEventListener('dragstart',(ev)=>{
+            DRAG_TASK_ID = t.id;
+            ev.dataTransfer.setData('text/plain', t.id);
+            ev.dataTransfer.effectAllowed = 'move';
+          });
+          card.addEventListener('dragend',()=>{
+            DRAG_TASK_ID = null;
+            board.querySelectorAll('.dropzone.drag').forEach(z=> z.classList.remove('drag'));
+          });
+
+          /* أزرار التحريك لأعلى/أسفل */
+          card.querySelectorAll('.card-move').forEach(btn=>{
+            btn.addEventListener('click', (ev)=>{
+              ev.stopPropagation();
+              const dir = btn.dataset.dir;
+              moveTask(t.id, status, dir);
+            });
+          });
+
           zone.appendChild(card);
         });
       });
@@ -1157,7 +1402,7 @@
       assigneeChip.innerHTML = SELECTED_ASSIGNEES.map(a=>`
         <span class="chip" data-uid="${a.uid}">
           <span class="dot" style="background:${a.color || '#bc8f74'};width:10px;height:10px;border-radius:999px"></span>
-          <span>${a.name}</span>
+          <span>${escapeHtml(a.name)}</span>
           <span class="chip-remove" title="إزالة">×</span>
         </span>
       `).join('');
@@ -1185,7 +1430,7 @@
     function renderAssigneeMenu(filter){
       const f=(filter||'').toLowerCase();
       assigneeMenu.innerHTML='';
-      const list = USERS.filter(u=> u.name.toLowerCase().includes(f));
+      const list = USERS.filter(u=> (u.name || '').toLowerCase().includes(f));
       if(!list.length){
         assigneeMenu.style.display='none';
         return;
@@ -1199,9 +1444,9 @@
         it.innerHTML = `
           <span class="badge">
             <span class="dot" style="background:${u.color}"></span>
-            ${u.name}
+            ${escapeHtml(u.name)}
           </span>
-          <span class="small">(${u.role})</span>
+          <span class="small">(${escapeHtml(u.role)})</span>
         `;
         it.onclick = ()=>{
           const exists = SELECTED_ASSIGNEES.some(a=> a.uid === u.uid);
@@ -1237,6 +1482,40 @@
       }
     });
 
+    /* ===== روابط التاسك (المودال) ===== */
+    function clearLinksForm(){
+      linksContainer.innerHTML = '';
+    }
+
+    function addLinkRow(data = { title:'', url:'' }){
+      const row = document.createElement('div');
+      row.className = 'link-row';
+      row.innerHTML = `
+        <input class="link-title" placeholder="اسم الرابط" value="${escapeHtml(data.title || '')}">
+        <input class="link-url" placeholder="الرابط (URL)" value="${escapeHtml(data.url || '')}">
+        <button type="button" class="link-remove" title="حذف الرابط">✕</button>
+      `;
+      row.querySelector('.link-remove').onclick = ()=> row.remove();
+      linksContainer.appendChild(row);
+    }
+
+    btnAddLink.addEventListener('click', ()=>{
+      addLinkRow();
+    });
+
+    function getLinksFromForm(){
+      const rows = Array.from(linksContainer.querySelectorAll('.link-row'));
+      const links = [];
+      rows.forEach(r=>{
+        const title = (r.querySelector('.link-title')?.value || '').trim();
+        const url   = (r.querySelector('.link-url')?.value || '').trim();
+        if(url){
+          links.push({ title, url });
+        }
+      });
+      return links;
+    }
+
     /* Task modal handlers */
     function openTaskModal(opts={}){
       SELECTED_ASSIGNEES=[];
@@ -1246,9 +1525,10 @@
       tName.value='';
       tDue.value='';
       tDesc.value='';
-      assigneeChip.innerHTML='';
       tAssigneeSearch.value='';
       tColor.value='#bc8f74';
+      assigneeChip.innerHTML='';
+      clearLinksForm();
 
       if(opts.status) PRESELECT_STATUS = opts.status;
 
@@ -1259,6 +1539,19 @@
         tName.value = t.name || '';
         tDue.value  = t.due  || '';
         tDesc.value = t.description || '';
+
+        /* روابط موجودة مسبقًا */
+        if(Array.isArray(t.links) && t.links.length){
+          t.links.forEach(l=>{
+            if(typeof l === 'string'){
+              addLinkRow({ title:'', url:l });
+            }else{
+              addLinkRow({ title:l.title || '', url:l.url || '' });
+            }
+          });
+        }else{
+          addLinkRow(); // صف فاضي واحد على الأقل
+        }
 
         const assignees = Array.isArray(t.assignees) && t.assignees.length
           ? t.assignees
@@ -1275,6 +1568,7 @@
         }
       }else{
         taskModalTitle.textContent = 'تاسك جديد';
+        addLinkRow();
       }
 
       taskModal.classList.add('show');
@@ -1298,6 +1592,9 @@
       const due = tDue.value || null;
       const description = tDesc.value || null;
       const mainColor = (tColor.value || '#bc8f74').trim();
+
+      /* Parse links from form (title + url) */
+      const links = getLinksFromForm();
 
       if(SELECTED_ASSIGNEES.length){
         SELECTED_ASSIGNEES = SELECTED_ASSIGNEES.map((a,idx)=>({
@@ -1327,6 +1624,7 @@
             name,
             description,
             due,
+            links,
             assignees: assigneesPayload,
             assignee: singleAssignee,
             assigneesNames,
@@ -1334,12 +1632,24 @@
           });
         }else{
           const status = PRESELECT_STATUS || (COLUMNS[0] || 'ريلز - كاش');
+
+          /* حساب order جديد في هذا العمود */
+          let maxOrder = 0;
+          TASKS.filter(t=> t.status === status).forEach(t=>{
+            if(typeof t.order === 'number' && t.order > maxOrder){
+              maxOrder = t.order;
+            }
+          });
+          const nextOrder = maxOrder + 1 || 1;
+
           await addDoc(collection(db,'tasks'), {
             spaceId: CURRENT_CAMPAIGN,
             name,
             description,
             due,
             status,
+            links,
+            order: nextOrder,
             assignees: assigneesPayload,
             assignee: singleAssignee,
             assigneesNames,
@@ -1350,8 +1660,18 @@
         }
         closeTaskModal();
       }catch(e){
-        alert('⚠️ فشل حفظ التاسك: ' + e.message);
+        alert('⚠ فشل حفظ التاسك: ' + e.message);
       }
+    };
+
+    /* زر إضافة عمود جديد (يضيف في نهاية المصفوفة) */
+    btnAddColumn.onclick = async ()=>{
+      if(!CURRENT_CAMPAIGN) return alert('اختر حملة أولاً');
+      const title = prompt('اسم العمود الجديد:');
+      if(!title) return;
+      COLUMNS.push(title);
+      await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { columns:COLUMNS });
+      renderBoard();
     };
 
   </script>
@@ -1362,3 +1682,4 @@
 
 </body>
 </html>
+```

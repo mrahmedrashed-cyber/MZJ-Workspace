@@ -64,6 +64,11 @@
     .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);display:inline-flex;align-items:center;gap:6px}
     .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
     .small{font-size:12px;color:var(--muted)}
+    /* تأثير الكارت عند السحب فوقه لإعادة الترتيب */
+    .card.drag-over{
+      outline:2px dashed #e5d2c6;
+      outline-offset:2px;
+    }
 
     /* Modal */
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;place-items:center;padding:16px;z-index:99}
@@ -617,7 +622,8 @@
     });
 
     btnSpaceManage?.addEventListener('click', async ()=>{
-      if(!IS_ADMIN || !CURRENT_SPACE) return;
+      if(!IS_ADMIN) return;
+      if(!CURRENT_SPACE) return alert('اختر Space أولاً');
       const action = prompt('اكتب:\nrename لإعادة التسمية\narchive لأرشفة الـSpace');
       if(!action) return;
       if(action.toLowerCase()==='rename'){
@@ -1101,7 +1107,8 @@
         const id = doneBtn.dataset.id;
         if(!id) return;
         try{
-          await updateDoc(doc(db,'tasks', id), { status: "تم التنفيذ" });
+          const newOrder = computeOrderAtEnd("تم التنفيذ");
+          await updateTaskStatusAndOrder(id, "تم التنفيذ", newOrder);
         }catch(err){
           console.error(err);
           alert('⚠️ تعذر تحديث حالة التاسك: '+(err?.message||err));
@@ -1162,11 +1169,8 @@
           e.preventDefault(); zone.classList.remove('drag');
           const cardId = e.dataTransfer.getData(MIME_TASK);
           const newStatus = zone.dataset.zone;
-          try{
-            await updateDoc(doc(db,'tasks', cardId), { status:newStatus });
-          }catch(err){
-            alert('⚠️ تعذر النقل: '+err.message);
-          }
+          const newOrder = computeOrderAtEnd(newStatus);
+          await updateTaskStatusAndOrder(cardId, newStatus, newOrder);
         });
       });
     }
@@ -1189,6 +1193,67 @@
       return firstTwo + `<span class="small">+${more}</span>`;
     }
 
+    /* === Helpers لترتيب مهام الحملات === */
+    function taskOrderValue(t){
+      if(typeof t.order === 'number') return t.order;
+      if(t.createdAt?.seconds) return t.createdAt.seconds;
+      return 0;
+    }
+
+    async function updateTaskStatusAndOrder(taskId, newStatus, newOrder){
+      const patch = { status:newStatus };
+      if(typeof newOrder === 'number' && !Number.isNaN(newOrder)){
+        patch.order = newOrder;
+      }
+      try{
+        await updateDoc(doc(db,'tasks', taskId), patch);
+      }catch(err){
+        console.error(err);
+        alert('⚠️ تعذر النقل: '+(err?.message||err));
+      }
+    }
+
+    function computeOrderForDrop(status, targetTaskId, position){
+      const tasks = TASKS_CAMPAIGNS
+        .filter(t=>t.status===status)
+        .slice()
+        .sort((a,b)=> taskOrderValue(a)-taskOrderValue(b));
+
+      if(!tasks.length) return 1;
+
+      const idx = tasks.findIndex(t=>t.id===targetTaskId);
+      if(idx===-1){
+        const last = tasks[tasks.length-1];
+        return taskOrderValue(last)+1;
+      }
+
+      const target = tasks[idx];
+      const targetVal = taskOrderValue(target);
+
+      if(position === 'before'){
+        if(idx===0){
+          return targetVal - 1;
+        }
+        const prev = tasks[idx-1];
+        const prevVal = taskOrderValue(prev);
+        return (prevVal + targetVal)/2;
+      }else{
+        if(idx===tasks.length-1){
+          return targetVal + 1;
+        }
+        const next = tasks[idx+1];
+        const nextVal = taskOrderValue(next);
+        return (targetVal + nextVal)/2;
+      }
+    }
+
+    function computeOrderAtEnd(status){
+      const tasks = TASKS_CAMPAIGNS.filter(t=>t.status===status);
+      if(!tasks.length) return 1;
+      let max = tasks.reduce((m,t)=> Math.max(m, taskOrderValue(t)), 0);
+      return max + 1;
+    }
+
     function renderTasksCampaigns(){
       const board=boardCampaigns;
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
@@ -1203,7 +1268,8 @@
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
         if(!zone) return;
         const list = byStatus[status]||[];
-        list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+        // الترتيب حسب order ثم createdAt
+        list.sort((a,b)=> taskOrderValue(a)-taskOrderValue(b));
         list.forEach(t=>{
           const card=document.createElement('article');
           card.className='card';
@@ -1244,6 +1310,33 @@
             e.dataTransfer.setData(MIME_TASK, t.id);
             e.dataTransfer.setData('text/plain', t.id);
           });
+
+          // إعادة ترتيب داخل العمود: إفلات على الكارت نفسه
+          card.addEventListener('dragover', e=>{
+            if(e.dataTransfer.types.includes(MIME_TASK)){
+              e.preventDefault();
+              card.classList.add('drag-over');
+            }
+          });
+          card.addEventListener('dragleave', ()=>{
+            card.classList.remove('drag-over');
+          });
+          card.addEventListener('drop', async (e)=>{
+            if(!e.dataTransfer.types.includes(MIME_TASK)) return;
+            e.preventDefault();
+            card.classList.remove('drag-over');
+            const draggedId = e.dataTransfer.getData(MIME_TASK);
+            if(!draggedId || draggedId === t.id) return;
+            const zoneEl = card.closest('.dropzone');
+            if(!zoneEl) return;
+            const status = zoneEl.dataset.zone;
+            const rect = card.getBoundingClientRect();
+            const mid = rect.top + rect.height/2;
+            const position = e.clientY < mid ? 'before' : 'after';
+            const newOrder = computeOrderForDrop(status, t.id, position);
+            await updateTaskStatusAndOrder(draggedId, status, newOrder);
+          });
+
           card.addEventListener('click', (e)=>{
             if(e.target.closest('.campaign-done-btn')) return;
             openDetail(t);
@@ -1312,7 +1405,9 @@
           links: [],
           createdBy: CURRENT_USER?.uid || null,
           createdAt: serverTimestamp(),
-          active:true
+          active:true,
+          // ترتيب مبدئي جديد
+          order: Date.now()
         };
         await addDoc(collection(db,'tasks'), payload);
         alert('✅ تم حفظ التاسك');

@@ -982,7 +982,7 @@
       }
     }
 
-    // استماع لحملات type="campaign"
+    // استماع لحملات type="campaign" مع اختيار حملة ثابتة افتراضية
     onSnapshot(
       query(collection(db,'spaces'), where('type','==','campaign')),
       snap=>{
@@ -993,22 +993,47 @@
           arr.push({ id:d.id, ...data });
           SPACES_CACHE.set(d.id, data.name||d.id);
         });
-        arr.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+
+        // اختيار الحملة الافتراضية:
+        // 1) لو isDefault == true
+        // 2) لو مافيه isDefault يدور على اسم يحتوي "حملة ثابتة"
+        let defaultCampaign =
+          arr.find(c=>c.isDefault === true) ||
+          arr.find(c=>(c.name||'').includes('حملة ثابتة'));
+
+        if(defaultCampaign){
+          arr.sort((a,b)=>{
+            if(a.id === defaultCampaign.id) return -1;
+            if(b.id === defaultCampaign.id) return 1;
+            return (b.createdAt?.seconds||0)-(a.createdAt?.seconds||0);
+          });
+        }else{
+          arr.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+        }
+
         CAMPAIGNS = arr;
-        fillCampaignDropdown(CAMPAIGNS, CURRENT_CAMPAIGN);
 
         if(!CAMPAIGNS.length){
           CURRENT_CAMPAIGN = null;
+          fillCampaignDropdown([], null);
           boardCampaigns.innerHTML='';
           setCampaignDescription("لا توجد حملات حالياً — أنشئ حملة جديدة من الزر.");
           if(unsubTasksCampaigns){ unsubTasksCampaigns(); unsubTasksCampaigns=null; }
           return;
         }
 
-        const selectedId = campaignSelect.value || CAMPAIGNS[0].id;
-        CURRENT_CAMPAIGN = selectedId;
-        const found = CAMPAIGNS.find(c=>c.id===CURRENT_CAMPAIGN);
-        CAMPAIGN_COLUMNS = found?.columns?.length ? found.columns : CAMPAIGN_DEFAULT_COLS.slice();
+        // لو مافيش حملة مختارة أو الحملة القديمة اختفت من الليستة
+        if(!CURRENT_CAMPAIGN || !CAMPAIGNS.find(c=>c.id===CURRENT_CAMPAIGN)){
+          CURRENT_CAMPAIGN = defaultCampaign
+            ? defaultCampaign.id
+            : (CAMPAIGNS[0]?.id || null);
+        }
+
+        fillCampaignDropdown(CAMPAIGNS, CURRENT_CAMPAIGN);
+
+        const found = CAMPAIGNS.find(c=>c.id===CURRENT_CAMPAIGN) || CAMPAIGNS[0];
+        CURRENT_CAMPAIGN   = found?.id || null;
+        CAMPAIGN_COLUMNS   = found?.columns?.length ? found.columns : CAMPAIGN_DEFAULT_COLS.slice();
         renderBoardSkeletonCampaigns();
         listenTasksCampaigns();
         updateCampaignInfo(found);
@@ -1055,7 +1080,8 @@
             type:'campaign',
             columns: CAMPAIGN_DEFAULT_COLS,
             createdAt: serverTimestamp(),
-            active: true
+            active: true,
+            isDefault: false // الحملة الجديدة ليست ثابتة إلا لو عدّلتها من Firestore
           });
           CURRENT_CAMPAIGN = ref.id;
           CAMPAIGN_COLUMNS = CAMPAIGN_DEFAULT_COLS.slice();

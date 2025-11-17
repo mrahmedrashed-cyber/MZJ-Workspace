@@ -156,10 +156,14 @@
       background:#fff;
       border:1px solid #eee;
       border-radius:12px;
-      padding:8px;
+      padding:10px 10px 12px;
       box-shadow:0 8px 20px rgba(62,36,32,.06);
       cursor:pointer;
       transition:.12s transform, .12s box-shadow;
+      min-height:120px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
     }
     .card:hover{
       transform:translateY(-2px);
@@ -169,9 +173,21 @@
       margin:0;
       color:var(--brown);
       font-size:15px;
-      line-height:1.4
+      line-height:1.4;
+      font-weight:800;
     }
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .card-desc{
+      margin:0;
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.5;
+      display:-webkit-box;
+      -webkit-line-clamp:3;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      word-wrap:break-word;
+    }
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
     .badge{
       padding:4px 8px;
       border-radius:999px;
@@ -368,7 +384,23 @@
     }
 
     .chips{display:flex;gap:8px;flex-wrap:wrap}
-    .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #eee;border-radius:999px;background:#fff}
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border:1px solid #eee;
+      border-radius:999px;
+      background:#fff;
+      font-size:12px;
+    }
+    .chip-remove{
+      cursor:pointer;
+      font-size:12px;
+      color:#b91c1c;
+      padding-inline:2px;
+    }
+
     .dropdown-menu{
       position:absolute;
       background:#fff;
@@ -386,6 +418,10 @@
       border-bottom:1px solid #f3f3f3;
       cursor:pointer;
       font-size:13px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:6px;
     }
     .dd-item:hover{background:#fff8ef}
 
@@ -613,16 +649,16 @@
 
         <div class="grid2">
           <div style="position:relative">
-            <label>المسؤول</label>
+            <label>المسؤولون (يمكن اختيار أكثر من عضو)</label>
             <input id="tAssigneeSearch" placeholder="ابحث باسم العضو…">
             <div id="assigneeMenu" class="dropdown-menu" style="right:0;top:64px;"></div>
             <div id="assigneeChip" class="chips"></div>
           </div>
           <div>
-            <label>لون العضو</label>
+            <label>لون العضو الرئيسي</label>
             <div class="row">
               <input id="tColor" type="color" value="#bc8f74" style="width:70px;height:44px;padding:4px">
-              <span class="muted" style="font-size:12px">يظهر على البطاقة ويحفظ للعضو</span>
+              <span class="muted" style="font-size:12px">يظهر على البطاقة ويحفظ لأول عضو.</span>
             </div>
           </div>
         </div>
@@ -675,7 +711,7 @@
     let quillEdit = null;
 
     /* Task modal state */
-    let SELECTED_ASSIGNEE=null;
+    let SELECTED_ASSIGNEES=[];   // ← أكتر من عضو
     let EDITING_TASK=null;
     let PRESELECT_STATUS=null;
 
@@ -1015,9 +1051,7 @@
             if(!nn || nn === status) return;
             COLUMNS = COLUMNS.map(c=> c===status ? nn : c);
             await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { columns:COLUMNS });
-            // مبدئيًا لن نعدل حالة المهام القديمة (هتظهر باسم الحالة القديمة لو رجعناها)
             renderBoard();
-            renderTasks();
           }else if(act === 'delete'){
             if(COLUMNS.length <= 1){
               alert("لا يمكن حذف آخر عمود.");
@@ -1027,7 +1061,6 @@
             COLUMNS = COLUMNS.filter(c=> c!==status);
             await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { columns:COLUMNS });
             renderBoard();
-            renderTasks();
           }
         };
       });
@@ -1068,15 +1101,34 @@
           card.className='card';
           card.dataset.id=t.id;
 
+          const assignees = Array.isArray(t.assignees) && t.assignees.length
+            ? t.assignees
+            : (t.assignee ? [t.assignee] : []);
+
+          let assigneesHtml = '';
+          if(assignees.length){
+            const shown = assignees.slice(0,3);
+            assigneesHtml = shown.map(a=>`
+              <span class="badge">
+                <span class="dot" style="background:${a.color || '#bc8f74'}"></span>
+                ${a.name || ''}
+              </span>
+            `).join('');
+            if(assignees.length > 3){
+              assigneesHtml += `<span class="small">+${assignees.length - 3}</span>`;
+            }
+          }
+
+          const descText = (t.description || '').replace(/\s+/g,' ').trim();
+          const descHtml = descText
+            ? `<p class="card-desc">${descText}</p>`
+            : '';
+
           card.innerHTML=`
             <h4>${t.name || '-'}</h4>
-            <div class="row" style="margin-top:6px">
-              ${t.assignee ? `
-                <span class="badge">
-                  <span class="dot" style="background:${t.assignee.color || '#bc8f74'}"></span>
-                  ${t.assignee.name || ''}
-                </span>
-              `:''}
+            ${descHtml}
+            <div class="row">
+              ${assigneesHtml}
               ${t.due ? `<span class="small">📅 ${t.due}</span>` : '' }
             </div>
           `;
@@ -1086,6 +1138,31 @@
         });
       });
     }
+
+    /* Assignee chips render */
+    function renderAssigneeChips(){
+      if(!SELECTED_ASSIGNEES.length){
+        assigneeChip.innerHTML = '';
+        return;
+      }
+      assigneeChip.innerHTML = SELECTED_ASSIGNEES.map(a=>`
+        <span class="chip" data-uid="${a.uid}">
+          <span class="dot" style="background:${a.color || '#bc8f74'};width:10px;height:10px;border-radius:999px"></span>
+          <span>${a.name}</span>
+          <span class="chip-remove" title="إزالة">×</span>
+        </span>
+      `).join('');
+    }
+
+    assigneeChip.addEventListener('click',(e)=>{
+      const removeBtn = e.target.closest('.chip-remove');
+      if(!removeBtn) return;
+      const chip = removeBtn.closest('.chip');
+      const uid  = chip?.dataset.uid;
+      if(!uid) return;
+      SELECTED_ASSIGNEES = SELECTED_ASSIGNEES.filter(a=> a.uid !== uid);
+      renderAssigneeChips();
+    });
 
     /* Assignee menu */
     function renderAssigneeMenu(filter){
@@ -1107,14 +1184,15 @@
           <span class="small">(${u.role})</span>
         `;
         it.onclick = ()=>{
-          SELECTED_ASSIGNEE = {...u};
-          assigneeChip.innerHTML = `
-            <span class="badge">
-              <span class="dot" style="background:${u.color}"></span>
-              ${u.name}
-            </span>
-          `;
-          tColor.value = u.color;
+          const exists = SELECTED_ASSIGNEES.some(a=> a.uid === u.uid);
+          if(!exists){
+            SELECTED_ASSIGNEES.push({...u});
+            // أوّل عضو ياخد لون الـ input الحالي
+            if(SELECTED_ASSIGNEES.length === 1){
+              SELECTED_ASSIGNEES[0].color = (tColor.value || u.color || '#bc8f74');
+            }
+            renderAssigneeChips();
+          }
           assigneeMenu.style.display='none';
         };
         assigneeMenu.appendChild(it);
@@ -1137,7 +1215,7 @@
 
     /* Task modal handlers */
     function openTaskModal(opts={}){
-      SELECTED_ASSIGNEE=null;
+      SELECTED_ASSIGNEES=[];
       EDITING_TASK=null;
       PRESELECT_STATUS=null;
 
@@ -1157,19 +1235,20 @@
         tName.value = t.name || '';
         tDue.value  = t.due  || '';
         tDesc.value = t.description || '';
-        if(t.assignee){
-          SELECTED_ASSIGNEE = {
-            uid:t.assignee.uid,
-            name:t.assignee.name,
-            color:t.assignee.color || '#bc8f74'
-          };
-          assigneeChip.innerHTML = `
-            <span class="badge">
-              <span class="dot" style="background:${SELECTED_ASSIGNEE.color}"></span>
-              ${SELECTED_ASSIGNEE.name}
-            </span>
-          `;
-          tColor.value = SELECTED_ASSIGNEE.color;
+
+        const assignees = Array.isArray(t.assignees) && t.assignees.length
+          ? t.assignees
+          : (t.assignee ? [t.assignee] : []);
+
+        if(assignees.length){
+          SELECTED_ASSIGNEES = assignees.map(a=>({
+            uid:a.uid,
+            name:a.name,
+            color:a.color || '#bc8f74'
+          }));
+          // لو في عضو رئيسي خليه ياخد لون input
+          tColor.value = SELECTED_ASSIGNEES[0].color;
+          renderAssigneeChips();
         }
       }else{
         taskModalTitle.textContent = 'تاسك جديد';
@@ -1194,11 +1273,29 @@
 
       const due = tDue.value || null;
       const description = tDesc.value || null;
-      const color = (tColor.value || '#bc8f74').trim();
+      const mainColor = (tColor.value || '#bc8f74').trim();
 
-      if(SELECTED_ASSIGNEE){
-        await updateDoc(doc(db,'users', SELECTED_ASSIGNEE.uid), { color });
+      // عدّل لون أول عضو في الليست على حسب الـ input
+      if(SELECTED_ASSIGNEES.length){
+        SELECTED_ASSIGNEES = SELECTED_ASSIGNEES.map((a,idx)=>({
+          ...a,
+          color: idx===0 ? mainColor : (a.color || mainColor)
+        }));
       }
+
+      // حدّث ألوان المستخدمين في users
+      for(const u of SELECTED_ASSIGNEES){
+        try{
+          await updateDoc(doc(db,'users', u.uid), { color:u.color || mainColor });
+        }catch(e){}
+      }
+
+      const assigneesPayload = SELECTED_ASSIGNEES.map(a=>({
+        uid:a.uid,
+        name:a.name,
+        color:a.color || mainColor
+      }));
+      const singleAssignee = assigneesPayload[0] || null;
 
       try{
         if(EDITING_TASK){
@@ -1206,11 +1303,8 @@
             name,
             description,
             due,
-            assignee: SELECTED_ASSIGNEE ? {
-              uid:SELECTED_ASSIGNEE.uid,
-              name:SELECTED_ASSIGNEE.name,
-              color
-            } : null
+            assignees: assigneesPayload,
+            assignee: singleAssignee
           });
         }else{
           const status = PRESELECT_STATUS || (COLUMNS[0] || 'ريلز - كاش');
@@ -1220,11 +1314,8 @@
             description,
             due,
             status,
-            assignee: SELECTED_ASSIGNEE ? {
-              uid:SELECTED_ASSIGNEE.uid,
-              name:SELECTED_ASSIGNEE.name,
-              color
-            } : null,
+            assignees: assigneesPayload,
+            assignee: singleAssignee,
             createdBy: CURRENT_USER?.uid || null,
             createdAt: serverTimestamp()
           });

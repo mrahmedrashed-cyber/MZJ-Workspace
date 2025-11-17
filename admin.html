@@ -156,91 +156,37 @@
       background:#fff;
       border:1px solid #eee;
       border-radius:12px;
-      padding:8px 9px 10px;
+      padding:10px 10px 12px;
       box-shadow:0 8px 20px rgba(62,36,32,.06);
       cursor:pointer;
       transition:.12s transform, .12s box-shadow;
-      min-height:80px;
+      min-height:120px;
       display:flex;
       flex-direction:column;
-      gap:4px;
-      font-size:13px;
+      gap:6px;
     }
     .card:hover{
       transform:translateY(-2px);
       box-shadow:0 10px 24px rgba(62,36,32,.12);
     }
-
-    .card-top{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:6px;
-    }
-
     .card h4{
       margin:0;
       color:var(--brown);
-      font-size:14px;
+      font-size:15px;
       line-height:1.4;
       font-weight:800;
     }
-
-    .card-actions{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-      margin-inline-start:4px;
-    }
-    .card-move{
-      border:1px solid #e5e7eb;
-      border-radius:6px;
-      background:#fff;
-      font-size:10px;
-      padding:2px 4px;
-      cursor:pointer;
-      line-height:1;
-    }
-    .card-move:hover{
-      background:#fff8ef;
-      border-color:#e5d2c6;
-    }
-
     .card-desc{
-      margin:2px 0 0;
-      font-size:12px;
+      margin:0;
+      font-size:13px;
       color:var(--muted);
-      line-height:1.4;
+      line-height:1.5;
       white-space:pre-wrap;
-      max-height:3.4em; /* سطرين تقريبًا */
-      overflow:hidden;
-      display:-webkit-box;
-      -webkit-line-clamp:2;
-      -webkit-box-orient:vertical;
-      border:none;
-      padding:0;
-      background:transparent;
-    }
-
-    .links-row{
-      display:flex;
-      flex-wrap:wrap;
-      gap:4px;
-      margin-top:2px;
-    }
-    .task-link{
-      font-size:11px;
-      padding:3px 6px;
-      border-radius:999px;
-      border:1px dashed #e5d2c6;
+      border:1px solid #f2e7df;
+      border-radius:8px;
+      padding:6px 8px;
       background:#fffaf5;
-      color:var(--brown);
-      text-decoration:none;
     }
-    .task-link:hover{
-      background:#f7e9e0;
-    }
-
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
     .badge{
       padding:4px 8px;
@@ -345,12 +291,12 @@
     }
     textarea{min-height:90px;resize:vertical}
 
-    /* مربع وصف التاسك (مش كبير) */
+    /* تكبير مربع وصف التاسك */
     #tDesc{
-      min-height:120px;
-      padding:10px;
+      min-height:220px;
+      padding:14px;
       font-size:14px;
-      line-height:1.6;
+      line-height:1.8;
     }
 
     input:focus,select:focus,textarea:focus{
@@ -710,14 +656,6 @@
           <textarea id="tDesc" placeholder="اكتب تفاصيل المهمة…"></textarea>
         </div>
 
-        <div>
-          <label>روابط مرتبطة (اختياري)</label>
-          <textarea id="tLinks" placeholder="الصق كل رابط في سطر مستقل…"></textarea>
-          <div class="date-helper">
-            مثال: روابط Google Drive، Trello، مجلدات الحملة… إلخ.
-          </div>
-        </div>
-
         <div class="grid2">
           <div style="position:relative">
             <label>المسؤولون (يمكن اختيار أكثر من عضو)</label>
@@ -810,7 +748,6 @@
     const tName          = document.getElementById('tName');
     const tDue           = document.getElementById('tDue');
     const tDesc          = document.getElementById('tDesc');
-    const tLinks         = document.getElementById('tLinks');
     const tAssigneeSearch= document.getElementById('tAssigneeSearch');
     const assigneeMenu   = document.getElementById('assigneeMenu');
     const assigneeChip   = document.getElementById('assigneeChip');
@@ -828,24 +765,6 @@
         modules: { toolbar: '#editDescToolbar' }
       });
     });
-
-    /* Small helper for HTML escaping */
-    function escapeHtml(str){
-      return (str || '').replace(/[&<>"']/g, c => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-      }[c]));
-    }
-
-    /* Sorting helper for tasks in a column */
-    function taskSort(a,b){
-      const ao = (typeof a.order === 'number')
-        ? a.order
-        : 999999 + (a.createdAt?.seconds || 0);
-      const bo = (typeof b.order === 'number')
-        ? b.order
-        : 999999 + (b.createdAt?.seconds || 0);
-      return ao - bo;
-    }
 
     /* Auth */
     document.getElementById('btnLogout').onclick = async ()=>{
@@ -1171,35 +1090,6 @@
       });
     }
 
-    /* Move task up/down within same column */
-    async function moveTask(taskId, status, dir){
-      const colTasks = TASKS
-        .filter(t=> t.status === status)
-        .slice()
-        .sort(taskSort);
-
-      const idx = colTasks.findIndex(t=> t.id === taskId);
-      if(idx === -1) return;
-      if(dir === 'up' && idx === 0) return;
-      if(dir === 'down' && idx === colTasks.length - 1) return;
-
-      const otherIdx = dir === 'up' ? idx - 1 : idx + 1;
-      const cur   = colTasks[idx];
-      const other = colTasks[otherIdx];
-
-      const curOrder   = (typeof cur.order === 'number') ? cur.order : (idx+1);
-      const otherOrder = (typeof other.order === 'number') ? other.order : (otherIdx+1);
-
-      try{
-        await Promise.all([
-          updateDoc(doc(db,'tasks', cur.id),   { order: otherOrder }),
-          updateDoc(doc(db,'tasks', other.id), { order: curOrder })
-        ]);
-      }catch(e){
-        console.error('moveTask error', e);
-      }
-    }
-
     /* Render Tasks */
     function renderTasks(){
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
@@ -1215,10 +1105,7 @@
       COLUMNS.forEach(status=>{
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
         if(!zone) return;
-
-        const list = (grouped[status] || []).slice().sort(taskSort);
-
-        list.forEach(t=>{
+        (grouped[status]||[]).forEach(t=>{
           const card=document.createElement('article');
           card.className='card';
           card.dataset.id=t.id;
@@ -1243,52 +1130,19 @@
 
           const descText = (t.description || '').trim();
           const descHtml = descText
-            ? `<p class="card-desc">${escapeHtml(descText)}</p>`
+            ? `<p class="card-desc">${descText}</p>`
             : '';
 
-          let linksHtml = '';
-          if(Array.isArray(t.links) && t.links.length){
-            const limited = t.links.slice(0,3);
-            linksHtml = `
-              <div class="links-row">
-                ${limited.map((l,idx)=>`
-                  <a href="${escapeHtml(l)}" target="_blank" rel="noopener noreferrer" class="task-link">
-                    🔗 رابط ${idx+1}
-                  </a>
-                `).join('')}
-                ${t.links.length > 3 ? `<span class="small">+${t.links.length - 3}</span>` : ''}
-              </div>
-            `;
-          }
-
           card.innerHTML=`
-            <div class="card-top">
-              <h4>${escapeHtml(t.name || '-')}</h4>
-              <div class="card-actions">
-                <button class="card-move" data-dir="up" title="تحريك لأعلى">▲</button>
-                <button class="card-move" data-dir="down" title="تحريك لأسفل">▼</button>
-              </div>
-            </div>
-            ${linksHtml}
+            <h4>${t.name || '-'}</h4>
             ${descHtml}
             <div class="row">
               ${assigneesHtml}
-              ${t.due ? `<span class="small">📅 ${escapeHtml(t.due)}</span>` : '' }
+              ${t.due ? `<span class="small">📅 ${t.due}</span>` : '' }
             </div>
           `;
 
-          /* فتح المودال عند الضغط على الكارت */
           card.onclick = ()=> openTaskModal({ edit:t });
-
-          /* أزرار التحريك لأعلى/أسفل */
-          card.querySelectorAll('.card-move').forEach(btn=>{
-            btn.addEventListener('click', (ev)=>{
-              ev.stopPropagation();
-              const dir = btn.dataset.dir;
-              moveTask(t.id, status, dir);
-            });
-          });
-
           zone.appendChild(card);
         });
       });
@@ -1392,7 +1246,6 @@
       tName.value='';
       tDue.value='';
       tDesc.value='';
-      tLinks.value='';
       assigneeChip.innerHTML='';
       tAssigneeSearch.value='';
       tColor.value='#bc8f74';
@@ -1406,10 +1259,6 @@
         tName.value = t.name || '';
         tDue.value  = t.due  || '';
         tDesc.value = t.description || '';
-
-        if(Array.isArray(t.links) && t.links.length){
-          tLinks.value = t.links.join('\n');
-        }
 
         const assignees = Array.isArray(t.assignees) && t.assignees.length
           ? t.assignees
@@ -1450,16 +1299,6 @@
       const description = tDesc.value || null;
       const mainColor = (tColor.value || '#bc8f74').trim();
 
-      /* Parse links */
-      const linksText = (tLinks.value || '').trim();
-      let links = [];
-      if(linksText){
-        links = linksText
-          .split('\n')
-          .map(s=>s.trim())
-          .filter(Boolean);
-      }
-
       if(SELECTED_ASSIGNEES.length){
         SELECTED_ASSIGNEES = SELECTED_ASSIGNEES.map((a,idx)=>({
           ...a,
@@ -1488,7 +1327,6 @@
             name,
             description,
             due,
-            links,
             assignees: assigneesPayload,
             assignee: singleAssignee,
             assigneesNames,
@@ -1496,24 +1334,12 @@
           });
         }else{
           const status = PRESELECT_STATUS || (COLUMNS[0] || 'ريلز - كاش');
-
-          /* حساب order جديد في هذا العمود */
-          let maxOrder = 0;
-          TASKS.filter(t=> t.status === status).forEach(t=>{
-            if(typeof t.order === 'number' && t.order > maxOrder){
-              maxOrder = t.order;
-            }
-          });
-          const nextOrder = maxOrder + 1 || 1;
-
           await addDoc(collection(db,'tasks'), {
             spaceId: CURRENT_CAMPAIGN,
             name,
             description,
             due,
             status,
-            links,
-            order: nextOrder,
             assignees: assigneesPayload,
             assignee: singleAssignee,
             assigneesNames,

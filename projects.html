@@ -707,11 +707,22 @@
     }
 
     // إنشاء إشعارات المنشن
-    async function createMentionNotifications({taskId, taskName, taskDescription, spaceId, status}){
+    async function createMentionNotifications({taskId, taskName, taskDescription, spaceId, status, assignees}){
       const text = `${taskName||''}\n${taskDescription||''}`;
       const tags = extractMentions(text);
-      if(!tags.length) return;
-      const recipients = resolveMentionRecipients(tags).filter(u=> u.uid !== (CURRENT_USER?.uid||''));
+      let recipients = [];
+
+      // أولاً: لو في منشن مكتوب بـ @ في الاسم أو الوصف نستخدمه
+      if(tags.length){
+        recipients = resolveMentionRecipients(tags).filter(u=> u.uid !== (CURRENT_USER?.uid||''));
+      }
+      // ثانياً: لو مافيهش @ منشن، نستخدم أعضاء المهمة المختارين كـ ريسيفرز
+      else if(Array.isArray(assignees) && assignees.length){
+        recipients = assignees
+          .map(a => USERS.find(u => u.uid === a.uid))
+          .filter(u => u && u.uid !== (CURRENT_USER?.uid||''));
+      }
+
       if(!recipients.length) return;
 
       const notifCol = collection(db,'notifications');
@@ -1644,7 +1655,8 @@
           taskName: name,
           taskDescription: description,
           spaceId: targetSpaceId,
-          status
+          status,
+          assignees: assigneesPayload
         });
 
         alert('✅ تم حفظ التاسك');

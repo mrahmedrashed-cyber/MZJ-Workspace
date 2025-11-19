@@ -1420,6 +1420,13 @@
         e.stopPropagation();
         const id = doneBtn.dataset.id;
         if(!id) return;
+
+        const task = TASKS_CAMPAIGNS.find(t=> t.id === id);
+        if(!task || !canUserMarkCampaignDone(task)){
+          alert('هذا الزر متاح للأعضاء المنشن في المهمة أو الأدمِن فقط.');
+          return;
+        }
+
         try{
           const newOrder = computeOrderAtEnd("تم التنفيذ");
           await updateTaskStatusAndOrder(id, "تم التنفيذ", newOrder);
@@ -1488,6 +1495,18 @@
     }
 
     function renderMembersBadges(members){
+    function isCurrentUserTaskMember(task){
+      const members = taskMembersArray(task);
+      const myUid   = CURRENT_USER?.uid || '';
+      return members.some(m => (m.uid === myUid));
+    }
+
+    function canUserMarkCampaignDone(task){
+      if(IS_ADMIN) return true;
+      return isCurrentUserTaskMember(task);
+    }
+
+
       if(!members.length) return '';
       if(members.length<=2){
         return members.map(m=>`
@@ -1601,7 +1620,8 @@
           `;
           footer.appendChild(left);
 
-          if(IS_ADMIN){
+          const canDone = canUserMarkCampaignDone(t);
+          if(t.status !== "تم التنفيذ" && canDone){
             const right = document.createElement('div');
             const btn = document.createElement('button');
             btn.className = 'btn secondary xs campaign-done-btn';

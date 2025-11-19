@@ -1169,6 +1169,7 @@
     function renderBoard(){
       board.innerHTML='';
 
+      // الأعمدة العادية القادمة من الحملة
       COLUMNS.forEach((col, index)=>{
         const sec=document.createElement('section');
         sec.className='col';
@@ -1192,6 +1193,26 @@
 
         board.appendChild(sec);
       });
+
+      // عمود ثابت لــ "تم التنفيذ" يظهر دائمًا في نهاية البورد
+      (function(){
+        const doneCol = 'تم التنفيذ';
+        const sec=document.createElement('section');
+        sec.className='col';
+        sec.dataset.status=doneCol;
+
+        sec.innerHTML = `
+          <div class="col-head">
+            <span class="col-title">${doneCol}</span>
+            <div class="col-actions" style="display:none"></div>
+          </div>
+          <div class="col-body">
+            <div class="dropzone" data-zone="${doneCol}"></div>
+          </div>
+        `;
+
+        board.appendChild(sec);
+      })();
 
       attachColumnActions();
       attachDragAndDrop();
@@ -1282,14 +1303,20 @@
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
 
       const grouped={};
+      // نحضر الأعمدة الديناميكية
       COLUMNS.forEach(c=> grouped[c]=[]);
+      // نتأكد أن "تم التنفيذ" له مجموعة خاصة
+      grouped['تم التنفيذ'] = grouped['تم التنفيذ'] || [];
 
       TASKS.forEach(t=>{
         if(!grouped[t.status]) grouped[t.status]=[];
         grouped[t.status].push(t);
       });
 
-      COLUMNS.forEach(status=>{
+      // نعرض كل الأعمدة + عمود "تم التنفيذ"
+      const allStatuses = COLUMNS.concat('تم التنفيذ');
+
+      allStatuses.forEach(status=>{
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
         if(!zone) return;
 

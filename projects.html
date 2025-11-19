@@ -456,7 +456,7 @@
         </div>
       </div>
       <div class="footer">
-        <button class="btn secondary" id="btnMarkReviewed">✅ تم للمراجعة</button>
+        <button class="btn secondary" id="btnMarkReviewed">✅ تم التنفيذ</button>
         <span style="flex:1"></span>
         <button class="btn" id="btnEditTask" style="display:none">تعديل</button>
         <button class="btn danger" id="btnDeleteTask" style="display:none">حذف</button>
@@ -1476,6 +1476,21 @@
           }
         });
       });
+      // عمود ثابت لــ "تم التنفيذ" في آخر اللوحة
+      (function(){
+        const doneCol = 'تم التنفيذ';
+        const sec=document.createElement('section');
+        sec.className='col';
+        sec.dataset.status=doneCol;
+        sec.innerHTML = `
+          <div class="col-head" style="cursor:default">
+            <span class="col-title">${doneCol}</span>
+            <div class="col-actions" style="display:none"></div>
+          </div>
+          <div class="col-body"><div class="dropzone" data-zone="${doneCol}"></div></div>
+        `;
+        board.appendChild(sec);
+      })();
 
       const doneCol = document.createElement('section');
       doneCol.className = 'col campaign-done-col';
@@ -1975,7 +1990,13 @@
     document.getElementById('btnMarkReviewed').addEventListener('click', async ()=>{
       if(!OPEN_TASK) return;
       try{
-        await updateDoc(doc(db,'tasks', OPEN_TASK.id), { status: "تحت المراجعة" });
+        const isCampaignTask = CURRENT_CAMPAIGN && OPEN_TASK.spaceId === CURRENT_CAMPAIGN;
+        if(isCampaignTask){
+          const newOrder = computeOrderAtEnd("تم التنفيذ");
+          await updateTaskStatusAndOrder(OPEN_TASK.id, "تم التنفيذ", newOrder);
+        }else{
+          await updateDoc(doc(db,'tasks', OPEN_TASK.id), { status: "تحت المراجعة" });
+        }
         document.getElementById('detailModal').classList.remove('show');
       }catch(e){ alert('⚠️ تعذر تحديث الحالة: '+e.message); }
     });

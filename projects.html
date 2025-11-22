@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -456,7 +457,7 @@
         </div>
       </div>
       <div class="footer">
-        <button class="btn secondary" id="btnMarkReviewed">✅ تم التنفيذ</button>
+        <button class="btn secondary" id="btnMarkReviewed">✅ تم الانتهاء</button>
         <span style="flex:1"></span>
         <button class="btn" id="btnEditTask" style="display:none">تعديل</button>
         <button class="btn danger" id="btnDeleteTask" style="display:none">حذف</button>
@@ -1440,8 +1441,8 @@
         }
 
         try{
-          const newOrder = computeOrderAtEnd("تم التنفيذ");
-          await updateTaskStatusAndOrder(id, "تم التنفيذ", newOrder);
+          const newOrder = computeOrderAtEnd("تم الانتهاء");
+          await updateTaskStatusAndOrder(id, "تم الانتهاء", newOrder);
         }catch(err){
           console.error(err);
           alert('⚠️ تعذر تحديث حالة التاسك: '+(err?.message||err));
@@ -1476,9 +1477,9 @@
           }
         });
       });
-      // عمود ثابت لــ "تم التنفيذ" في آخر اللوحة
+      // عمود ثابت لــ "تم الانتهاء" في آخر اللوحة
       (function(){
-        const doneCol = 'تم التنفيذ';
+        const doneCol = 'تم الانتهاء';
         const sec=document.createElement('section');
         sec.className='col';
         sec.dataset.status=doneCol;
@@ -1494,12 +1495,12 @@
 
       const doneCol = document.createElement('section');
       doneCol.className = 'col campaign-done-col';
-      doneCol.dataset.status = 'تم التنفيذ';
+      doneCol.dataset.status = 'تم الانتهاء';
       doneCol.innerHTML = `
         <div class="col-head" style="cursor:default">
-          <span class="col-title">تم التنفيذ</span>
+          <span class="col-title">تم الانتهاء</span>
         </div>
-        <div class="col-body"><div class="dropzone" data-zone="تم التنفيذ"></div></div>
+        <div class="col-body"><div class="dropzone" data-zone="تم الانتهاء"></div></div>
       `;
       board.appendChild(doneCol);
 
@@ -1604,12 +1605,12 @@
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
 
       const byStatus={};
-      [...(CAMPAIGN_COLUMNS||[]), 'تم التنفيذ'].forEach(s=> byStatus[s]=[]);
+      [...(CAMPAIGN_COLUMNS||[]), 'تم الانتهاء'].forEach(s=> byStatus[s]=[]);
       TASKS_CAMPAIGNS.forEach(t=>{
         (byStatus[t.status]||(byStatus[t.status]=[])).push(t);
       });
 
-      [...(CAMPAIGN_COLUMNS||[]), 'تم التنفيذ'].forEach(status=>{
+      [...(CAMPAIGN_COLUMNS||[]), 'تم الانتهاء'].forEach(status=>{
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
         if(!zone) return;
         const list = byStatus[status]||[];
@@ -1636,12 +1637,12 @@
           footer.appendChild(left);
 
           const canDone = canUserMarkCampaignDone(t);
-          if(t.status !== "تم التنفيذ" && canDone){
+          if(t.status !== "تم الانتهاء" && canDone){
             const right = document.createElement('div');
             const btn = document.createElement('button');
             btn.className = 'btn secondary xs campaign-done-btn';
             btn.textContent = '✓';
-            btn.title = 'نقل إلى تم التنفيذ';
+            btn.title = 'نقل إلى تم الانتهاء';
             btn.dataset.id = t.id;
             right.appendChild(btn);
             footer.appendChild(right);
@@ -1992,8 +1993,8 @@
       try{
         const isCampaignTask = CURRENT_CAMPAIGN && OPEN_TASK.spaceId === CURRENT_CAMPAIGN;
         if(isCampaignTask){
-          const newOrder = computeOrderAtEnd("تم التنفيذ");
-          await updateTaskStatusAndOrder(OPEN_TASK.id, "تم التنفيذ", newOrder);
+          const newOrder = computeOrderAtEnd("تم الانتهاء");
+          await updateTaskStatusAndOrder(OPEN_TASK.id, "تم الانتهاء", newOrder);
         }else{
           await updateDoc(doc(db,'tasks', OPEN_TASK.id), { status: "تحت المراجعة" });
         }
@@ -2108,7 +2109,7 @@
       const label = dailyMonthSelect.options[dailyMonthSelect.selectedIndex]?.textContent || '';
       const countMonth = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && !t.completed && t.dayKey!=='note').length;
       const countDone  = DAILY_TASKS.filter(t=>t.monthKey===DAILY_MONTH_KEY && t.completed && t.dayKey!=='note').length;
-      dailyMeta.textContent = `${label} — مهام قيد العمل: ${countMonth} | تم التنفيذ: ${countDone}`;
+      dailyMeta.textContent = `${label} — مهام قيد العمل: ${countMonth} | تم الانتهاء: ${countDone}`;
     }
 
     function listenDailyTasks(){
@@ -2333,7 +2334,7 @@
       doneCol.className='col daily-done-col';
       doneCol.innerHTML=`
         <div class="col-head" style="cursor:default">
-          <span class="col-title">تم التنفيذ</span>
+          <span class="col-title">تم الانتهاء</span>
         </div>
         <div class="col-body">
           <div class="daily-drop" data-week="done" data-day="done"></div>

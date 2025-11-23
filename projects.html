@@ -1697,8 +1697,24 @@
       if(!CURRENT_CAMPAIGN) return;
       const qy=query(collection(db,'tasks'), where('spaceId','==', CURRENT_CAMPAIGN));
       unsubTasksCampaigns=onSnapshot(qy,(snap)=>{
-        TASKS_CAMPAIGNS=[];
-        snap.forEach(d=> TASKS_CAMPAIGNS.push({ id:d.id, ...(d.data()||{}) }));
+        const raw = [];
+        snap.forEach(d=> raw.push({ id:d.id, ...(d.data()||{}) }));
+
+        if (IS_ADMIN){
+          TASKS_CAMPAIGNS = raw;
+        } else {
+          const uid = CURRENT_USER?.uid || '';
+          const memberTasks = raw.filter(t=>{
+            if (Array.isArray(t.assigneesIds) && t.assigneesIds.includes(uid)) return true;
+            if (t.assigneeId && t.assigneeId === uid) return true;
+            const members = taskMembersArray(t);
+            return members.some(m=> m.uid === uid);
+          });
+          const pipelineStatuses = ['assigned','in_progress','changes_requested'];
+          const pipelineTasks = memberTasks.filter(t=> pipelineStatuses.includes(t.status));
+          TASKS_CAMPAIGNS = pipelineTasks.length ? pipelineTasks : memberTasks;
+        }
+
         renderTasksCampaigns();
       },(err)=>{ console.error(err); alert('⚠️ فشل قراءة التاسكات (الحملات).'); });
     }
@@ -1927,8 +1943,24 @@
       if(!CURRENT_SPACE) return;
       const qy=query(collection(db,'tasks'), where('spaceId','==', CURRENT_SPACE));
       unsubTasksSpaces=onSnapshot(qy,(snap)=>{
-        TASKS_SPACES=[];
-        snap.forEach(d=> TASKS_SPACES.push({ id:d.id, ...(d.data()||{}) }));
+        const raw = [];
+        snap.forEach(d=> raw.push({ id:d.id, ...(d.data()||{}) }));
+
+        if (IS_ADMIN){
+          TASKS_SPACES = raw;
+        } else {
+          const uid = CURRENT_USER?.uid || '';
+          const memberTasks = raw.filter(t=>{
+            if (Array.isArray(t.assigneesIds) && t.assigneesIds.includes(uid)) return true;
+            if (t.assigneeId && t.assigneeId === uid) return true;
+            const members = taskMembersArray(t);
+            return members.some(m=> m.uid === uid);
+          });
+          const pipelineStatuses = ['assigned','in_progress','changes_requested'];
+          const pipelineTasks = memberTasks.filter(t=> pipelineStatuses.includes(t.status));
+          TASKS_SPACES = pipelineTasks.length ? pipelineTasks : memberTasks;
+        }
+
         renderTasksSpaces();
         if(OPEN_TASK){
           const now = TASKS_SPACES.find(t=>t.id===OPEN_TASK.id);
@@ -1968,6 +2000,22 @@
       document.getElementById('btnEditTask').style.display = IS_ADMIN ? '' : 'none';
       document.getElementById('btnDeleteTask').style.display = IS_ADMIN ? '' : 'none';
 
+      const reviewBtn = document.getElementById('btnMarkReviewed');
+      if (reviewBtn){
+        if (task.status === 'assigned'){
+          reviewBtn.textContent = 'بدأت الشغل';
+          reviewBtn.style.display = '';
+        } else if (task.status === 'in_progress'){
+          reviewBtn.textContent = 'جاهز للمراجعة';
+          reviewBtn.style.display = '';
+        } else if (task.status === 'changes_requested'){
+          reviewBtn.textContent = 'عدلت و جاهز للمراجعة';
+          reviewBtn.style.display = '';
+        } else {
+          reviewBtn.style.display = 'none';
+        }
+      }
+
       const linksEl=document.getElementById('dLinks');
       linksEl.innerHTML='';
       (task.links||[]).forEach((l, idx)=>{
@@ -1992,15 +2040,48 @@
     document.getElementById('btnMarkReviewed').addEventListener('click', async ()=>{
       if(!OPEN_TASK) return;
       try{
-        const isCampaignTask = CURRENT_CAMPAIGN && OPEN_TASK.spaceId === CURRENT_CAMPAIGN;
-        if(isCampaignTask){
-          const newOrder = computeOrderAtEnd("تم الانتهاء");
-          await updateTaskStatusAndOrder(OPEN_TASK.id, "تم الانتهاء", newOrder);
-        }else{
-          await updateDoc(doc(db,'tasks', OPEN_TASK.id), { status: "تحت المراجعة" });
+        const taskRef = doc(db,'tasks', OPEN_TASK.id);
+        const snap = await getDoc(taskRef);
+        const data = snap.exists() ? (snap.data() || {}) : {};
+        const currentStatus = data.status || OPEN_TASK.status || '';
+        const now = Timestamp.now();
+        const existingTimestamps = data.timestamps || {};
+        const existingReviewCycles = Array.isArray(data.reviewCycles) ? data.reviewCycles.slice() : [];
+
+        if (currentStatus === 'assigned'){
+          const updatePayload = { status: 'in_progress' };
+          if (!existingTimestamps.startedAt){
+            updatePayload['timestamps.startedAt'] = now;
+          }
+          await updateDoc(taskRef, updatePayload);
+        } else if (currentStatus === 'in_progress' || currentStatus === 'changes_requested'){
+          const round = (existingReviewCycles.length || 0) + 1;
+          existingReviewCycles.push({
+            round,
+            sentForReviewAt: now,
+            feedbackAt: null,
+            result: 'pending'
+          });
+
+          const updatePayload = {
+            status: 'ready_for_review',
+            reviewCycles: existingReviewCycles,
+            'timestamps.lastReadyForReviewAt': now
+          };
+          if (!existingTimestamps.firstReadyForReviewAt){
+            updatePayload['timestamps.firstReadyForReviewAt'] = now;
+          }
+          await updateDoc(taskRef, updatePayload);
+        } else {
+          document.getElementById('detailModal').classList.remove('show');
+          return;
         }
+
         document.getElementById('detailModal').classList.remove('show');
-      }catch(e){ alert('⚠️ تعذر تحديث الحالة: '+e.message); }
+      }catch(e){
+        console.error(e);
+        alert('⚠️ تعذر تحديث الحالة: '+(e && e.message ? e.message : e));
+      }
     });
 
     document.getElementById('btnEditTask').addEventListener('click', async ()=>{

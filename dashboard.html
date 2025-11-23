@@ -223,7 +223,7 @@
 
     <!-- Per-member details -->
     <section class="panel">
-      <div class="head"><strong>تفاصيل حسب العضو — تم الانتهاء / مراجعة / متبقّي</strong></div>
+      <div class="head"><strong>تقرير الأعضاء — حالة المهام + زمن التنفيذ</strong></div>
       <div class="body"><div id="membersTableWrap"></div></div>
     </section>
 
@@ -706,12 +706,39 @@
 
       TASKS.forEach(t=>{
         const name = t.assignee?.name || 'غير معيّن';
-        if(!perMember.has(name)) perMember.set(name,{ total:0, done:0, review:0, remaining:0 });
+        if(!perMember.has(name)) perMember.set(name,{
+          total:0,
+          done:0,
+          review:0,
+          remaining:0,
+          durations:[],
+          reviewRounds:[]
+        });
         const m = perMember.get(name);
         m.total++;
         if(isDone(t)){ m.done++; perStatus.done++; }
         else if(isReview(t)){ m.review++; perStatus.review++; }
         else { m.remaining++; perStatus.todo++; }
+
+        // زمن التنفيذ من استلام المهمة حتى جاهزية النشر/الإنهاء
+        if(isDone(t)){
+          const startMs =
+            toMillis(t.assignedAt) ||
+            toMillis(t.createdAt) ||
+            toMillis(t.startedAt);
+          const endMs =
+            toMillis(t.readyToPublishAt) ||
+            toMillis(t.approvedAt) ||
+            toMillis(t.completedAt);
+          if(startMs && endMs && endMs >= startMs){
+            const days = (endMs - startMs) / 86400000;
+            m.durations.push(days);
+          }
+          // عدد دورات المراجعة لو موجودة
+          if(Array.isArray(t.reviewCycles) && t.reviewCycles.length){
+            m.reviewRounds.push(t.reviewCycles.length);
+          }
+        }
       });
 
       const ordered = Array.from(perMember.entries()).sort((a,b)=> b[1].total - a[1].total);
@@ -720,24 +747,50 @@
           <thead>
             <tr>
               <th>العضو</th>
-              <th>إجمالي</th>
+              <th>إجمالي المهام</th>
               <th>تم التنفيذ</th>
               <th>تحت المراجعة</th>
               <th>متبقّي</th>
-              <th>نسبة الإنهاء</th>
+              <th>متوسط زمن التنفيذ (يوم)</th>
+              <th>أسرع مهمة</th>
+              <th>أبطأ مهمة</th>
+              <th>متوسط مرات المراجعة</th>
             </tr>
           </thead>
           <tbody>
             ${ordered.map(([n,v])=>{
               const pct = v.total? Math.round(v.done/v.total*100):0;
+              let avgDur='—', minDur='—', maxDur='—', avgRev='—';
+              if(v.durations && v.durations.length){
+                let sum=0, min=v.durations[0], max=v.durations[0];
+                v.durations.forEach(d=>{
+                  sum += d;
+                  if(d<min) min=d;
+                  if(d>max) max=d;
+                });
+                avgDur = (sum / v.durations.length).toFixed(1);
+                minDur = min.toFixed(1);
+                maxDur = max.toFixed(1);
+              }
+              if(v.reviewRounds && v.reviewRounds.length){
+                let sumR = 0;
+                v.reviewRounds.forEach(r=> sumR += r);
+                avgRev = (sumR / v.reviewRounds.length).toFixed(1);
+              }
               return `
                 <tr>
-                  <td><strong>${n}</strong></td>
+                  <td>
+                    <strong>${n}</strong>
+                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">نسبة الإنهاء: ${pct}%</div>
+                  </td>
                   <td>${v.total}</td>
                   <td style="color:var(--ok);font-weight:700">${v.done}</td>
                   <td style="color:var(--warn);font-weight:700">${v.review}</td>
                   <td style="color:var(--danger);font-weight:700">${v.remaining}</td>
-                  <td>${pct}%</td>
+                  <td>${avgDur}</td>
+                  <td>${minDur}</td>
+                  <td>${maxDur}</td>
+                  <td>${avgRev}</td>
                 </tr>`;
             }).join('')}
           </tbody>

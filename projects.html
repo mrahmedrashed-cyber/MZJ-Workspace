@@ -758,26 +758,6 @@
       return isCurrentUserTaskMember(task);
     }
 
-    async function ensureAssigneeUidsForTask(taskId, data){
-      try{
-        if(!IS_ADMIN) return;
-        if(data && Array.isArray(data.assigneeUids) && data.assigneeUids.length) return;
-
-        let uids = [];
-        if(data && Array.isArray(data.assignees)){
-          uids = data.assignees.map(a => a && a.uid).filter(Boolean);
-        }else if(data && data.assignee && data.assignee.uid){
-          uids = [data.assignee.uid];
-        }
-
-        if(!uids.length) return;
-
-        await updateDoc(doc(db,'tasks', taskId), { assigneeUids: uids });
-      }catch(e){
-        console.error('ensureAssigneeUidsForTask error', e);
-      }
-    }
-
 
     // استخراج المنشن من النص @tag
     function extractMentions(text){
@@ -1718,11 +1698,7 @@
       const qy=query(collection(db,'tasks'), where('spaceId','==', CURRENT_CAMPAIGN));
       unsubTasksCampaigns=onSnapshot(qy,(snap)=>{
         TASKS_CAMPAIGNS=[];
-        snap.forEach(d=> {
-          const data = d.data() || {};
-          TASKS_CAMPAIGNS.push({ id:d.id, ...data });
-          ensureAssigneeUidsForTask(d.id, data);
-        });
+        snap.forEach(d=> TASKS_CAMPAIGNS.push({ id:d.id, ...(d.data()||{}) }));
         renderTasksCampaigns();
       },(err)=>{ console.error(err); alert('⚠️ فشل قراءة التاسكات (الحملات).'); });
     }
@@ -1758,9 +1734,7 @@
         color: color
       }));
 
-      const assigneeUids = assigneesPayload.map(u => u.uid);
-
-try{
+      try{
         for(const u of assigneesPayload){
           await setDoc(doc(db,'users', u.uid), { color }, { merge:true });
           const idx=USERS.findIndex(x=>x.uid===u.uid);
@@ -1772,7 +1746,6 @@ try{
           car,
           assignees: assigneesPayload.length ? assigneesPayload : null,
           assignee: assigneesPayload.length ? assigneesPayload[0] : null,
-          assigneeUids: assigneeUids,
           links: [],
           createdBy: CURRENT_USER?.uid || null,
           createdAt: serverTimestamp(),
@@ -1955,11 +1928,7 @@ try{
       const qy=query(collection(db,'tasks'), where('spaceId','==', CURRENT_SPACE));
       unsubTasksSpaces=onSnapshot(qy,(snap)=>{
         TASKS_SPACES=[];
-        snap.forEach(d=> {
-          const data = d.data() || {};
-          TASKS_SPACES.push({ id:d.id, ...data });
-          ensureAssigneeUidsForTask(d.id, data);
-        });
+        snap.forEach(d=> TASKS_SPACES.push({ id:d.id, ...(d.data()||{}) }));
         renderTasksSpaces();
         if(OPEN_TASK){
           const now = TASKS_SPACES.find(t=>t.id===OPEN_TASK.id);

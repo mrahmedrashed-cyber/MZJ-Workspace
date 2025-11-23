@@ -1308,9 +1308,12 @@
       // نتأكد أن "تم التنفيذ" له مجموعة خاصة
       grouped['تم التنفيذ'] = grouped['تم التنفيذ'] || [];
 
+      // نضيف كل التاسكات مع مراعاة أن حالة "تم الانتهاء" تُعرض داخل عمود "تم التنفيذ"
       TASKS.forEach(t=>{
-        if(!grouped[t.status]) grouped[t.status]=[];
-        grouped[t.status].push(t);
+        let st = (t.status || '').trim();
+        if(st === 'تم الانتهاء'){ st = 'تم التنفيذ'; }
+        if(!grouped[st]) grouped[st]=[];
+        grouped[st].push(t);
       });
 
       // نعرض كل الأعمدة + عمود "تم التنفيذ"

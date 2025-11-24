@@ -1,6 +1,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -1700,20 +1701,8 @@
         const raw = [];
         snap.forEach(d=> raw.push({ id:d.id, ...(d.data()||{}) }));
 
-        if (IS_ADMIN){
-          TASKS_CAMPAIGNS = raw;
-        } else {
-          const uid = CURRENT_USER?.uid || '';
-          const memberTasks = raw.filter(t=>{
-            if (Array.isArray(t.assigneesIds) && t.assigneesIds.includes(uid)) return true;
-            if (t.assigneeId && t.assigneeId === uid) return true;
-            const members = taskMembersArray(t);
-            return members.some(m=> m.uid === uid);
-          });
-          const pipelineStatuses = ['assigned','in_progress','changes_requested'];
-          const pipelineTasks = memberTasks.filter(t=> pipelineStatuses.includes(t.status));
-          TASKS_CAMPAIGNS = pipelineTasks.length ? pipelineTasks : memberTasks;
-        }
+        // عرض كل التاسكات لكل الأعضاء بدون فلترة
+        TASKS_CAMPAIGNS = raw;
 
         renderTasksCampaigns();
       },(err)=>{ console.error(err); alert('⚠️ فشل قراءة التاسكات (الحملات).'); });
@@ -1946,20 +1935,8 @@
         const raw = [];
         snap.forEach(d=> raw.push({ id:d.id, ...(d.data()||{}) }));
 
-        if (IS_ADMIN){
-          TASKS_SPACES = raw;
-        } else {
-          const uid = CURRENT_USER?.uid || '';
-          const memberTasks = raw.filter(t=>{
-            if (Array.isArray(t.assigneesIds) && t.assigneesIds.includes(uid)) return true;
-            if (t.assigneeId && t.assigneeId === uid) return true;
-            const members = taskMembersArray(t);
-            return members.some(m=> m.uid === uid);
-          });
-          const pipelineStatuses = ['assigned','in_progress','changes_requested'];
-          const pipelineTasks = memberTasks.filter(t=> pipelineStatuses.includes(t.status));
-          TASKS_SPACES = pipelineTasks.length ? pipelineTasks : memberTasks;
-        }
+        // عرض كل التاسكات لكل الأعضاء بدون فلترة
+        TASKS_SPACES = raw;
 
         renderTasksSpaces();
         if(OPEN_TASK){

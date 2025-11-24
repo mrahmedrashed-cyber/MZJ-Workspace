@@ -1700,6 +1700,7 @@
       unsubTasksCampaigns = onSnapshot(qy,(snap)=>{
         const raw = [];
         snap.forEach(d=> raw.push({ id:d.id, ...(d.data()||{}) }));
+        console.log('tasks snapshot campaigns', raw);
 
         // عرض كل التاسكات في الحملة لكل الأعضاء بدون أي فلترة
         TASKS_CAMPAIGNS = raw;
@@ -1934,6 +1935,7 @@
       unsubTasksSpaces = onSnapshot(qy,(snap)=>{
         const raw = [];
         snap.forEach(d=> raw.push({ id:d.id, ...(d.data()||{}) }));
+        console.log('tasks snapshot spaces', raw);
 
         // عرض كل التاسكات في اللوحة لكل الأعضاء بدون أي فلترة
         TASKS_SPACES = raw;

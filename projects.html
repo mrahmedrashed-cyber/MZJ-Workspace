@@ -2,6 +2,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -1872,6 +1873,21 @@
         renderColumnHeaderActionsSpaces(sec.querySelector('.__actions'), col);
       });
 
+      // عمود "تم الانتهاء" في آخر اللوحة
+      {
+        const sec = document.createElement('section');
+        sec.className = 'col daily-done-col';
+        sec.dataset.status = DONE_STATUS_SPACES;
+        sec.innerHTML = `
+          <div class="col-head" style="cursor:default">
+            <span class="col-title">${DONE_STATUS_SPACES}</span>
+          </div>
+          <div class="col-body"><div class="dropzone" data-zone="${DONE_STATUS_SPACES}"></div></div>
+        `;
+        board.appendChild(sec);
+      }
+
+
       board.querySelectorAll('.dropzone').forEach(zone=>{
         zone.addEventListener('dragover', e=>{
           if (e.dataTransfer.types.includes(MIME_TASK)){
@@ -1890,16 +1906,37 @@
       });
     }
 
-    function renderTasksSpaces(){
+    
+    // زرار علامة الصح في لوحة Spaces (ينقل المهمة إلى تم الانتهاء)
+    boardSpaces.addEventListener('click', async (e)=>{
+      const btn = e.target.closest('.space-done-btn');
+      if(!btn) return;
+      const id = btn.dataset.id;
+      if(!id) return;
+      const task = TASKS_SPACES.find(t=> t.id === id);
+      if(!task) return;
+      if(!(IS_ADMIN || isCurrentUserTaskMember(task))){
+        alert('هذا الزر متاح للأعضاء المشاركين في المهمة أو الأدمِن فقط.');
+        return;
+      }
+      try{
+        await updateDoc(doc(db,'tasks', id), { status: DONE_STATUS_SPACES });
+      }catch(err){
+        console.error(err);
+        alert('⚠️ تعذر تحديث حالة التاسك: '+(err?.message||err));
+      }
+    });
+
+function renderTasksSpaces(){
       const board=boardSpaces;
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
 
-      const byStatus={}; (SPACE_COLUMNS||[]).forEach(s=> byStatus[s]=[]);
+      const byStatus={}; ([...(SPACE_COLUMNS||[]), DONE_STATUS_SPACES]).forEach(s=> byStatus[s]=[]);
       TASKS_SPACES.forEach(t=>{
         (byStatus[t.status]||(byStatus[t.status]=[])).push(t);
       });
 
-      (SPACE_COLUMNS||[]).forEach(status=>{
+      ([...(SPACE_COLUMNS||[]), DONE_STATUS_SPACES]).forEach(status=>{
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
         const list = byStatus[status]||[];
         list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
@@ -1909,14 +1946,20 @@
           card.dataset.id=t.id;
           const members = taskMembersArray(t);
           const carLine = t.car ? [t.car.brand, t.car.model, t.car.trim, t.car.engine].filter(Boolean).join(' ') : '';
+          const canDoneSpace = (IS_ADMIN || isCurrentUserTaskMember(t));
           card.innerHTML = `
             <h4>${t.name||'-'}</h4>
             ${carLine ? `<div class="small" style="margin-top:4px">🚗 ${carLine}</div>` : ''}
-            <div class="row" style="margin-top:6px">
-              ${members.length? renderMembersBadges(members):''}
-              ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
-            </div>`;
-          card.setAttribute('draggable','true');
+            <div class="row between" style="margin-top:6px">
+              <div class="row">
+                ${members.length? renderMembersBadges(members):''}
+                ${t.due?`<span class="small">📅 ${t.due}</span>`:''}
+              </div>
+              ${t.status !== DONE_STATUS_SPACES && canDoneSpace ? `
+                <button class="btn secondary xs space-done-btn" data-id="${t.id}" title="نقل إلى تم الانتهاء">✓</button>
+              ` : ''}
+            </div>`;          
+card.setAttribute('draggable','true');
           card.addEventListener('dragstart', e=>{
             e.dataTransfer.effectAllowed='move';
             e.dataTransfer.setData(MIME_TASK, t.id);

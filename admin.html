@@ -206,7 +206,6 @@
       border-color:#e5d2c6;
     }
 
-    /* وصف الكارت لن نعرضه في الكارت نفسه – فقط تلميح صغير */
     .card-hint{
       margin:2px 0 0;
       font-size:11px;
@@ -336,7 +335,6 @@
     }
     textarea{min-height:90px;resize:vertical}
 
-    /* مربع وصف التاسك (مش كبير) */
     #tDesc{
       min-height:120px;
       padding:10px;
@@ -349,7 +347,6 @@
       border-color:var(--beige);
     }
 
-    /* Dates styling */
     .dates-grid .date-field{
       display:flex;
       flex-direction:column;
@@ -479,7 +476,6 @@
     }
     .dd-item:hover{background:#fff8ef}
 
-    /* رابطــات التاسك (داخل المودال) */
     .links-form{
       display:flex;
       flex-direction:column;
@@ -656,23 +652,6 @@
           <div id="campaignDescEditor"></div>
         </div>
 
-        <!-- حقل الأعمدة المخصصة للحملة -->
-        <div>
-          <label>أعمدة البورد (كل سطر = عمود)</label>
-          <textarea id="newCampColumns" placeholder="مثال:
-ريلز - كاش
-موشن - كاش
-جرافيك - كاش
-ريلز أقساط
-AI Generate - اقساط
-جرافيك أقساط
-اقساط شركات - سوشيال ميديا
-شركات - لينكد ان"></textarea>
-          <div class="date-helper">
-            اكتب اسم كل عمود في سطر منفصل. يمكنك تعديل الأعمدة لاحقًا من داخل البورد.
-          </div>
-        </div>
-
       </div>
 
       <div class="footer">
@@ -822,7 +801,7 @@ AI Generate - اقساط
     let TASKS=[];
     let unsubTasks=null;
 
-    let DRAG_TASK_ID = null; /* للسحب والإفلات */
+    let DRAG_TASK_ID = null;
 
     /* Quill editors */
     let quill = null;
@@ -848,9 +827,6 @@ AI Generate - اقساط
     const btnDeleteCampaign  = document.getElementById('btnDeleteCampaign');
     const btnAddColumn       = document.getElementById('btnAddColumn');
     const btnSaveDates       = document.getElementById('btnSaveDates');
-
-    /* new campaign columns textarea */
-    const newCampColumnsEl   = document.getElementById('newCampColumns');
 
     /* Task modal refs */
     const taskModal      = document.getElementById('taskModal');
@@ -880,14 +856,12 @@ AI Generate - اقساط
       });
     });
 
-    /* Small helper for HTML escaping */
     function escapeHtml(str){
       return (str || '').replace(/[&<>"']/g, c => ({
         '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
       }[c]));
     }
 
-    /* Sorting helper for tasks in a column */
     function taskSort(a,b){
       const ao = (typeof a.order === 'number')
         ? a.order
@@ -898,7 +872,6 @@ AI Generate - اقساط
       return ao - bo;
     }
 
-    /* Auth */
     document.getElementById('btnLogout').onclick = async ()=>{
       await signOut(auth);
       location.href = "login.html";
@@ -926,7 +899,6 @@ AI Generate - اقساط
       bootCampaigns();
     });
 
-    /* Load Users */
     async function loadUsers(){
       const snap = await getDocs(collection(db,'users'));
       USERS=[];
@@ -941,7 +913,6 @@ AI Generate - اقساط
       });
     }
 
-    /* Default Columns */
     const CAMPAIGN_DEFAULT_COLS = [
       "ريلز - كاش",
       "موشن - كاش",
@@ -953,7 +924,6 @@ AI Generate - اقساط
       "شركات - لينكد ان"
     ];
 
-    /* Campaigns */
     function bootCampaigns(){
       onSnapshot(
         query(collection(db,'spaces'), where('type','==','campaign')),
@@ -987,21 +957,17 @@ AI Generate - اقساط
       });
     }
 
-    /* Select Campaign */
     async function selectCampaign(id){
       CURRENT_CAMPAIGN=id;
 
       const d = await getDoc(doc(db,'spaces', id));
       const data = d.data() || {};
 
-      /* Load Columns */
       COLUMNS = Array.isArray(data.columns) ? data.columns : CAMPAIGN_DEFAULT_COLS.slice();
 
-      /* Load Description */
       const desc = data.description || "<em class='muted'>لا يوجد وصف للحملة</em>";
       campaignDescBox.innerHTML = desc;
 
-      /* Campaign Dates */
       const start = data.start || '';
       const due   = data.due   || '';
 
@@ -1009,26 +975,9 @@ AI Generate - اقساط
       campDueEl.value   = due   || '';
       campaignDates.textContent = `📅 ${start||'—'} → ${due||'—'}`;
 
-      /* Render Board */
       renderBoard();
-
-      /* Load Tasks */
       listenTasks();
     }
-
-    /* Create New Campaign */
-    btnNewCampaign.onclick = ()=>{
-      document.getElementById('newCampName').value="";
-      quill.setContents([]);
-      if(newCampColumnsEl){
-        newCampColumnsEl.value = CAMPAIGN_DEFAULT_COLS.join('\n');
-      }
-      document.getElementById('newCampaignModal').classList.add('show');
-    };
-
-    document.getElementById('cancelNewCamp').onclick = ()=>{
-      document.getElementById('newCampaignModal').classList.remove('show');
-    };
 
     document.getElementById('saveNewCamp').onclick = async ()=>{
       const name = document.getElementById('newCampName').value.trim();
@@ -1036,20 +985,11 @@ AI Generate - اقساط
 
       const descriptionHTML = quill.root.innerHTML;
 
-      let cols = [];
-      if(newCampColumnsEl){
-        const raw = newCampColumnsEl.value || '';
-        cols = raw.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-      }
-      if(!cols.length){
-        cols = CAMPAIGN_DEFAULT_COLS.slice();
-      }
-
       const ref = await addDoc(collection(db,'spaces'), {
         name,
         description: descriptionHTML,
         type:'campaign',
-        columns: cols,
+        columns: [],
         createdAt: serverTimestamp(),
         active:true,
         start:null,
@@ -1057,7 +997,7 @@ AI Generate - اقساط
       });
 
       CURRENT_CAMPAIGN = ref.id;
-      COLUMNS = cols.slice();
+      COLUMNS = [];
 
       document.getElementById('newCampaignModal').classList.remove('show');
       renderBoard();
@@ -1065,7 +1005,16 @@ AI Generate - اقساط
       alert("تم إنشاء الحملة بنجاح");
     };
 
-    /* Edit Campaign Description */
+    btnNewCampaign.onclick = ()=>{
+      document.getElementById('newCampName').value="";
+      quill.setContents([]);
+      document.getElementById('newCampaignModal').classList.add('show');
+    };
+
+    document.getElementById('cancelNewCamp').onclick = ()=>{
+      document.getElementById('newCampaignModal').classList.remove('show');
+    };
+
     btnEditCampDesc.onclick = async ()=>{
       if(!CURRENT_CAMPAIGN) return;
 
@@ -1095,7 +1044,6 @@ AI Generate - اقساط
       alert("✔ تم تحديث وصف الحملة");
     };
 
-    /* Rename Campaign */
     btnRenameCampaign.onclick = async ()=>{
       if(!CURRENT_CAMPAIGN) return;
 
@@ -1105,7 +1053,6 @@ AI Generate - اقساط
       await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { name:nm });
     };
 
-    /* Archive */
     btnArchiveCampaign.onclick = async ()=>{
       if(!CURRENT_CAMPAIGN) return;
 
@@ -1117,7 +1064,6 @@ AI Generate - اقساط
       campaignDescBox.innerHTML="<em class='muted'>لا يوجد وصف</em>";
     };
 
-    /* Delete Campaign */
     btnDeleteCampaign.onclick = async ()=>{
       if(!CURRENT_CAMPAIGN) return alert("اختر حملة");
 
@@ -1139,7 +1085,6 @@ AI Generate - اقساط
       alert("تم حذف الحملة نهائيًا");
     };
 
-    /* Save Campaign Dates */
     btnSaveDates.onclick = async ()=>{
       if(!CURRENT_CAMPAIGN) return;
 
@@ -1152,7 +1097,6 @@ AI Generate - اقساط
       alert("تم حفظ التواريخ");
     };
 
-    /* Drag & Drop setup for columns */
     function attachDragAndDrop(){
       board.querySelectorAll('.dropzone').forEach(zone=>{
         zone.addEventListener('dragover', (ev)=>{
@@ -1172,7 +1116,6 @@ AI Generate - اقساط
           const task = TASKS.find(t=> t.id === id);
           if(!task) return;
 
-          /* لو نفس العمود، ننقله لآخر العمود (تغيير ترتيب) */
           let newStatus = status;
           let newOrder  = 1;
 
@@ -1196,11 +1139,9 @@ AI Generate - اقساط
       });
     }
 
-    /* Render Board */
     function renderBoard(){
       board.innerHTML='';
 
-      // الأعمدة العادية القادمة من الحملة
       COLUMNS.forEach((col, index)=>{
         const sec=document.createElement('section');
         sec.className='col';
@@ -1225,7 +1166,6 @@ AI Generate - اقساط
         board.appendChild(sec);
       });
 
-      // عمود ثابت لــ "تم التنفيذ" يظهر دائمًا في نهاية البورد
       (function(){
         const doneCol = 'تم التنفيذ';
         const sec=document.createElement('section');
@@ -1250,7 +1190,6 @@ AI Generate - اقساط
       renderTasks();
     }
 
-    /* Column actions (rename / delete / newtask) */
     function attachColumnActions(){
       board.querySelectorAll('.col').forEach(colEl=>{
         const status = colEl.dataset.status;
@@ -1285,7 +1224,6 @@ AI Generate - اقساط
       });
     }
 
-    /* Listen Tasks */
     function listenTasks(){
       if(unsubTasks) unsubTasks();
 
@@ -1300,7 +1238,6 @@ AI Generate - اقساط
       });
     }
 
-    /* Move task up/down within same column */
     async function moveTask(taskId, status, dir){
       const colTasks = TASKS
         .filter(t=> t.status === status)
@@ -1329,17 +1266,13 @@ AI Generate - اقساط
       }
     }
 
-    /* Render Tasks */
     function renderTasks(){
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
 
       const grouped={};
-      // نحضر الأعمدة الديناميكية
       COLUMNS.forEach(c=> grouped[c]=[]);
-      // نتأكد أن "تم التنفيذ" له مجموعة خاصة
       grouped['تم التنفيذ'] = grouped['تم التنفيذ'] || [];
 
-      // نضيف كل التاسكات مع مراعاة أن حالة "تم الانتهاء" تُعرض داخل عمود "تم التنفيذ"
       TASKS.forEach(t=>{
         let st = (t.status || '').trim();
         if(st === 'تم الانتهاء'){ st = 'تم التنفيذ'; }
@@ -1347,7 +1280,6 @@ AI Generate - اقساط
         grouped[st].push(t);
       });
 
-      // نعرض كل الأعمدة + عمود "تم التنفيذ"
       const allStatuses = COLUMNS.concat('تم التنفيذ');
 
       allStatuses.forEach(status=>{
@@ -1382,7 +1314,6 @@ AI Generate - اقساط
 
           const descText = (t.description || '').trim();
 
-          /* Links: يمكن أن تكون array of strings أو array of {title,url} */
           let linksHtml = '';
           if(Array.isArray(t.links) && t.links.length){
             const limited = t.links.slice(0,3);
@@ -1426,10 +1357,8 @@ AI Generate - اقساط
             ${descText ? `<div class="card-hint">اضغط لعرض تفاصيل التاسك</div>` : ''}
           `;
 
-          /* فتح المودال عند الضغط على الكارت */
           card.addEventListener('click', ()=> openTaskModal({ edit:t }));
 
-          /* سحب الكارت */
           card.addEventListener('dragstart',(ev)=>{
             DRAG_TASK_ID = t.id;
             ev.dataTransfer.setData('text/plain', t.id);
@@ -1440,7 +1369,6 @@ AI Generate - اقساط
             board.querySelectorAll('.dropzone.drag').forEach(z=> z.classList.remove('drag'));
           });
 
-          /* أزرار التحريك لأعلى/أسفل */
           card.querySelectorAll('.card-move').forEach(btn=>{
             btn.addEventListener('click', (ev)=>{
               ev.stopPropagation();
@@ -1454,7 +1382,6 @@ AI Generate - اقساط
       });
     }
 
-    /* Assignee chips render */
     function renderAssigneeChips(){
       if(!SELECTED_ASSIGNEES.length){
         assigneeChip.innerHTML = '';
@@ -1479,7 +1406,6 @@ AI Generate - اقساط
       renderAssigneeChips();
     });
 
-    /* Position dropdown under the input (viewport based) */
     function positionAssigneeMenu(){
       const r = tAssigneeSearch.getBoundingClientRect();
       assigneeMenu.style.top   = (r.bottom + 4) + 'px';
@@ -1487,7 +1413,6 @@ AI Generate - اقساط
       assigneeMenu.style.minWidth = r.width + 'px';
     }
 
-    /* Assignee menu */
     function renderAssigneeMenu(filter){
       const f=(filter||'').toLowerCase();
       assigneeMenu.innerHTML='';
@@ -1543,7 +1468,6 @@ AI Generate - اقساط
       }
     });
 
-    /* ===== روابط التاسك (المودال) ===== */
     function clearLinksForm(){
       linksContainer.innerHTML = '';
     }
@@ -1577,7 +1501,6 @@ AI Generate - اقساط
       return links;
     }
 
-    /* Task modal handlers */
     function openTaskModal(opts={}){
       SELECTED_ASSIGNEES=[];
       EDITING_TASK=null;
@@ -1601,7 +1524,6 @@ AI Generate - اقساط
         tDue.value  = t.due  || '';
         tDesc.value = t.description || '';
 
-        /* روابط موجودة مسبقًا */
         if(Array.isArray(t.links) && t.links.length){
           t.links.forEach(l=>{
             if(typeof l === 'string'){
@@ -1611,7 +1533,7 @@ AI Generate - اقساط
             }
           });
         }else{
-          addLinkRow(); // صف فاضي واحد على الأقل
+          addLinkRow();
         }
 
         const assignees = Array.isArray(t.assignees) && t.assignees.length
@@ -1654,7 +1576,6 @@ AI Generate - اقساط
       const description = tDesc.value || null;
       const mainColor = (tColor.value || '#bc8f74').trim();
 
-      /* Parse links from form (title + url) */
       const links = getLinksFromForm();
 
       if(SELECTED_ASSIGNEES.length){
@@ -1694,7 +1615,6 @@ AI Generate - اقساط
         }else{
           const status = PRESELECT_STATUS || (COLUMNS[0] || 'ريلز - كاش');
 
-          /* حساب order جديد في هذا العمود */
           let maxOrder = 0;
           TASKS.filter(t=> t.status === status).forEach(t=>{
             if(typeof t.order === 'number' && t.order > maxOrder){
@@ -1725,7 +1645,6 @@ AI Generate - اقساط
       }
     };
 
-    /* زر إضافة عمود جديد (يضيف في نهاية المصفوفة) */
     btnAddColumn.onclick = async ()=>{
       if(!CURRENT_CAMPAIGN) return alert('اختر حملة أولاً');
       const title = prompt('اسم العمود الجديد:');

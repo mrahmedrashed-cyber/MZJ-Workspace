@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -1844,17 +1845,47 @@ function closeCreate(){ taskModal.classList.remove('show'); resetCreateForm(); }
         function listenTasksCampaigns(){
       if(unsubTasksCampaigns){ unsubTasksCampaigns(); unsubTasksCampaigns=null; }
       if(!CURRENT_CAMPAIGN) return;
-      const qy = query(collection(db,'tasks'), where('spaceId','==', CURRENT_CAMPAIGN));
-      unsubTasksCampaigns = onSnapshot(qy,(snap)=>{
-        const raw = [];
-        snap.forEach(d=> raw.push({ id:d.id, ...(d.data()||{}) }));
-        console.log('tasks snapshot campaigns', raw);
 
-        // عرض كل التاسكات في الحملة لكل الأعضاء بدون أي فلترة
-        TASKS_CAMPAIGNS = raw;
+      const tasksMap = new Map();
+      const col = collection(db,'tasks');
 
+      const handleSnap = (snap)=>{
+        let changed = false;
+        snap.docChanges().forEach(change=>{
+          const id = change.doc.id;
+          if(change.type === 'removed'){
+            if(tasksMap.has(id)){
+              tasksMap.delete(id);
+              changed = true;
+            }
+          }else{
+            const data = change.doc.data()||{};
+            tasksMap.set(id, { id, ...data });
+            changed = true;
+          }
+        });
+        if(!changed) return;
+
+        TASKS_CAMPAIGNS = Array.from(tasksMap.values());
         renderTasksCampaigns();
-      },(err)=>{ console.error(err); alert('⚠️ فشل قراءة التاسكات (الحملات).'); });
+      };
+
+      const unsub1 = onSnapshot(
+        query(col, where('spaceId','==', CURRENT_CAMPAIGN)),
+        handleSnap,
+        (err)=>{ console.error(err); alert('⚠️ فشل قراءة التاسكات (spaceId) (الحملات).'); }
+      );
+
+      const unsub2 = onSnapshot(
+        query(col, where('campaignId','==', CURRENT_CAMPAIGN)),
+        handleSnap,
+        (err)=>{ console.error(err); alert('⚠️ فشل قراءة التاسكات (campaignId) (الحملات).'); }
+      );
+
+      unsubTasksCampaigns = ()=>{
+        try{ unsub1 && unsub1(); }catch{}
+        try{ unsub2 && unsub2(); }catch{}
+      };
     }
 
     /* حفظ التاسك (Spaces / Campaign) + إشعارات المنشن */
@@ -1909,7 +1940,11 @@ function closeCreate(){ taskModal.classList.remove('show'); resetCreateForm(); }
           alert('✅ تم تعديل التاسك');
         }else{
           const payload = {
-            spaceId: targetSpaceId, name, description, due, status,
+            spaceId: targetSpaceId,
+            name,
+            description,
+            due,
+            status,
             car,
             assignees: assigneesPayload.length ? assigneesPayload : null,
             assignee: assigneesPayload.length ? assigneesPayload[0] : null,
@@ -1919,6 +1954,14 @@ function closeCreate(){ taskModal.classList.remove('show'); resetCreateForm(); }
             active:true,
             order: Date.now()
           };
+
+          if(isCampaignTab && CURRENT_CAMPAIGN){
+            payload.campaignId   = CURRENT_CAMPAIGN;
+            payload.workspaceType = 'campaign';
+          }else{
+            payload.workspaceType = 'space';
+          }
+
           const ref = await addDoc(collection(db,'tasks'), payload);
 
           // 🔔 إشعارات المنشن

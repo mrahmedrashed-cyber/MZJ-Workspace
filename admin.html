@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -1225,17 +1226,42 @@
     }
 
     function listenTasks(){
-      if(unsubTasks) unsubTasks();
+      if (unsubTasks) {
+        try { unsubTasks(); } catch(e) {}
+        unsubTasks = null;
+      }
 
-      if(!CURRENT_CAMPAIGN) return;
+      if (!CURRENT_CAMPAIGN) return;
 
-      const qy=query(collection(db,'tasks'), where('spaceId','==', CURRENT_CAMPAIGN));
+      const tasksMap = new Map();
 
-      unsubTasks = onSnapshot(qy,(snap)=>{
-        TASKS=[];
-        snap.forEach(d=> TASKS.push({ id:d.id, ...(d.data()) }));
-        renderTasks();
-      });
+      function applySnap(snap){
+        let changed = false;
+        snap.docChanges().forEach(change => {
+          const d = change.doc;
+          if (change.type === 'removed') {
+            if (tasksMap.delete(d.id)) changed = true;
+          } else {
+            tasksMap.set(d.id, { id:d.id, ...(d.data()) });
+            changed = true;
+          }
+        });
+        if (changed) {
+          TASKS = Array.from(tasksMap.values());
+          renderTasks();
+        }
+      }
+
+      const qSpace   = query(collection(db,'tasks'), where('spaceId','==', CURRENT_CAMPAIGN));
+      const qCampaign= query(collection(db,'tasks'), where('campaignId','==', CURRENT_CAMPAIGN));
+
+      const unsub1 = onSnapshot(qSpace, applySnap);
+      const unsub2 = onSnapshot(qCampaign, applySnap);
+
+      unsubTasks = () => {
+        try { unsub1(); } catch(e) {}
+        try { unsub2(); } catch(e) {}
+      };
     }
 
     async function moveTask(taskId, status, dir){
@@ -1625,6 +1651,8 @@
 
           await addDoc(collection(db,'tasks'), {
             spaceId: CURRENT_CAMPAIGN,
+            campaignId: CURRENT_CAMPAIGN,
+            workspaceType: 'campaign',
             name,
             description,
             due,

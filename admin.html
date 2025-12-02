@@ -1191,6 +1191,48 @@
       renderTasks();
     }
 
+
+    async function renameColumnStatus(oldStatus, newStatus){
+      if(!CURRENT_CAMPAIGN || !oldStatus || !newStatus || oldStatus === newStatus) return;
+
+      try{
+        const updatedIds = new Set();
+
+        const q1 = query(
+          collection(db,'tasks'),
+          where('spaceId','==', CURRENT_CAMPAIGN),
+          where('status','==', oldStatus)
+        );
+        const q2 = query(
+          collection(db,'tasks'),
+          where('campaignId','==', CURRENT_CAMPAIGN),
+          where('status','==', oldStatus)
+        );
+
+        const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+
+        const batch = writeBatch(db);
+
+        snap1.forEach(d=>{
+          if(updatedIds.has(d.id)) return;
+          updatedIds.add(d.id);
+          batch.update(d.ref, { status:newStatus });
+        });
+
+        snap2.forEach(d=>{
+          if(updatedIds.has(d.id)) return;
+          updatedIds.add(d.id);
+          batch.update(d.ref, { status:newStatus });
+        });
+
+        if(updatedIds.size){
+          await batch.commit();
+        }
+      }catch(e){
+        console.error('renameColumnStatus error', e);
+      }
+    }
+
     function attachColumnActions(){
       board.querySelectorAll('.col').forEach(colEl=>{
         const status = colEl.dataset.status;
@@ -1208,35 +1250,14 @@
           }else if(act === 'rename'){
             const nn = prompt("اسم العمود الجديد:", status);
             if(!nn || nn === status) return;
+            COLUMNS = COLUMNS.map(c=> c===status ? nn : c);
 
-            const oldStatus = status;
-
-            // تحديث أسماء الأعمدة في وثيقة الحملة
-            COLUMNS = COLUMNS.map(c=> c===oldStatus ? nn : c);
+            // تحديث الأعمدة في وثيقة الحملة
             await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { columns:COLUMNS });
 
-            // تحديث جميع التاسكات التابعة لهذه الحملة والتي تحمل اسم العمود القديم
-            try{
-              const qTasks = query(
-                collection(db,'tasks'),
-                where('spaceId','==', CURRENT_CAMPAIGN)
-              );
-              const snap = await getDocs(qTasks);
-              const batch = writeBatch(db);
+            // تحديث كل التاسكات التابعة لنفس الحملة اللي كانت على العمود القديم
+            await renameColumnStatus(status, nn);
 
-              snap.forEach(d=>{
-                const data = d.data() || {};
-                if((data.status || '') === oldStatus){
-                  batch.update(d.ref, { status: nn });
-                }
-              });
-
-              await batch.commit();
-            }catch(e){
-              console.error('column rename - update tasks status error', e);
-            }
-
-            // إعادة الرسم بعد التحديث
             renderBoard();
           }else if(act === 'delete'){
             if(COLUMNS.length <= 1){
@@ -1322,15 +1343,23 @@
     function renderTasks(){
       board.querySelectorAll('.dropzone').forEach(z=> z.innerHTML='');
 
-      const grouped={};
-      COLUMNS.forEach(c=> grouped[c]=[]);
+      const grouped = {};
+      COLUMNS.forEach(c => grouped[c] = []);
       grouped['تم التنفيذ'] = grouped['تم التنفيذ'] || [];
 
-      TASKS.forEach(t=>{
+      TASKS.forEach(t => {
         let st = (t.status || '').trim();
-        if(st === 'تم الانتهاء'){ st = 'تم التنفيذ'; }
-        if(!grouped[st]) grouped[st]=[];
-        grouped[st].push(t);
+        if (st === 'تم الانتهاء') { st = 'تم التنفيذ'; }
+
+        let key = st;
+
+        // لو حالة التاسك مش موجودة ضمن الأعمدة الحالية، نحطها في أول عمود كحل آمن
+        if (!COLUMNS.includes(key) && key !== 'تم التنفيذ') {
+          key = COLUMNS[0] || 'تم التنفيذ';
+        }
+
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(t);
       });
 
       const allStatuses = COLUMNS.concat('تم التنفيذ');

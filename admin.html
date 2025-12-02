@@ -1208,8 +1208,35 @@
           }else if(act === 'rename'){
             const nn = prompt("اسم العمود الجديد:", status);
             if(!nn || nn === status) return;
-            COLUMNS = COLUMNS.map(c=> c===status ? nn : c);
+
+            const oldStatus = status;
+
+            // تحديث أسماء الأعمدة في وثيقة الحملة
+            COLUMNS = COLUMNS.map(c=> c===oldStatus ? nn : c);
             await updateDoc(doc(db,'spaces', CURRENT_CAMPAIGN), { columns:COLUMNS });
+
+            // تحديث جميع التاسكات التابعة لهذه الحملة والتي تحمل اسم العمود القديم
+            try{
+              const qTasks = query(
+                collection(db,'tasks'),
+                where('spaceId','==', CURRENT_CAMPAIGN)
+              );
+              const snap = await getDocs(qTasks);
+              const batch = writeBatch(db);
+
+              snap.forEach(d=>{
+                const data = d.data() || {};
+                if((data.status || '') === oldStatus){
+                  batch.update(d.ref, { status: nn });
+                }
+              });
+
+              await batch.commit();
+            }catch(e){
+              console.error('column rename - update tasks status error', e);
+            }
+
+            // إعادة الرسم بعد التحديث
             renderBoard();
           }else if(act === 'delete'){
             if(COLUMNS.length <= 1){

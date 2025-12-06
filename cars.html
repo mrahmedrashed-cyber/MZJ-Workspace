@@ -46,7 +46,7 @@
 
   /* ===== جداول مضغوطة ===== */
   .table-soft{overflow:auto;border-radius:16px;border:1px solid #f0e6df}
-  table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed;min-width:1100px}
+  table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed;min-width:1200px}
   thead th{position:sticky;top:0;background:#fbf6f1;color:var(--brown);padding:var(--tbl-pad);border-bottom:1px solid #f0e6df;font-size:var(--tbl-font);z-index:3;text-align:right;white-space:nowrap}
   tbody td{padding:var(--tbl-pad);border-bottom:1px solid #f7eee7;font-size:var(--tbl-font);vertical-align:middle;background:#fff}
   tbody tr:nth-child(even) td{background:#fffdfa}
@@ -137,8 +137,8 @@
     <!-- KPIs -->
     <div class="grid grid-4 panel" style="margin-top:14px">
       <div class="card metric"><h3>إجمالي السيارات</h3><strong id="kTotal">0</strong></div>
-      <div class="card metric"><h3>تم التصوير</h3><strong id="kShot">0</strong></div>
-      <div class="card metric"><h3>تحت المونتاج</h3><strong id="kEditing">0</strong></div>
+      <div class="card metric"><h3>تم التصوير (نعم)</h3><strong id="kShot">0</strong></div>
+      <div class="card metric"><h3>تحت المونتاج (نعم)</h3><strong id="kEditing">0</strong></div>
       <div class="card metric"><h3>داخل الأجندة</h3><strong id="kAgenda">0</strong></div>
     </div>
 
@@ -158,24 +158,30 @@
         <div><label>اللون الداخلي</label><input id="iIntColor" placeholder="مثال: جلد بيج"></div>
         <div><label>Status – تصوير</label><select id="iShoot"></select></div>
         <div><label>Status – مونتاج</label><select id="iEdit"></select></div>
-        <div><label>نوع المحتوى</label><select id="iType"></select></div>
         <div><label>تاريخ التصوير</label><input id="iShootDate" type="date"></div>
         <div><label>داخل الأجندة؟</label><select id="iInAgenda"></select></div>
+        <div></div>
       </div>
       <div class="row" style="margin-top:10px">
-        <div id="agendaFields" class="hidden">
+        <div id="agendaFields" class="hidden" style="grid-column:span 2">
           <label>تاريخ الأجندة</label>
           <div style="display:flex;gap:8px">
             <select id="iAgendaMonth"></select>
             <input id="iAgendaYear" type="number" min="2020" max="2035" value="">
           </div>
         </div>
-        <div><label>مرفوع على الموقع؟</label><select id="iOnSite"></select></div>
-        <div id="siteLinkField" class="hidden" style="grid-column: span 2">
-          <label>رابط صفحة السيارة (اختياري)</label>
-          <input id="iSiteLink" placeholder="https://mzjcars.com/...">
+        <div id="shootExtras" class="hidden" style="grid-column:span 3">
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+            <div>
+              <label>صور + ريل مواصفات</label>
+              <select id="iPhotosSpecs"></select>
+            </div>
+            <div>
+              <label>ريل قصير</label>
+              <select id="iShortReel"></select>
+            </div>
+          </div>
         </div>
-        <div style="grid-column: span 2"><label>ملاحظات</label><input id="iNotes" placeholder="مثلاً: ينتظر مراجعة SEO / صور ناقصة"></div>
         <div><label>&nbsp;</label><button id="btnAdd" class="btn btn-primary" style="width:100%">إضافة</button></div>
       </div>
     </div>
@@ -206,7 +212,8 @@
           <col style="width:var(--w-brand)"><col style="width:var(--w-model)"><col class="narrow-90">
           <col style="width:var(--w-trim)"><col style="width:var(--w-engine)">
           <col class="narrow-110"><col class="narrow-110">
-          <col class="narrow-90"><col class="narrow-90"><col class="narrow-100"><col class="narrow-110">
+          <col class="narrow-90"><col class="narrow-90"><col class="narrow-100"><col class="narrow-100">
+          <col class="narrow-100"><col class="narrow-110">
           <col class="narrow-90"><col class="narrow-120"><col class="narrow-120">
         </colgroup>
         <thead>
@@ -217,7 +224,10 @@
             <th class="sticky-trim">الفئة</th>
             <th>سعة المحرك</th>
             <th>اللون الخارجي</th><th>اللون الداخلي</th>
-            <th>تصوير</th><th>مونتاج</th><th>نوع المحتوى</th>
+            <th>تصوير</th><th>مونتاج</th>
+            <th>صور + ريل مواصفات</th>
+            <th>ريل قصير</th>
+            <th>نوع المحتوى</th>
             <th>تاريخ التصوير</th><th>داخل الأجندة؟</th><th>مرفوع؟</th>
             <th>رابط الصفحة</th><th>ملاحظات</th>
           </tr>
@@ -234,7 +244,8 @@
           <col style="width:var(--w-brand)"><col style="width:var(--w-model)"><col class="narrow-90">
           <col style="width:var(--w-trim)"><col style="width:var(--w-engine)">
           <col class="narrow-110"><col class="narrow-110">
-          <col class="narrow-90"><col class="narrow-90"><col class="narrow-100"><col class="narrow-110">
+          <col class="narrow-90"><col class="narrow-90"><col class="narrow-100"><col class="narrow-100">
+          <col class="narrow-100"><col class="narrow-110">
           <col class="narrow-90"><col class="narrow-120"><col class="narrow-120">
           <col style="width:var(--w-actions)">
         </colgroup>
@@ -246,13 +257,16 @@
             <th class="sticky-trim">الفئة</th>
             <th>سعة المحرك</th>
             <th>اللون الخارجي</th><th>اللون الداخلي</th>
-            <th>تصوير</th><th>مونتاج</th><th>نوع المحتوى</th>
+            <th>تصوير</th><th>مونتاج</th>
+            <th>صور + ريل مواصفات</th>
+            <th>ريل قصير</th>
+            <th>نوع المحتوى</th>
             <th>تاريخ التصوير</th><th>داخل الأجندة؟</th>
             <th>مرفوع على الموقع؟</th><th>رابط الصفحة</th><th>ملاحظات</th>
             <th class="sticky-actions">إجراءات</th>
           </tr>
         </thead>
-        <tbody id="tbody"><tr><td colspan="16" style="padding:14px">جار التحميل…</td></tr></tbody>
+        <tbody id="tbody"><tr><td colspan="17" style="padding:14px">جار التحميل…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -266,7 +280,7 @@ import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, orderBy, serverTimestamp, limit, where
+  onSnapshot, query, orderBy, serverTimestamp, limit
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 /* ==== Firebase ==== */
@@ -327,10 +341,10 @@ const MODELS_BY_BRAND = {
   "تويوتا": ["يارس","هايس"]
 };
 const TRIMS  = ["ستاندر","سمارت","سمارت بلس","كومفورت","فل كامل","ترند","امبيانتي","رويـال"];
-const SHOOT_STATUS = ["لم يُصوّر","تم التصوير","بانتظار مراجعة"];
-const EDIT_STATUS  = ["لم يبدأ","جاري","تم الانتهاء"];
-const CONTENT_TYPES = ["صور","فيديو","ريل","موشن","AI"];
 const YESNO = ["لا","نعم"];
+const SHOOT_STATUS = YESNO;
+const EDIT_STATUS  = YESNO;
+const CONTENT_TYPES = ["صور","فيديو","ريل","موشن","AI"];
 const MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 
 /* ====== State ====== */
@@ -345,6 +359,7 @@ function $fill(el, arr, withBlank=false, blankLabel="الكل"){
   arr.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; el.appendChild(o); });
 }
 function $fillStrict(el, arr, withBlank=false){
+  if(!el) return;
   el.innerHTML = withBlank ? `<option value="">— اختر —</option>` : "";
   arr.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; el.appendChild(o); });
 }
@@ -368,10 +383,10 @@ function initAddControls(){
   $fillStrict($("#iBrand"), BRANDS, true);
   $fillStrict($("#iShoot"), SHOOT_STATUS, true);
   $fillStrict($("#iEdit"), EDIT_STATUS, true);
-  $fillStrict($("#iType"), CONTENT_TYPES, true);
   $fillStrict($("#iInAgenda"), YESNO, true);
-  $fillStrict($("#iOnSite"), YESNO, true);
   $fillStrict($("#iAgendaMonth"), MONTHS, true);
+  $fillStrict($("#iPhotosSpecs"), YESNO, true);
+  $fillStrict($("#iShortReel"), YESNO, true);
   $("#iAgendaYear").value = new Date().getFullYear();
 
   function refreshAddModels(){
@@ -384,9 +399,13 @@ function initAddControls(){
   refreshAddModels();
 
   $("#iInAgenda").addEventListener("change", ()=>$("#agendaFields").classList.toggle("hidden", $("#iInAgenda").value!=="نعم"));
-  $("#iOnSite").addEventListener("change", ()=>$("#siteLinkField").classList.toggle("hidden", $("#iOnSite").value!=="نعم"));
   $("#agendaFields").classList.toggle("hidden", $("#iInAgenda").value!=="نعم");
-  $("#siteLinkField").classList.toggle("hidden", $("#iOnSite").value!=="نعم");
+
+  $("#iShoot").addEventListener("change", ()=>{
+    const show = $("#iShoot").value==="نعم";
+    $("#shootExtras").classList.toggle("hidden", !show);
+  });
+  $("#shootExtras").classList.add("hidden");
 }
 
 /* Cells */
@@ -418,7 +437,7 @@ let ROW_INDEX_BY_ID = new Map();
 function renderEditor(){
   const tb = $("#tbody"); tb.innerHTML = ""; ROW_INDEX_BY_ID.clear();
   if(!ROWS.length){
-    tb.innerHTML = `<tr><td colspan="16" style="padding:14px">لا توجد سيارات بعد.</td></tr>`; return;
+    tb.innerHTML = `<tr><td colspan="17" style="padding:14px">لا توجد سيارات بعد.</td></tr>`; return;
   }
   ROWS.forEach((r,idx)=>{
     ROW_INDEX_BY_ID.set(r.id, idx);
@@ -432,8 +451,10 @@ function renderEditor(){
       <td class="narrow-110">${textCell("engine", r.engine??"", idx)}</td>
       <td class="narrow-110">${textCell("color", r.color??"", idx)}</td>
       <td class="narrow-110">${textCell("intColor", r.intColor??"", idx)}</td>
-      <td class="narrow-90">${selectCell("shoot", SHOOT_STATUS, r.shoot||SHOOT_STATUS[0], idx)}</td>
-      <td class="narrow-90">${selectCell("edit", EDIT_STATUS, r.edit||EDIT_STATUS[0], idx)}</td>
+      <td class="narrow-90">${selectCell("shoot", SHOOT_STATUS, r.shoot||"لا", idx)}</td>
+      <td class="narrow-90">${selectCell("edit", EDIT_STATUS, r.edit||"لا", idx)}</td>
+      <td class="narrow-100">${selectCell("photosSpecs", YESNO, r.photosSpecs||"لا", idx)}</td>
+      <td class="narrow-100">${selectCell("shortReel", YESNO, r.shortReel||"لا", idx)}</td>
       <td class="narrow-100">${selectCell("ctype", CONTENT_TYPES, r.ctype||CONTENT_TYPES[0], idx)}</td>
       <td class="narrow-110">${dateCell("shootDate", r.shootDate||"", idx)}</td>
       <td class="narrow-90">${selectCell("inAgenda", YESNO, r.inAgenda||"لا", idx)}</td>
@@ -481,13 +502,17 @@ function renderFilteredTable(){
   const tb = $("#filteredTBody");
   tb.innerHTML = "";
   if(!list.length){
-    tb.innerHTML = `<tr><td colspan="15" style="padding:14px">لا توجد نتائج مطابقة.</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="17" style="padding:14px">لا توجد نتائج مطابقة.</td></tr>`;
   } else {
     list.forEach(r=>{
-      const shootP = r.shoot==="تم التصوير" ? badgePill(r.shoot,"green") :
-                     r.shoot==="بانتظار مراجعة" ? badgePill(r.shoot,"orange") : badgePill(r.shoot,"gray");
-      const editP  = r.edit==="تم الانتهاء" ? badgePill(r.edit,"green") :
-                     r.edit==="جاري" ? badgePill(r.edit,"orange") : badgePill(r.edit,"gray");
+      const shootVal = r.shoot==="نعم" ? "نعم" : "لا";
+      const editVal  = r.edit==="نعم" ? "نعم" : "لا";
+      const psVal    = r.photosSpecs==="نعم" ? "نعم" : "لا";
+      const srVal    = r.shortReel==="نعم" ? "نعم" : "لا";
+      const shootP   = shootVal==="نعم" ? badgePill("نعم","green") : badgePill("لا","gray");
+      const editP    = editVal==="نعم"   ? badgePill("نعم","green") : badgePill("لا","gray");
+      const psP      = psVal==="نعم"     ? badgePill("نعم","green") : badgePill("لا","gray");
+      const srP      = srVal==="نعم"     ? badgePill("نعم","green") : badgePill("لا","gray");
       const link   = (r.onSite==="نعم" && r.siteLink) ? `<a href="${escapeHTML(r.siteLink)}" target="_blank" rel="noopener">${escapeHTML(r.siteLink)}</a>` : "—";
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -499,7 +524,9 @@ function renderFilteredTable(){
         <td class="narrow-110">${escapeHTML(r.color||"—")}</td>
         <td class="narrow-110">${escapeHTML(r.intColor||"—")}</td>
         <td class="narrow-90">${shootP}</td>
-        <td class="narrow-90">${escapeHTML(r.edit||"—")}</td>
+        <td class="narrow-90">${editP}</td>
+        <td class="narrow-100">${psP}</td>
+        <td class="narrow-100">${srP}</td>
         <td class="narrow-100">${escapeHTML(r.ctype||"—")}</td>
         <td class="narrow-110">${escapeHTML(r.shootDate||"—")}</td>
         <td class="narrow-90">${escapeHTML(r.inAgenda||"—")}</td>
@@ -516,8 +543,8 @@ function renderFilteredTable(){
 /* KPIs */
 function updateKPIs(){
   document.getElementById("kTotal").textContent   = ROWS.length;
-  document.getElementById("kShot").textContent    = ROWS.filter(r=>r.shoot==="تم التصوير").length;
-  document.getElementById("kEditing").textContent = ROWS.filter(r=>r.edit==="جاري").length;
+  document.getElementById("kShot").textContent    = ROWS.filter(r=>r.shoot==="نعم").length;
+  document.getElementById("kEditing").textContent = ROWS.filter(r=>r.edit==="نعم").length;
   document.getElementById("kAgenda").textContent  = ROWS.filter(r=>r.inAgenda==="نعم").length;
 }
 
@@ -543,18 +570,20 @@ async function addCarFS(){
     model: document.getElementById("iModel").value || "",
     year:  +(document.getElementById("iYear").value || 2026),
     trim:  (document.getElementById("iTrimText").value||"").trim(),
-    engine:(document.getElementById("iEngine").value||"").trim(),          // الجديد
+    engine:(document.getElementById("iEngine").value||"").trim(),
     color: (document.getElementById("iColor").value || "").trim(),
     intColor: (document.getElementById("iIntColor").value || "").trim(),
-    shoot: document.getElementById("iShoot").value || SHOOT_STATUS[0],
-    edit:  document.getElementById("iEdit").value || EDIT_STATUS[0],
-    ctype: document.getElementById("iType").value || CONTENT_TYPES[0],
+    shoot: document.getElementById("iShoot").value || "لا",
+    edit:  document.getElementById("iEdit").value || "لا",
+    photosSpecs: document.getElementById("iPhotosSpecs")?.value || "لا",
+    shortReel: document.getElementById("iShortReel")?.value || "لا",
+    ctype: "",
     shootDate: document.getElementById("iShootDate").value || "",
     inAgenda: document.getElementById("iInAgenda").value || "لا",
     agendaDate,
-    onSite: document.getElementById("iOnSite").value || "لا",
-    siteLink: (document.getElementById("iOnSite").value==="نعم" ? (document.getElementById("iSiteLink").value||"") : ""),
-    notes: document.getElementById("iNotes").value || "",
+    onSite: "لا",
+    siteLink: "",
+    notes: "",
     createdAt: serverTimestamp(),
     createdBy: CURRENT_USER?.uid || null
   };
@@ -562,9 +591,15 @@ async function addCarFS(){
   try{
     const ref = await addDoc(collection(db, CARS_COL), payload);
     LAST_CHANGED_ID = ref.id;
-    ["iModel","iColor","iIntColor","iNotes","iShootDate","iSiteLink","iTrimText","iEngine"].forEach(id=>document.getElementById(id).value="");
-    document.getElementById("iInAgenda").value = "لا"; document.getElementById("agendaFields").classList.add("hidden");
-    document.getElementById("iOnSite").value = "لا"; document.getElementById("siteLinkField").classList.add("hidden");
+    ["iModel","iColor","iIntColor","iShootDate","iTrimText","iEngine","iPhotosSpecs","iShortReel"].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.value = "";
+    });
+    document.getElementById("iShoot").value = "لا";
+    document.getElementById("iEdit").value = "لا";
+    document.getElementById("shootExtras").classList.add("hidden");
+    document.getElementById("iInAgenda").value = "لا";
+    document.getElementById("agendaFields").classList.add("hidden");
     showToast("✅ تم إضافة السيارة إلى Firestore","success");
   }catch(e){
     console.error(e);
@@ -616,7 +651,9 @@ async function duplicateRowFS(idx){
 }
 
 /* XLSX */
-function xHeaders(){ return ["brand","model","year","trim","engine","color","intColor","shoot","edit","ctype","shootDate","inAgenda","agendaDate","onSite","siteLink","notes"]; }
+function xHeaders(){
+  return ["brand","model","year","trim","engine","color","intColor","shoot","edit","photosSpecs","shortReel","ctype","shootDate","inAgenda","agendaDate","onSite","siteLink","notes"];
+}
 function exportXLSX(){
   const headers = xHeaders();
   const data = ROWS.map(r=>{ const o={}; headers.forEach(h=>o[h]=r[h]??"" ); return o; });
@@ -629,8 +666,10 @@ function downloadTemplate(){
   const headers = xHeaders();
   const sample = [{
     brand:"هيونداي", model:"سوناتا", year:2026, trim:"سمارت", engine:"2000 سي سي",
-    color:"أبيض لؤلؤي", intColor:"أسود", shoot:"تم التصوير", edit:"جاري",
-    ctype:"ريل", shootDate:"2025-10-12", inAgenda:"نعم", agendaDate:"أكتوبر 2025",
+    color:"أبيض لؤلؤي", intColor:"أسود",
+    shoot:"نعم", edit:"لا",
+    photosSpecs:"نعم", shortReel:"لا",
+    ctype:"صور", shootDate:"2025-10-12", inAgenda:"نعم", agendaDate:"أكتوبر 2025",
     onSite:"لا", siteLink:"", notes:"مثال: ينتظر فويس"
   }];
   const ws = XLSX.utils.json_to_sheet(sample, {header: headers});
@@ -675,7 +714,7 @@ function initFilters(){
   $fill($("#dShoot"), SHOOT_STATUS, true, "الكل");
   $fill($("#dEdit"), EDIT_STATUS, true, "الكل");
   $fill($("#dAgenda"), YESNO, true, "الكل");
-  fillModelFilter(); // تعبئة الموديل مبدئيًا
+  fillModelFilter();
 }
 function fillModelFilter(){
   const brand = document.getElementById("dBrand").value;
@@ -689,9 +728,8 @@ document.addEventListener("change", async (e)=>{
   const t = e.target;
   if(t.matches("#dBrand")){
     FILTERS.brand = document.getElementById("dBrand").value;
-    // إعادة تعبئة الموديلات بحسب العلامة المختارة
     fillModelFilter();
-    FILTERS.model = ""; // تصفير قيمة الموديل بعد تبديل العلامة
+    FILTERS.model = "";
     document.getElementById("dModel").value="";
     renderFilteredTable(); return;
   }

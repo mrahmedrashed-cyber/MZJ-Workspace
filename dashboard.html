@@ -1,354 +1,20 @@
 
-
 <!DOCTYPE html>
-
-<html dir="rtl" lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>لوحة التحكم — MZJ Workspace</title>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>لوحة التحكم — MZJ Workspace</title>
+
+  <!-- Fonts + Charts + PDF -->
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<link rel="stylesheet" href="mzj-ui.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
-<meta content="light" name="color-scheme"/>
-<!-- Quill Editor CSS -->
-<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet"/>
-<!-- Unified UI -->
-<link href="mzj-ui (1).css" rel="stylesheet">
-<style id="noFlash">html{background:#fff8ef} body{background:#fff8ef}</style>
 <style>
-/* ===== Campaigns (Admin) — scoped to .camp ===== */
-.camp{ display:block; }
-.camp .camp-controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-.camp .camp-select,.camp .camp-input{
-  padding:10px 12px;
-  border:1px solid var(--line);
-  border-radius:12px;
-  background:var(--card);
-  font-family:inherit;
-}
-.camp .camp-btn{
-  padding:10px 12px;
-  border-radius:12px;
-  border:0;
-  background:var(--brown);
-  color:#fff;
-  cursor:pointer;
-  font-weight:800;
-}
-.camp .camp-btn.secondary{
-  background:transparent;
-  color:var(--brown);
-  border:1px solid var(--brown);
-}
-.camp .camp-btn.danger{ background:#b91c1c; color:#fff; }
-.camp .camp-muted{ color:var(--muted); }
-.camp .board{ display:grid; gap:14px; grid-template-columns:repeat(4,1fr); }
-@media(max-width:1400px){ .camp .board{ grid-template-columns:repeat(3,1fr);} }
-@media(max-width:980px){ .camp .board{ grid-template-columns:repeat(2,1fr);} }
-@media(max-width:640px){ .camp .board{ grid-template-columns:1fr;} }
-
-.camp .col{
-  background:var(--card);
-  border-radius:14px;
-  display:flex;
-  flex-direction:column;
-  min-height:260px;
-  position:relative;
-  border:1px solid rgba(231,229,228,.8);
-}
-body.mzj.dark .camp .col{ border-color: rgba(255,255,255,.10); }
-
-.camp .col-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:12px 14px;
-  border-bottom:1px solid rgba(231,229,228,.8);
-  background:rgba(255,248,239,.70);
-  border-top-left-radius:14px;
-  border-top-right-radius:14px;
-}
-body.mzj.dark .camp .col-head{
-  background: rgba(255,255,255,.06);
-  border-bottom:1px solid rgba(255,255,255,.10);
-}
-.camp .col-title{ color:var(--brown); font-weight:800; }
-.camp .col-actions{ display:flex; gap:6px; }
-.camp .col-actions .icon{
-  cursor:pointer;
-  font-size:13px;
-  padding:6px 8px;
-  border:1px solid #e9d8cc;
-  border-radius:10px;
-  background:#fff;
-}
-body.mzj.dark .camp .col-actions .icon{
-  background: rgba(255,255,255,.06);
-  border-color: rgba(255,255,255,.10);
-  color: var(--text);
-}
-.camp .col-body{ padding:10px; display:grid; gap:10px; }
-.camp .dropzone{
-  min-height:140px;
-  border:2px dashed transparent;
-  border-radius:12px;
-  transition:.15s;
-}
-.camp .dropzone.drag{
-  border-color:#e5d2c6;
-  background:#fffaf5;
-}
-body.mzj.dark .camp .dropzone.drag{
-  background: rgba(255,255,255,.06);
-  border-color: rgba(188,143,116,.5);
-}
-
-/* Task Cards */
-.camp .task-card{
-  background:var(--card);
-  border:1px solid rgba(231,229,228,.8);
-  border-radius:12px;
-  padding:8px 9px 10px;
-  box-shadow:0 8px 20px rgba(62,36,32,.06);
-  cursor:pointer;
-  transition:.12s transform, .12s box-shadow;
-  min-height:80px;
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-  font-size:13px;
-}
-body.mzj.dark .camp .task-card{ border-color: rgba(255,255,255,.10); box-shadow:none; }
-.camp .task-card:hover{
-  transform:translateY(-2px);
-  box-shadow:0 10px 24px rgba(62,36,32,.12);
-}
-.camp .card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:6px; }
-.camp .task-card h4{
-  margin:0;
-  color:var(--brown);
-  font-size:14px;
-  line-height:1.4;
-  font-weight:800;
-}
-body.mzj.dark .camp .task-card h4{ color: #fff; }
-.camp .card-actions{ display:flex; flex-direction:column; gap:2px; margin-inline-start:4px; }
-.camp .card-move{
-  border:1px solid #e5e7eb;
-  border-radius:6px;
-  background:#fff;
-  font-size:10px;
-  padding:2px 4px;
-  cursor:pointer;
-  line-height:1;
-}
-.camp .card-move:hover{ background:#fff8ef; border-color:#e5d2c6; }
-body.mzj.dark .camp .card-move{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.10); color:#fff; }
-.camp .card-hint{ margin:2px 0 0; font-size:11px; color:var(--muted); }
-
-.camp .links-row{ display:flex; flex-wrap:wrap; gap:4px; margin-top:2px; }
-.camp .task-link{
-  font-size:11px;
-  padding:3px 6px;
-  border-radius:999px;
-  border:1px dashed #e5d2c6;
-  background:#fffaf5;
-  color:var(--brown);
-  text-decoration:none;
-}
-.camp .task-link:hover{ background:#f7e9e0; }
-body.mzj.dark .camp .task-link{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); color:#fff; }
-
-.camp .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px; }
-.camp .badge{
-  padding:4px 8px;
-  border-radius:999px;
-  font-size:12px;
-  background:#f7e9e0;
-  color:var(--brown);
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-}
-body.mzj.dark .camp .badge{ background: rgba(255,255,255,.08); color:#fff; }
-.camp .badge .dot{ inline-size:8px; block-size:8px; border-radius:999px; background:var(--beige); }
-.camp .small{ font-size:12px; color:var(--muted); }
-
-/* Modals */
-.camp .modal-campaign, .camp .modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.45);
-  display:none;
-  place-items:center;
-  padding:18px;
-  z-index:999;
-}
-.camp .modal.show, .camp .modal-campaign.show{ display:grid; }
-.camp .campaign-sheet, .camp .sheet{
-  background:var(--card);
-  border-radius:16px;
-  width:min(820px, 100%);
-  max-height:90vh;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-  box-shadow:0 30px 80px rgba(62,36,32,.25);
-  border:1px solid rgba(231,229,228,.8);
-}
-body.mzj.dark .camp .campaign-sheet, body.mzj.dark .camp .sheet{
-  border-color: rgba(255,255,255,.10);
-  box-shadow:none;
-}
-.camp .campaign-sheet .head, .camp .sheet .head{
-  padding:12px 16px;
-  border-bottom:1px solid rgba(231,229,228,.8);
-  background:rgba(255,248,239,.70);
-  font-weight:800;
-  font-size:18px;
-  color:var(--brown);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-body.mzj.dark .camp .campaign-sheet .head, body.mzj.dark .camp .sheet .head{
-  background: rgba(255,255,255,.06);
-  border-bottom:1px solid rgba(255,255,255,.10);
-  color:#fff;
-}
-.camp .campaign-sheet .body, .camp .sheet .body{
-  padding:16px;
-  overflow-y:auto;
-  display:grid;
-  gap:14px;
-}
-.camp .campaign-sheet .footer, .camp .sheet .footer{
-  padding:12px 16px;
-  border-top:1px solid rgba(231,229,228,.8);
-  background:rgba(255,248,239,.70);
-  display:flex;
-  justify-content:flex-end;
-  gap:10px;
-  flex-wrap:wrap;
-}
-body.mzj.dark .camp .campaign-sheet .footer, body.mzj.dark .camp .sheet .footer{
-  background: rgba(255,255,255,.06);
-  border-top:1px solid rgba(255,255,255,.10);
-}
-
-/* Form */
-.camp .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-@media(max-width:900px){ .camp .grid2{ grid-template-columns:1fr; } }
-.camp label{ display:block; margin:4px 0 4px; font-weight:700; color:var(--brown); font-size:13px; }
-body.mzj.dark .camp label{ color:#fff; }
-.camp input, .camp select, .camp textarea{
-  width:100%;
-  padding:10px;
-  border:1px solid #e5e7eb;
-  border-radius:10px;
-  background:#fff;
-  font-family:inherit;
-  font-size:14px;
-}
-body.mzj.dark .camp input, body.mzj.dark .camp select, body.mzj.dark .camp textarea{
-  background: rgba(255,255,255,.06);
-  border-color: rgba(255,255,255,.10);
-  color:#fff;
-}
-.camp textarea{ min-height:90px; resize:vertical; }
-.camp input:focus, .camp select:focus, .camp textarea:focus{
-  outline:3px solid rgba(188,143,116,.25);
-  border-color:var(--beige);
-}
-
-/* Date inputs helpers */
-.camp .date-input-wrap{
-  display:flex;
-  align-items:center;
-  border-radius:12px;
-  border:1px solid #e5e7eb;
-  background:#fff;
-  padding-inline:6px;
-  transition:.15s border-color, .15s box-shadow, .15s background;
-}
-.camp .date-input-wrap:focus-within{
-  border-color:var(--beige);
-  box-shadow:0 0 0 3px rgba(188,143,116,.15);
-  background:#fffbf7;
-}
-body.mzj.dark .camp .date-input-wrap{
-  background: rgba(255,255,255,.06);
-  border-color: rgba(255,255,255,.10);
-}
-.camp .date-input-wrap input{ border:0; background:transparent; padding:8px 6px; }
-.camp .date-input-wrap input:focus{ outline:none; box-shadow:none; }
-.camp .date-icon{ font-size:15px; color:var(--muted); padding-inline:4px; }
-.camp .date-helper{ font-size:11px; color:var(--muted); }
-
-/* Quill boxes */
-.camp #campaignDescEditor, .camp #editCampDescEditor{
-  height:230px;
-  border:1px solid #ddd;
-  border-radius:12px;
-  background:#fff;
-}
-body.mzj.dark .camp #campaignDescEditor, body.mzj.dark .camp #editCampDescEditor{
-  background: rgba(255,255,255,.06);
-  border-color: rgba(255,255,255,.10);
-}
-.camp .dropdown-menu{
-  position:fixed;
-  background:#fff;
-  border:1px solid #eee;
-  border-radius:12px;
-  box-shadow:0 10px 30px rgba(62,36,32,.12);
-  display:none;
-  min-width:260px;
-  max-height:260px;
-  overflow:auto;
-  z-index:1000;
-}
-body.mzj.dark .camp .dropdown-menu{
-  background: rgba(17,17,19,.92);
-  border-color: rgba(255,255,255,.10);
-  color:#fff;
-  box-shadow:none;
-}
-.camp .dd-item{
-  padding:8px 10px;
-  border-bottom:1px solid #f3f3f3;
-  cursor:pointer;
-  font-size:13px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:6px;
-}
-.camp .dd-item:hover{ background:#fff8ef; }
-body.mzj.dark .camp .dd-item{ border-bottom-color: rgba(255,255,255,.08); }
-body.mzj.dark .camp .dd-item:hover{ background: rgba(255,255,255,.06); }
-
-/* Links form */
-.camp .links-form{ display:flex; flex-direction:column; gap:6px; margin-bottom:6px; }
-.camp .link-row{ display:flex; gap:6px; align-items:center; }
-.camp .link-row input{ flex:1; }
-.camp .link-row .link-title{ max-width:190px; }
-.camp .link-remove{
-  border:1px solid #e5e7eb;
-  background:#fff;
-  border-radius:8px;
-  padding:6px 8px;
-  cursor:pointer;
-  font-size:12px;
-}
-.camp .link-remove:hover{ background:#fff8ef; border-color:#e5d2c6; }
-body.mzj.dark .camp .link-remove{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.10); color:#fff; }
-
-.camp .btn-link-add{ margin-top:4px; padding:6px 10px; font-size:12px; }
-</style>
-</link><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script><style>
-    :root{
+:root{
       --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px;
       --ok:#16a34a; --warn:#f59e0b; --danger:#dc2626; --info:#1e90ff;
     }
@@ -370,8 +36,7 @@ body.mzj.dark .camp .link-remove{ background: rgba(255,255,255,.06); border-colo
     .select{border-radius:10px;border:0;padding:8px 10px}
 
     /* Layout */
-    .page{padding:18px;display:grid;gap:16px}
-    .grid{display:grid;gap:16px}
+.grid{display:grid;gap:16px}
     @media(min-width:1100px){ .grid.two{grid-template-columns:2fr 1fr} }
     @media(min-width:900px){ .grid.three{grid-template-columns:repeat(3,1fr)} }
     @media(min-width:1100px){ .grid.four{grid-template-columns:repeat(4,1fr)} }
@@ -437,270 +102,242 @@ body.mzj.dark .camp .link-remove{ background: rgba(255,255,255,.06); border-colo
     .hm-head{background:#fffaf5;color:var(--brown);font-weight:700}
     .hm-name{background:#fff; text-align:right; font-weight:700}
 
-    footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);margin-top:8px}
-
-    @media print {
-      html, body { background: #fff8ef; }
-      #reportRoot { width: 100%; }
+    #reportRoot { width: 100%; }
     }
-  </style><style id="mzjProSelect">
-/* Professional dropdown styling (only for #spaceSelect on Dashboard) */
-#spaceSelect{
-  -webkit-appearance:none;
-  -moz-appearance:none;
-  appearance:none;
-  min-height:44px;
-  padding:10px 44px 10px 14px; /* leave room for arrow */
-  border-radius:12px;
-  border:1px solid rgba(62,36,32,.18);
-  background:rgba(255,255,255,.92);
-  color:rgb(62,36,32);
-  font-family:"Tajawal",system-ui,Arial;
-  font-weight:800;
-  letter-spacing:.2px;
-  box-shadow:0 10px 22px rgba(62,36,32,.08);
-  cursor:pointer;
-  transition:box-shadow .15s, transform .15s, border-color .15s;
-}
-#spaceSelect:hover{
-  border-color:rgba(62,36,32,.28);
-  box-shadow:0 14px 28px rgba(62,36,32,.11);
-  transform:translateY(-1px);
-}
-#spaceSelect:focus{
-  outline:none;
-  border-color:rgba(188,143,116,.9);
-  box-shadow:0 0 0 4px rgba(188,143,116,.20), 0 14px 28px rgba(62,36,32,.10);
-}
-#spaceSelect:disabled{
-  opacity:.65;
-  cursor:not-allowed;
-  box-shadow:none;
-  transform:none;
-}
-/* arrow */
-.mzj-actions{position:relative}
-.mzj-actions:has(#spaceSelect)::after{
-  content:"";
-  position:absolute;
-  right:16px;
-  top:50%;
-  width:0;height:0;
-  border-left:6px solid transparent;
-  border-right:6px solid transparent;
-  border-top:7px solid rgba(62,36,32,.65);
-  transform:translateY(-50%);
-  pointer-events:none;
-}
-</style></head>
+
+/* Dashboard inside MZJ UI shell */
+.dash-wrap{padding:14px}
+@media(min-width:1024px){ .dash-wrap{padding:18px} }
+.dash-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+.dash-actions .select{min-width:180px}
+.dash-actions .btnlink{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--brown);color:#fff;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(62,36,32,.22)}
+.dash-actions .btnlink.secondary{background:#ffffff; color:var(--brown); border:1px solid #ead8cb; box-shadow:none}
+
+</style>
+</head>
 <body class="mzj">
-<!-- MZJ Unified Topbar -->
-<header class="mzj-topbar">
-<div class="topbar-left">
-<button aria-label="القائمة" class="icon-btn" id="mzjSidebarBtn"><i class="fa-solid fa-bars"></i></button>
-<div class="brand">
-<div class="brand-mark">MZJ</div>
-<div class="brand-text">
-<div class="brand-title">محمد بن ذعار العجمي للسيارات</div>
-<div class="brand-sub">Workspace</div>
-</div>
-</div>
-</div>
-<div class="topbar-center">
-<div class="mzj-breadcrumb">
-<span class="crumb">الرئيسية</span>
-<i class="fa-solid fa-chevron-left"></i>
-<span class="crumb current">الحملات</span>
-</div>
-</div>
-<div class="topbar-right">
-<div class="mzj-chip"><i class="fa-regular fa-clock"></i><span id="mzjNow">—</span></div>
-<button class="mzj-btn mzj-btn-ghost" id="btnSignOut" style="display:none" type="button">
-<i class="fa-solid fa-right-from-bracket"></i>
-<span>تسجيل الخروج</span>
-</button> <div class="mzj-user">
-<div class="avatar">DB</div>
-<div class="user-text">
-<div class="user-name">الحملات</div>
-<div class="user-role">Dashboard</div>
-</div>
-</div>
-</div>
-</header>
-<div class="mzj-shell" id="mzjShell">
-<aside class="mzj-sidebar" data-mzj-sidebar="workspace" id="mzjSidebar">
-<div class="side-section">
-<div class="side-title">Workspace</div>
-<nav class="side-nav" id="mzjSideNav">
-<!-- يُبنى تلقائيًا من mzj-ui.js -->
-</nav>
-</div>
-</aside>
-<div class="mzj-backdrop" id="mzjBackdrop"></div>
-<main class="mzj-content"><section class="mzj-pagehead">
-<div class="pagehead-left">
-<h1 class="page-title">لوحة التحكم</h1>
-<p class="page-desc">تقارير ومؤشرات الأداء</p>
-</div>
-<div class="pagehead-right">
-<div class="mzj-actions" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-<select class="mzj-select" id="spaceSelect" style="min-width:200px;"></select>
-<button class="mzj-btn mzj-btn-primary" id="btnExportPdf" type="button">
-<i class="fa-regular fa-file-pdf"></i> حفظ PDF
-  </button>
-<button class="mzj-btn mzj-btn-ghost" id="btnLogout" type="button">
-<i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
-  </button>
-</div>
-</div></section><main class="page" id="reportRoot">
-<!-- KPIs -->
-<section class="panel">
-<div class="head">
-<div style="display:flex;align-items:center;gap:10px">
-<strong>ملخص الـ Space الحالي</strong>
-<span class="chip" id="who">—</span>
-</div>
-<div class="muted" id="todayChip"></div>
-</div>
-<div class="body">
-<div class="kpis" id="kpis">
-<div class="kpi">
-<div class="lbl"><span class="ico">
-<svg fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" stroke="#bc8f74" stroke-width="1.5"></path></svg>
-</span>إجمالي المهام</div>
-<div class="val" id="k_total">—</div>
-<div class="hint">كل الأعمدة</div>
-</div>
-<div class="kpi">
-<div class="lbl"><span class="ico">
-<svg fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M12 7v5l3 3" stroke="#bc8f74" stroke-linecap="round" stroke-width="1.5"></path><circle cx="12" cy="12" r="9" stroke="#bc8f74" stroke-width="1.5"></circle></svg>
-</span>متأخرة</div>
-<div class="val" id="k_overdue">—</div>
-<div class="hint">تاريخ قبل اليوم</div>
-</div>
-<div class="kpi">
-<div class="lbl"><span class="ico">
-<svg fill="none" height="18" viewbox="0 0 24 24" width="18"><rect height="16" rx="2" stroke="#bc8f74" stroke-width="1.5" width="18" x="3" y="5"></rect><path d="M3 10h18" stroke="#bc8f74" stroke-width="1.5"></path><path d="M8 3v4M16 3v4" stroke="#bc8f74" stroke-linecap="round" stroke-width="1.5"></path></svg>
-</span>تسليم اليوم</div>
-<div class="val" id="k_today">—</div>
-<div class="hint">Due Today</div>
-</div>
-<div class="kpi">
-<div class="lbl"><span class="ico">
-<svg fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-5 5V6a2 2 0 0 1 2-2z" stroke="#bc8f74" stroke-width="1.5"></path></svg>
-</span>تحت المراجعة</div>
-<div class="val" id="k_review">—</div>
-<div class="hint">عمود “تحت المراجعة”</div>
-</div>
-<div class="kpi">
-<div class="lbl"><span class="ico">
-<svg fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M12 12a5 5 0 1 0-5-5" stroke="#bc8f74" stroke-width="1.5"></path><path d="M20 21a8 8 0 0 0-16 0" stroke="#bc8f74" stroke-width="1.5"></path><path d="M4 4l16 16" stroke="#bc8f74" stroke-width="1.5"></path></svg>
-</span>غير معيّنة</div>
-<div class="val" id="k_unassigned">—</div>
-<div class="hint">بدون مسؤول</div>
-</div>
-</div>
-</div>
-</section>
-<!-- Daily Task Monthly + Weekly Summary -->
-<section class="panel">
-<div class="head">
-<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-<strong>🗓 Daily Task — المهام اليومية</strong>
-<span class="muted" id="dailySpaceLabel">قائمة الشهور الفعّالة فقط</span>
-</div>
-<select class="select" id="dailyMonthSelect" style="padding:6px 10px;font-size:13px;min-width:170px;"></select>
-</div>
-<div class="body" id="dailyMonthlyWrap">
-<div class="empty">جارِ تحميل بيانات Daily Task ...</div>
-</div>
-</section>
-<!-- Columns counters -->
-<section class="panel">
-<div class="head">
-<div style="display:flex;align-items:center;gap:10px">
-<strong>عداد الأعمدة</strong>
-<span class="chip">
-<svg fill="none" height="14" viewbox="0 0 24 24" width="14">
-<path d="M3 6h18M3 12h18M3 18h18" stroke="#3e2420" stroke-linecap="round" stroke-width="2"></path>
-</svg>
+  <!-- Topbar (MZJ UI) -->
+  <header class="mzj-topbar">
+    <div class="mzj-topbar-left">
+      <button class="btn btn-ghost" id="mzjSidebarBtn" type="button" aria-label="القائمة">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="mzj-topbar-title">
+        <div class="mzj-title">لوحة التحكم</div>
+        <div class="mzj-subtitle">MZJ Workspace</div>
+      </div>
+    </div>
+
+    <div class="mzj-topbar-right">
+      <div class="mzj-now" id="mzjNow">—</div>
+      <button id="mzjThemeBtn" class="btn btn-ghost" type="button" aria-label="الوضع الليلي">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <div class="mzj-shell" id="mzjShell">
+    <!-- Sidebar -->
+    <aside class="mzj-sidebar" id="mzjSidebar">
+      <div class="mzj-side-head">
+        <div class="mzj-side-logo">MZJ</div>
+        <div class="mzj-side-meta">
+          <div class="mzj-side-name">Workspace</div>
+          <div class="mzj-side-sub">Dashboard</div>
+        </div>
+      </div>
+
+      <nav class="mzj-side-nav">
+        <a class="side-link" href="./admin.html"><i class="fa-solid fa-bullhorn"></i><span>الحملات</span></a>
+          <a class="side-link active" href="./dashboard.html"><i class="fa-solid fa-bullhorn"></i><span>الداش بورد</span></a>
+          <a class="side-link" href="./projects.html"><i class="fa-solid fa-bullhorn"></i><span>المشاريع</span></a>
+          <a class="side-link" href="./members.html"><i class="fa-solid fa-bullhorn"></i><span>الاعضاء</span></a>
+          <a class="side-link" href="./cars.html"><i class="fa-solid fa-bullhorn"></i><span>متابعة السيارات</span></a>
+          <a class="side-link" href="./Whiteboard.html"><i class="fa-solid fa-bullhorn"></i><span>وايت بورد</span></a>
+
+        <div class="mzj-side-sep"></div>
+
+        <a class="mzj-nav-link danger" href="javascript:void(0)" id="btnLogout"><i class="fa-solid fa-right-from-bracket"></i><span>تسجيل الخروج</span></a>
+      </nav>
+    </aside>
+
+    <div class="mzj-backdrop" id="mzjBackdrop"></div>
+
+    <main class="mzj-content">
+      <section class="mzj-pagehead">
+        <div class="mzj-pagehead-left">
+          <h1>لوحة التحكم</h1>
+          <p class="muted">تقارير الـ Space + Daily Task + الرسوم البيانية</p>
+        </div>
+        <div class="dash-actions">
+          <select id="spaceSelect" class="select"></select>
+          <a href="javascript:void(0)" id="btnExportPdf" class="btnlink">حفظ PDF</a>
+        </div>
+      </section>
+
+      <div class="dash-wrap" id="reportRoot">
+        <!-- KPIs -->
+    <section class="panel">
+      <div class="head">
+        <div style="display:flex;align-items:center;gap:10px">
+          <strong>ملخص الـ Space الحالي</strong>
+          <span class="chip" id="who">—</span>
+        </div>
+        <div class="muted" id="todayChip"></div>
+      </div>
+      <div class="body">
+        <div class="kpis" id="kpis">
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" stroke="#bc8f74" stroke-width="1.5"/></svg>
+            </span>إجمالي المهام</div>
+            <div class="val" id="k_total">—</div>
+            <div class="hint">كل الأعمدة</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="#bc8f74" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#bc8f74" stroke-width="1.5"/></svg>
+            </span>متأخرة</div>
+            <div class="val" id="k_overdue">—</div>
+            <div class="hint">تاريخ قبل اليوم</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="#bc8f74" stroke-width="1.5"/><path d="M3 10h18" stroke="#bc8f74" stroke-width="1.5"/><path d="M8 3v4M16 3v4" stroke="#bc8f74" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </span>تسليم اليوم</div>
+            <div class="val" id="k_today">—</div>
+            <div class="hint">Due Today</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-5 5V6a2 2 0 0 1 2-2z" stroke="#bc8f74" stroke-width="1.5"/></svg>
+            </span>تحت المراجعة</div>
+            <div class="val" id="k_review">—</div>
+            <div class="hint">عمود “تحت المراجعة”</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12a5 5 0 1 0-5-5" stroke="#bc8f74" stroke-width="1.5"/><path d="M20 21a8 8 0 0 0-16 0" stroke="#bc8f74" stroke-width="1.5"/><path d="M4 4l16 16" stroke="#bc8f74" stroke-width="1.5"/></svg>
+            </span>غير معيّنة</div>
+            <div class="val" id="k_unassigned">—</div>
+            <div class="hint">بدون مسؤول</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Daily Task Monthly + Weekly Summary -->
+    <section class="panel">
+      <div class="head">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <strong>🗓 Daily Task — المهام اليومية</strong>
+          <span class="muted" id="dailySpaceLabel">قائمة الشهور الفعّالة فقط</span>
+        </div>
+        <select id="dailyMonthSelect" class="select" style="padding:6px 10px;font-size:13px;min-width:170px;"></select>
+      </div>
+      <div class="body" id="dailyMonthlyWrap">
+        <div class="empty">جارِ تحميل بيانات Daily Task ...</div>
+      </div>
+    </section>
+
+    <!-- Columns counters -->
+    <section class="panel">
+      <div class="head">
+        <div style="display:flex;align-items:center;gap:10px">
+          <strong>عداد الأعمدة</strong>
+          <span class="chip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M3 6h18M3 12h18M3 18h18" stroke="#3e2420" stroke-width="2" stroke-linecap="round"/>
+            </svg>
             ريل مواصفات / ريل قصير / تصميم صور / يوتيوب ...
           </span>
-</div>
-</div>
-<div class="body"><div class="cols" id="cols"></div></div>
-</section>
-<!-- Soon + Assignees -->
-<div class="grid two">
-<section class="panel">
-<div class="head"><strong>أقرب تسليم (Top 10)</strong><span class="chip" id="todayInfo"></span></div>
-<div class="body"><div id="soonWrap"></div></div>
-</section>
-<section class="panel">
-<div class="head"><strong>توزيع المهام على الأعضاء</strong></div>
-<div class="body"><div id="assigneesWrap"></div></div>
-</section>
-</div>
-<!-- Per-member details -->
-<section class="panel">
-<div class="head"><strong>تقرير الأعضاء — حالة المهام + زمن التنفيذ</strong></div>
-<div class="body"><div id="membersTableWrap"></div></div>
-</section>
-<!-- Charts base -->
-<section class="panel">
-<div class="head"><strong>رسوم بيانية أساسية</strong><span class="muted">Per Member + Status Mix</span></div>
-<div class="body">
-<div class="charts">
-<div><canvas height="180" id="barPerUser"></canvas></div>
-<div><canvas height="180" id="pieStatuses"></canvas></div>
-</div>
-</div>
-</section>
-<!-- Lead/Cycle + Throughput -->
-<div class="grid 2-1">
-<section class="panel">
-<div class="head"><strong>Lead Time &amp; Cycle Time (Days)</strong><span class="muted">Median per Week</span></div>
-<div class="body"><canvas height="200" id="lineLeadCycle"></canvas></div>
-</section>
-<section class="panel">
-<div class="head"><strong>Throughput Weekly</strong><span class="muted">Completed Tasks / Week</span></div>
-<div class="body"><canvas height="200" id="barThroughput"></canvas></div>
-</section>
-</div>
-<!-- SLA Breach + Completion by Column -->
-<div class="grid 1-2">
-<section class="panel">
-<div class="head"><strong>SLA Breach</strong><span class="muted">Completed after Due Date</span></div>
-<div class="body"><canvas height="220" id="gaugeSLA"></canvas></div>
-</section>
-<section class="panel">
-<div class="head"><strong>Completion Rate by Column</strong><span class="muted">Done vs Remaining</span></div>
-<div class="body"><canvas height="220" id="barByColumn"></canvas></div>
-</section>
-</div>
-<!-- Workload Heatmap -->
-<section class="panel">
-<div class="head"><strong>Member Workload Heatmap</strong><span class="muted">Next 14 days by Due Date</span></div>
-<div class="body">
-<div class="heatmap">
-<div class="legend">
-<span class="chip">Intensity: 0</span>
-<span class="chip warn">Medium</span>
-<span class="chip danger">High</span>
-</div>
-<div class="hm-grid" id="hmWrap"></div>
-</div>
-</div>
-</section>
-<!-- Activity -->
-<section class="panel">
-<div class="head"><strong>نشاط حديث</strong><span class="muted">آخر 15 تحديث</span></div>
-<div class="body" id="activityWrap"></div>
-</section>
-</main></main>
-</div>
-<script src="mzj-ui (1).js"></script>
-<script type="module">
+        </div>
+      </div>
+      <div class="body"><div class="cols" id="cols"></div></div>
+    </section>
+
+    <!-- Soon + Assignees -->
+    <div class="grid two">
+      <section class="panel">
+        <div class="head"><strong>أقرب تسليم (Top 10)</strong><span class="chip" id="todayInfo"></span></div>
+        <div class="body"><div id="soonWrap"></div></div>
+      </section>
+
+      <section class="panel">
+        <div class="head"><strong>توزيع المهام على الأعضاء</strong></div>
+        <div class="body"><div id="assigneesWrap"></div></div>
+      </section>
+    </div>
+
+    <!-- Per-member details -->
+    <section class="panel">
+      <div class="head"><strong>تقرير الأعضاء — حالة المهام + زمن التنفيذ</strong></div>
+      <div class="body"><div id="membersTableWrap"></div></div>
+    </section>
+
+    <!-- Charts base -->
+    <section class="panel">
+      <div class="head"><strong>رسوم بيانية أساسية</strong><span class="muted">Per Member + Status Mix</span></div>
+      <div class="body">
+        <div class="charts">
+          <div><canvas id="barPerUser" height="180"></canvas></div>
+          <div><canvas id="pieStatuses" height="180"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lead/Cycle + Throughput -->
+    <div class="grid 2-1">
+      <section class="panel">
+        <div class="head"><strong>Lead Time & Cycle Time (Days)</strong><span class="muted">Median per Week</span></div>
+        <div class="body"><canvas id="lineLeadCycle" height="200"></canvas></div>
+      </section>
+      <section class="panel">
+        <div class="head"><strong>Throughput Weekly</strong><span class="muted">Completed Tasks / Week</span></div>
+        <div class="body"><canvas id="barThroughput" height="200"></canvas></div>
+      </section>
+    </div>
+
+    <!-- SLA Breach + Completion by Column -->
+    <div class="grid 1-2">
+      <section class="panel">
+        <div class="head"><strong>SLA Breach</strong><span class="muted">Completed after Due Date</span></div>
+        <div class="body"><canvas id="gaugeSLA" height="220"></canvas></div>
+      </section>
+      <section class="panel">
+        <div class="head"><strong>Completion Rate by Column</strong><span class="muted">Done vs Remaining</span></div>
+        <div class="body"><canvas id="barByColumn" height="220"></canvas></div>
+      </section>
+    </div>
+
+    <!-- Workload Heatmap -->
+    <section class="panel">
+      <div class="head"><strong>Member Workload Heatmap</strong><span class="muted">Next 14 days by Due Date</span></div>
+      <div class="body">
+        <div class="heatmap">
+          <div class="legend">
+            <span class="chip">Intensity: 0</span>
+            <span class="chip warn">Medium</span>
+            <span class="chip danger">High</span>
+          </div>
+          <div id="hmWrap" class="hm-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Activity -->
+    <section class="panel">
+      <div class="head"><strong>نشاط حديث</strong><span class="muted">آخر 15 تحديث</span></div>
+      <div class="body" id="activityWrap"></div>
+    </section>
+      </div>
+
+      <footer class="mzj-footer">© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</footer>
+    </main>
+  </div>
+
+    <script src="mzj-ui.js"></script>
+  <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
     import {
@@ -1452,15 +1089,6 @@ body.mzj.dark .camp .link-remove{ background: rgba(255,255,255,.06); border-colo
         return d;
       }
     }
-  </script><script id="mzjActiveDash">
-(function(){
-  try{
-    var p=(location.pathname||'').split('/').pop()||'dashboard.html';
-    var links=document.querySelectorAll('#mzjSideNav a, .mzj-sidebar a');
-    links.forEach(function(a){
-      var h=(a.getAttribute('href')||'').split('/').pop();
-      if(h===p) a.classList.add('active');
-    });
-  }catch(e){}
-})();</script></body>
+  </script>
+</body>
 </html>

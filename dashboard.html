@@ -1,8 +1,7 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8"/>
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>لوحة التحكم — MZJ Workspace</title>
 
@@ -11,10 +10,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-<link rel="stylesheet" href="mzj-ui.css">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
-<style>
-:root{
+  <style>
+    :root{
       --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px;
       --ok:#16a34a; --warn:#f59e0b; --danger:#dc2626; --info:#1e90ff;
     }
@@ -36,7 +33,8 @@
     .select{border-radius:10px;border:0;padding:8px 10px}
 
     /* Layout */
-.grid{display:grid;gap:16px}
+    .page{padding:18px;display:grid;gap:16px}
+    .grid{display:grid;gap:16px}
     @media(min-width:1100px){ .grid.two{grid-template-columns:2fr 1fr} }
     @media(min-width:900px){ .grid.three{grid-template-columns:repeat(3,1fr)} }
     @media(min-width:1100px){ .grid.four{grid-template-columns:repeat(4,1fr)} }
@@ -102,81 +100,35 @@
     .hm-head{background:#fffaf5;color:var(--brown);font-weight:700}
     .hm-name{background:#fff; text-align:right; font-weight:700}
 
-    #reportRoot { width: 100%; }
+    footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);margin-top:8px}
+
+    @media print {
+      html, body { background: #fff8ef; }
+      #reportRoot { width: 100%; }
     }
-
-/* Dashboard inside MZJ UI shell */
-.dash-wrap{padding:14px}
-@media(min-width:1024px){ .dash-wrap{padding:18px} }
-.dash-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
-.dash-actions .select{min-width:180px}
-.dash-actions .btnlink{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--brown);color:#fff;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(62,36,32,.22)}
-.dash-actions .btnlink.secondary{background:#ffffff; color:var(--brown); border:1px solid #ead8cb; box-shadow:none}
-
-</style>
+  </style>
 </head>
-<body class="mzj">
-  <!-- Topbar (MZJ UI) -->
-  <header class="mzj-topbar">
-    <div class="mzj-topbar-left">
-      <button class="btn btn-ghost" id="mzjSidebarBtn" type="button" aria-label="القائمة">
-        <i class="fa-solid fa-bars"></i>
-      </button>
-      <div class="mzj-topbar-title">
-        <div class="mzj-title">لوحة التحكم</div>
-        <div class="mzj-subtitle">MZJ Workspace</div>
-      </div>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-badge"></span>
+      <strong>MZJ Workspace — لوحة التحكم</strong>
     </div>
-
-    <div class="mzj-topbar-right">
-      <div class="mzj-now" id="mzjNow">—</div>
-      <button id="mzjThemeBtn" class="btn btn-ghost" type="button" aria-label="الوضع الليلي">
-        <i class="fa-solid fa-moon"></i>
-      </button>
-    </div>
+    <nav class="nav">
+      <a id="navDashboard" href="dashboard.html">لوحة التحكم</a>
+      <a id="navProjects"  href="projects.html">المشاريع</a>
+      <a id="navMembers"   href="members.html">الأعضاء</a>
+      <a id="navAdmin"     href="admin.html">الحملات</a>
+      <select id="spaceSelect" class="select"></select>
+      <a href="javascript:void(0)" id="btnExportPdf" class="btn">حفظ PDF</a>
+      <a href="javascript:void(0)" id="btnLogout">تسجيل الخروج</a>
+      <a href="cars.html">متابعة السيارات</a>
+      <a href="Whiteboard.html">وايت بورد</a>
+    </nav>
   </header>
 
-  <div class="mzj-shell" id="mzjShell">
-    <!-- Sidebar -->
-    <aside class="mzj-sidebar" id="mzjSidebar">
-      <div class="mzj-side-head">
-        <div class="mzj-side-logo">MZJ</div>
-        <div class="mzj-side-meta">
-          <div class="mzj-side-name">Workspace</div>
-          <div class="mzj-side-sub">Dashboard</div>
-        </div>
-      </div>
-
-      <nav class="mzj-side-nav">
-        <a class="side-link" href="./admin.html"><i class="fa-solid fa-bullhorn"></i><span>الحملات</span></a>
-          <a class="side-link active" href="./dashboard.html"><i class="fa-solid fa-bullhorn"></i><span>الداش بورد</span></a>
-          <a class="side-link" href="./projects.html"><i class="fa-solid fa-bullhorn"></i><span>المشاريع</span></a>
-          <a class="side-link" href="./members.html"><i class="fa-solid fa-bullhorn"></i><span>الاعضاء</span></a>
-          <a class="side-link" href="./cars.html"><i class="fa-solid fa-bullhorn"></i><span>متابعة السيارات</span></a>
-          <a class="side-link" href="./Whiteboard.html"><i class="fa-solid fa-bullhorn"></i><span>وايت بورد</span></a>
-
-        <div class="mzj-side-sep"></div>
-
-        <a class="mzj-nav-link danger" href="javascript:void(0)" id="btnLogout"><i class="fa-solid fa-right-from-bracket"></i><span>تسجيل الخروج</span></a>
-      </nav>
-    </aside>
-
-    <div class="mzj-backdrop" id="mzjBackdrop"></div>
-
-    <main class="mzj-content">
-      <section class="mzj-pagehead">
-        <div class="mzj-pagehead-left">
-          <h1>لوحة التحكم</h1>
-          <p class="muted">تقارير الـ Space + Daily Task + الرسوم البيانية</p>
-        </div>
-        <div class="dash-actions">
-          <select id="spaceSelect" class="select"></select>
-          <a href="javascript:void(0)" id="btnExportPdf" class="btnlink">حفظ PDF</a>
-        </div>
-      </section>
-
-      <div class="dash-wrap" id="reportRoot">
-        <!-- KPIs -->
+  <main class="page" id="reportRoot">
+    <!-- KPIs -->
     <section class="panel">
       <div class="head">
         <div style="display:flex;align-items:center;gap:10px">
@@ -330,13 +282,11 @@
       <div class="head"><strong>نشاط حديث</strong><span class="muted">آخر 15 تحديث</span></div>
       <div class="body" id="activityWrap"></div>
     </section>
-      </div>
+  </main>
 
-      <footer class="mzj-footer">© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</footer>
-    </main>
-  </div>
+  <footer>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</footer>
 
-    <script src="mzj-ui.js"></script>
+  <!-- Firebase + Logic -->
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";

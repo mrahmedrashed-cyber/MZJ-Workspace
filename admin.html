@@ -6,10 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>الحملات | MZJ Workspace</title>
 
+  <!-- Tajawal Font -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="./mzj-ui.css"/>
 
+  <!-- Quill Editor CSS -->
   <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 
   <style>
@@ -22,94 +22,103 @@
       --radius:14px;
     }
 
-    /* ===== Campaign Page Only ===== */
-    .campaign-page{ padding:18px; display:grid; gap:16px; }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--cream);
+      color:var(--text);
+      font-family:"Tajawal",system-ui,Arial;
+      line-height:1.75
+    }
+    a{color:inherit;text-decoration:none}
 
-    .campaign-page .panel{
+    /* Topbar */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 18px;
+      background:var(--brown);
+      color:#fff;
+      box-shadow:0 6px 20px rgba(62,36,32,.2);
+      position:sticky;
+      top:0;
+      z-index:10
+    }
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand-badge{
+      inline-size:28px;
+      block-size:28px;
+      border-radius:8px;
+      background:linear-gradient(135deg,var(--beige),#d9b39a)
+    }
+    .nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .nav a{
+      padding:8px 12px;
+      border-radius:10px;
+      color:#fff
+    }
+    .nav a:hover{background:rgba(255,255,255,.14)}
+
+    .page{padding:18px;display:grid;gap:16px}
+
+    /* Panels */
+    .panel{
       background:#fff;
       border-radius:var(--radius);
-      box-shadow:0 12px 30px rgba(62,36,32,.12);
-      overflow:hidden;
+      box-shadow:0 12px 30px rgba(62,36,32,.12)
     }
-    .campaign-page .panel .head{
+    .panel .head{
       padding:12px 14px;
       border-bottom:1px solid #eee;
       display:flex;
       gap:10px;
       justify-content:space-between;
       align-items:center;
-      flex-wrap:wrap;
+      flex-wrap:wrap
     }
-    .campaign-page .panel .body{ padding:12px 14px; }
+    .panel .body{padding:12px 14px}
 
-    .campaign-page .controls{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-
-    /* Fix: campaign select size */
-    .campaign-page #campaignSelect{
-      min-width:260px;
-      max-width:420px;
-      height:44px;
-      padding:8px 12px;
-      border:1px solid #e5e7eb;
-      border-radius:12px;
-      background:#fff;
-      font-family:inherit;
-      font-size:14px;
-    }
-
-    .campaign-page .select,.campaign-page .input{
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .select,.input{
       padding:10px 12px;
       border:1px solid #e5e7eb;
       border-radius:12px;
-      background:#fff;
-      height:44px;
-      font-family:inherit;
-      font-size:14px;
+      background:#fff
     }
-
-    .campaign-page .btn{
+    .btn{
       padding:10px 12px;
       border-radius:12px;
       border:0;
       background:var(--brown);
       color:#fff;
       cursor:pointer;
-      font-weight:800;
-      height:44px;
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
+      font-weight:800
     }
-    .campaign-page .btn.secondary{
+    .btn.secondary{
       background:#fff;
       color:var(--brown);
-      border:1px solid var(--brown);
+      border:1px solid var(--brown)
     }
-    .campaign-page .btn.danger{background:#b91c1c;color:#fff}
-    .campaign-page .muted{color:var(--muted)}
+    .btn.danger{background:#b91c1c;color:#fff}
+    .muted{color:var(--muted)}
 
     /* Board */
-    .campaign-page .board{display:grid;gap:14px;grid-template-columns:repeat(4,1fr)}
-    @media(max-width:1400px){.campaign-page .board{grid-template-columns:repeat(3,1fr)}}
-    @media(max-width:980px){.campaign-page .board{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:640px){.campaign-page .board{grid-template-columns:1fr}}
+    .board{display:grid;gap:14px;grid-template-columns:repeat(4,1fr)}
+    @media(max-width:1400px){.board{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:980px){.board{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:640px){.board{grid-template-columns:1fr}}
 
-    .campaign-page .col{
+    .col{
       background:#fff;
       border-radius:14px;
       display:flex;
       flex-direction:column;
       min-height:260px;
-      position:relative;
-      border:1px solid #eee;
+      position:relative
     }
 
-    .campaign-page .col-head{
+    .col-head{
       display:flex;
       justify-content:space-between;
       align-items:center;
@@ -117,34 +126,34 @@
       border-bottom:1px solid #f2e7df;
       background:#fff8ef;
       border-top-left-radius:14px;
-      border-top-right-radius:14px;
+      border-top-right-radius:14px
     }
 
-    .campaign-page .col-title{color:var(--brown);font-weight:800}
-    .campaign-page .col-actions{display:flex;gap:6px}
-    .campaign-page .col-actions .icon{
+    .col-title{color:var(--brown);font-weight:800}
+    .col-actions{display:flex;gap:6px}
+    .col-actions .icon{
       cursor:pointer;
       font-size:13px;
       padding:6px 8px;
       border:1px solid #e9d8cc;
       border-radius:10px;
-      background:#fff;
+      background:#fff
     }
 
-    .campaign-page .col-body{padding:10px;display:grid;gap:10px}
-    .campaign-page .dropzone{
+    .col-body{padding:10px;display:grid;gap:10px}
+    .dropzone{
       min-height:140px;
       border:2px dashed transparent;
       border-radius:12px;
-      transition:.15s;
+      transition:.15s
     }
-    .campaign-page .dropzone.drag{
+    .dropzone.drag{
       border-color:#e5d2c6;
-      background:#fffaf5;
+      background:#fffaf5
     }
 
     /* Task Cards */
-    .campaign-page .card{
+    .card{
       background:#fff;
       border:1px solid #eee;
       border-radius:12px;
@@ -158,19 +167,19 @@
       gap:4px;
       font-size:13px;
     }
-    .campaign-page .card:hover{
+    .card:hover{
       transform:translateY(-2px);
       box-shadow:0 10px 24px rgba(62,36,32,.12);
     }
 
-    .campaign-page .card-top{
+    .card-top{
       display:flex;
       justify-content:space-between;
       align-items:flex-start;
       gap:6px;
     }
 
-    .campaign-page .card h4{
+    .card h4{
       margin:0;
       color:var(--brown);
       font-size:14px;
@@ -178,8 +187,13 @@
       font-weight:800;
     }
 
-    .campaign-page .card-actions{display:flex;flex-direction:column;gap:2px;margin-inline-start:4px}
-    .campaign-page .card-move{
+    .card-actions{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      margin-inline-start:4px;
+    }
+    .card-move{
       border:1px solid #e5e7eb;
       border-radius:6px;
       background:#fff;
@@ -188,12 +202,24 @@
       cursor:pointer;
       line-height:1;
     }
-    .campaign-page .card-move:hover{background:#fff8ef;border-color:#e5d2c6}
+    .card-move:hover{
+      background:#fff8ef;
+      border-color:#e5d2c6;
+    }
 
-    .campaign-page .card-hint{margin:2px 0 0;font-size:11px;color:var(--muted)}
+    .card-hint{
+      margin:2px 0 0;
+      font-size:11px;
+      color:var(--muted);
+    }
 
-    .campaign-page .links-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
-    .campaign-page .task-link{
+    .links-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+      margin-top:2px;
+    }
+    .task-link{
       font-size:11px;
       padding:3px 6px;
       border-radius:999px;
@@ -202,10 +228,12 @@
       color:var(--brown);
       text-decoration:none;
     }
-    .campaign-page .task-link:hover{background:#f7e9e0}
+    .task-link:hover{
+      background:#f7e9e0;
+    }
 
-    .campaign-page .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
-    .campaign-page .badge{
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
+    .badge{
       padding:4px 8px;
       border-radius:999px;
       font-size:12px;
@@ -213,17 +241,25 @@
       color:var(--brown);
       display:inline-flex;
       align-items:center;
-      gap:6px;
+      gap:6px
     }
-    .campaign-page .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
-    .campaign-page .small{font-size:12px;color:var(--muted)}
+    .badge .dot{
+      inline-size:8px;
+      block-size:8px;
+      border-radius:999px;
+      background:#bc8f74
+    }
+    .small{font-size:12px;color:var(--muted)}
 
     /* Modal Base (campaign) */
     .modal-campaign{
-      position:fixed; inset:0;
+      position:fixed;
+      inset:0;
       background:rgba(0,0,0,.45);
-      display:none; place-items:center;
-      padding:18px; z-index:999;
+      display:none;
+      place-items:center;
+      padding:18px;
+      z-index:999;
     }
     .modal-campaign.show{display:grid}
 
@@ -238,27 +274,30 @@
       flex-direction:column;
       box-shadow:0 30px 80px rgba(62,36,32,.25);
     }
+
     .campaign-sheet .head{
       padding:12px 16px;
       border-bottom:1px solid #eee;
       background:var(--cream);
       font-weight:800;
       font-size:18px;
-      color:var(--brown);
+      color:var(--brown)
     }
+
     .campaign-sheet .body{
       padding:16px;
       overflow-y:auto;
       display:grid;
-      gap:14px;
+      gap:14px
     }
+
     .campaign-sheet .footer{
       padding:12px 16px;
       border-top:1px solid #eee;
       background:#fff8ef;
       display:flex;
       justify-content:flex-end;
-      gap:10px;
+      gap:10px
     }
 
     /* Quill Editor Boxes */
@@ -270,10 +309,22 @@
       background:#fff;
     }
 
-    /* Generic form styles */
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media(max-width:900px){.grid2{grid-template-columns:1fr}}
-    label{display:block;margin:4px 0 4px;font-weight:700;color:var(--brown);font-size:13px}
+    /* Generic form styles (task modal + dates) */
+    .grid2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    @media(max-width:900px){
+      .grid2{grid-template-columns:1fr}
+    }
+    label{
+      display:block;
+      margin:4px 0 4px;
+      font-weight:700;
+      color:var(--brown);
+      font-size:13px;
+    }
     input,select,textarea{
       width:100%;
       padding:10px;
@@ -284,13 +335,24 @@
       font-size:14px;
     }
     textarea{min-height:90px;resize:vertical}
-    #tDesc{min-height:120px;padding:10px;font-size:14px;line-height:1.6}
+
+    #tDesc{
+      min-height:120px;
+      padding:10px;
+      font-size:14px;
+      line-height:1.6;
+    }
+
     input:focus,select:focus,textarea:focus{
       outline:3px solid rgba(188,143,116,.25);
       border-color:var(--beige);
     }
 
-    .dates-grid .date-field{display:flex;flex-direction:column;gap:4px}
+    .dates-grid .date-field{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
     .date-input-wrap{
       display:flex;
       align-items:center;
@@ -305,13 +367,35 @@
       box-shadow:0 0 0 3px rgba(188,143,116,.15);
       background:#fffbf7;
     }
-    .date-input-wrap input{border:0;background:transparent;padding:8px 6px}
-    .date-input-wrap input:focus{outline:none;box-shadow:none}
-    .date-icon{font-size:15px;color:var(--muted);padding-inline:4px}
-    .date-helper{font-size:11px;color:var(--muted)}
+    .date-input-wrap input{
+      border:0;
+      background:transparent;
+      padding:8px 6px;
+    }
+    .date-input-wrap input:focus{
+      outline:none;
+      box-shadow:none;
+    }
+    .date-icon{
+      font-size:15px;
+      color:var(--muted);
+      padding-inline:4px;
+    }
+    .date-helper{
+      font-size:11px;
+      color:var(--muted);
+    }
 
     /* Task Modal */
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;place-items:center;padding:16px;z-index:998}
+    .modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.35);
+      display:none;
+      place-items:center;
+      padding:16px;
+      z-index:998;
+    }
     .modal.show{display:grid}
     .sheet{
       background:#fff;
@@ -335,7 +419,12 @@
       font-weight:800;
       color:var(--brown);
     }
-    .sheet .body{padding:12px 14px;display:grid;gap:10px;overflow:auto}
+    .sheet .body{
+      padding:12px 14px;
+      display:grid;
+      gap:10px;
+      overflow:auto;
+    }
     .sheet .footer{
       padding:10px 14px;
       border-top:1px solid #eee;
@@ -357,7 +446,12 @@
       background:#fff;
       font-size:12px;
     }
-    .chip-remove{cursor:pointer;font-size:12px;color:#b91c1c;padding-inline:2px}
+    .chip-remove{
+      cursor:pointer;
+      font-size:12px;
+      color:#b91c1c;
+      padding-inline:2px;
+    }
 
     .dropdown-menu{
       position:fixed;
@@ -383,10 +477,23 @@
     }
     .dd-item:hover{background:#fff8ef}
 
-    .links-form{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
-    .link-row{display:flex;gap:6px;align-items:center}
-    .link-row input{flex:1}
-    .link-row .link-title{max-width:190px}
+    .links-form{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin-bottom:6px;
+    }
+    .link-row{
+      display:flex;
+      gap:6px;
+      align-items:center;
+    }
+    .link-row input{
+      flex:1;
+    }
+    .link-row .link-title{
+      max-width:190px;
+    }
     .link-remove{
       border:1px solid #e5e7eb;
       background:#fff;
@@ -395,72 +502,47 @@
       cursor:pointer;
       font-size:12px;
     }
-    .link-remove:hover{background:#fff8ef;border-color:#e5d2c6}
-    .btn-link-add{margin-top:4px;padding:6px 10px;font-size:12px}
-  </style>
+    .link-remove:hover{
+      background:#fff8ef;
+      border-color:#e5d2c6;
+    }
+    .btn-link-add{
+      margin-top:4px;
+      padding:6px 10px;
+      font-size:12px;
+    }
 
+    .footer-bar{
+      padding:16px 18px;
+      color:#fff;
+      background:linear-gradient(180deg,var(--brown),#2f1c19);
+      text-align:center;
+      font-size:13px;
+    }
+  </style>
 </head>
 
-<body class="mzj">
-  <header class="mzj-topbar">
-    <div class="topbar-left">
-      <button class="mzj-btn mzj-btn-ghost" id="mzjSidebarBtn" type="button" aria-label="القائمة">
-        <i class="fa-solid fa-bars"></i>
-      </button>
-      <div class="brand">
-        <div class="logo">MZJ</div>
-        <div class="brand-text">
-          <div class="brand-title">MZJ Workspace</div>
-          <div class="brand-sub">Workflow</div>
-        </div>
-      </div>
+<body>
+  <!-- Top Navigation -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-badge"></span>
+      <strong>MZJ Workspace — الحملات</strong>
     </div>
-    <div class="topbar-right">
-      <div class="mzj-chip"><i class="fa-regular fa-clock"></i><span id="mzjNow">—</span></div>
-      <button class="mzj-btn mzj-btn-ghost" id="mzjThemeBtn" type="button" aria-label="الوضع الليلي">
-        <i class="fa-regular fa-moon"></i>
-      </button>
-      <button class="mzj-btn mzj-btn-ghost" id="btnLogout" type="button">
-        <i class="fa-solid fa-right-from-bracket"></i>
-        <span>تسجيل الخروج</span>
-      </button>
-    </div>
+
+    <nav class="nav">
+      <a href="dashboard.html">لوحة التحكم</a>
+      <a href="projects.html">المشاريع</a>
+      <a href="members.html">الأعضاء</a>
+      <a href="admin.html" style="background:rgba(255,255,255,.18)">الحملات</a>
+      <a href="cars.html">متابعة السيارات</a>
+      <a href="Whiteboard.html">وايت بورد</a>
+      <a href="javascript:void(0)" id="btnLogout">تسجيل الخروج</a>
+    </nav>
   </header>
 
-  <div class="mzj-shell" id="mzjShell">
-    <aside class="mzj-sidebar" id="mzjSidebar">
-      <div class="side-section">
-        <div class="side-title">العمليات</div>
-        <nav class="side-nav">
-          <a class="side-link active" href="./admin.html"><i class="fa-solid fa-bullhorn"></i><span>الحملات</span></a>
-          <a class="side-link" href="./dashboard.html"><i class="fa-solid fa-bullhorn"></i><span>الداش بورد</span></a>
-          <a class="side-link" href="./projects.html"><i class="fa-solid fa-bullhorn"></i><span>المشاريع</span></a>
-          <a class="side-link" href="./members.html"><i class="fa-solid fa-bullhorn"></i><span>الاعضاء</span></a>
-          <a class="side-link" href="./cars.html"><i class="fa-solid fa-bullhorn"></i><span>متابعة السيارات</span></a>
-          <a class="side-link" href="./Whiteboard.html"><i class="fa-solid fa-bullhorn"></i><span>وايت بورد</span></a>
-        </nav>
-      </div>
-      <div class="side-footer">
-        <div class="mzj-note">
-          <div class="note-title">نجم الطريق</div>
-          <div class="note-row"><span class="swatch sw-brown"></span><span>Dark Brown</span></div>
-          <div class="note-row"><span class="swatch sw-beige"></span><span>Beige Accent</span></div>
-        </div>
-      </div>
-    </aside>
-
-    <div class="mzj-backdrop" id="mzjBackdrop"></div>
-
-    <main class="mzj-content">
-      <section class="mzj-pagehead">
-        <div class="pagehead-title">
-          <h1>الحملات</h1>
-          <p>إدارة الحملات والمهام</p>
-        </div>
-      </section>
-
-      <div class="campaign-page">
-        
+  <!-- Main Content -->
+  <main class="page">
 
     <!-- Campaign Panel -->
     <section class="panel">
@@ -521,13 +603,7 @@
 
       </div>
     </section>
-  
-      </div>
-
-    </main>
-  </div>
-
-
+  </main>
 
   <!-- ========= مودال إنشاء حملة جديدة ========= -->
   <div class="modal-campaign" id="newCampaignModal">
@@ -1664,10 +1740,9 @@
 
   </script>
 
-  
+  <footer class="footer-bar">
+    <small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small>
+  </footer>
 
-
-
-  <script src="./mzj-ui.js"></script>
 </body>
 </html>

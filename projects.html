@@ -6,8 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>المشاريع — MZJ Workspace</title>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="mzj-ui.css">
-
   <style>
     :root{ --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px }
     *{box-sizing:border-box}
@@ -276,31 +274,45 @@
   <!-- SheetJS (للتصدير إلى Excel) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-
-
-  <style>
-    /* Page-specific wrapper inside MZJ UI */
-    .mzj-content .page{padding:18px;display:grid;gap:16px}
-    /* keep existing page padding on desktop; mzj-ui already handles */
-  </style>
-
 </head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-badge"></span>
+      <strong>MZJ Workspace — المشاريع</strong>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <!-- Notifications Bell -->
+      <div class="notif-wrapper">
+        <button id="notifBell" class="notif-bell" title="الإشعارات">
+          <span style="font-size:18px">🔔</span>
+          <span id="notifBadge" class="notif-badge">0</span>
+        </button>
+        <div id="notifDropdown" class="notif-dropdown">
+          <div class="notif-dropdown-header">
+            <span>الإشعارات</span>
+            <div>
+              <button id="markAllReadBtn" type="button">تحديد الكل كمقروء</button>
+              <button id="clearAllNotifBtn" type="button">مسح الكل</button>
+            </div>
+          </div>
+          <div id="notifList" class="notif-list"></div>
+        </div>
+      </div>
 
-<body class="mzj" dir="rtl">
-  <header class="mzj-topbar"></header>
+      <nav class="nav">
+        <a id="navDashboard" href="dashboard.html">لوحة التحكم</a>
+        <a id="navProjects"  href="projects.html" style="background:rgba(255,255,255,.18)">المشاريع</a>
+        <a id="navMembers"   href="members.html">الأعضاء</a>
+        <a id="navAdmin"     href="admin.html">الحملات</a>
+        <a href="cars.html">متابعة السيارات</a>
+        <a href="Whiteboard.html">وايت بورد</a>
+        <a href="javascript:void(0)" onclick="mzjLogout()">تسجيل الخروج</a>
+      </nav>
+    </div>
+  </header>
 
-  <div class="mzj-shell" id="mzjShell">
-    <aside class="mzj-sidebar" id="mzjSidebar"></aside>
-    <div class="mzj-backdrop" id="mzjBackdrop"></div>
-
-    <main class="mzj-content">
-
-      <section class="mzj-pagehead">
-        <h1>المشاريع</h1>
-        <p>إدارة Spaces والحملات والمهام اليومية</p>
-      </section>
-
-<!-- صوت الإشعار (ضع ملف notify.mp3 في نفس المجلد أو عدّل المسار) -->
+  <!-- صوت الإشعار (ضع ملف notify.mp3 في نفس المجلد أو عدّل المسار) -->
   <audio id="notifSound" src="notify.mp3" preload="auto"></audio>
 
   <main class="page">
@@ -513,7 +525,9 @@
     </div>
   </div>
 
-  
+  <footer class="footer" style="padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);">
+    <small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small>
+  </footer>
 
   <!-- Firebase & App -->
   <script type="module">
@@ -2757,13 +2771,5 @@ card.setAttribute('draggable','true');
     }
   </script>
 
-      <footer class="mzj-footer">
-        <small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small>
-      </footer>
-    </main>
-  </div>
-
-  <script src="mzj-ui.js"></script>
 </body>
-
 </html>

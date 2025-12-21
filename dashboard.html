@@ -1,142 +1,397 @@
 
 <!DOCTYPE html>
-
-<html dir="rtl" lang="ar">
-<head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>لوحة التحكم — MZJ Workspace</title>
-<!-- Fonts + Charts + PDF -->
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<html dir="rtl" lang="ar"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<meta content="light" name="color-scheme"/>
+<!-- Quill Editor CSS -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<!-- Unified UI -->
+<link href="./mzj-ui.css" rel="stylesheet"/>
+<style id="noFlash">html{background:#fff8ef} body{background:#fff8ef}</style>
 <style>
-    :root{
-      --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px;
-      --ok:#16a34a; --warn:#f59e0b; --danger:#dc2626; --info:#1e90ff;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal",system-ui,Arial}
-    a{color:inherit;text-decoration:none}
+/* ===== Campaigns (Admin) — scoped to .camp ===== */
+.camp{ display:block; }
+.camp .camp-controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.camp .camp-select,.camp .camp-input{
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--card);
+  font-family:inherit;
+}
+.camp .camp-btn{
+  padding:10px 12px;
+  border-radius:12px;
+  border:0;
+  background:var(--brown);
+  color:#fff;
+  cursor:pointer;
+  font-weight:800;
+}
+.camp .camp-btn.secondary{
+  background:transparent;
+  color:var(--brown);
+  border:1px solid var(--brown);
+}
+.camp .camp-btn.danger{ background:#b91c1c; color:#fff; }
+.camp .camp-muted{ color:var(--muted); }
+.camp .board{ display:grid; gap:14px; grid-template-columns:repeat(4,1fr); }
+@media(max-width:1400px){ .camp .board{ grid-template-columns:repeat(3,1fr);} }
+@media(max-width:980px){ .camp .board{ grid-template-columns:repeat(2,1fr);} }
+@media(max-width:640px){ .camp .board{ grid-template-columns:1fr;} }
 
-    /* Topbar */
-    .topbar{
-      display:flex;justify-content:space-between;align-items:center;padding:14px 18px;
-      background:linear-gradient(180deg,var(--brown),#2f1c19);color:#fff;position:sticky;top:0;z-index:10;
-      box-shadow:0 6px 20px rgba(62,36,32,.25)
-    }
-    .brand{display:flex;align-items:center;gap:10px}
-    .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
-    .nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .nav a{padding:8px 12px;border-radius:10px;color:#fff}
-    .nav a:hover{background:rgba(255,255,255,.14)}
-    .select{border-radius:10px;border:0;padding:8px 10px}
+.camp .col{
+  background:var(--card);
+  border-radius:14px;
+  display:flex;
+  flex-direction:column;
+  min-height:260px;
+  position:relative;
+  border:1px solid rgba(231,229,228,.8);
+}
+body.mzj.dark .camp .col{ border-color: rgba(255,255,255,.10); }
 
-    /* Layout */
-    .page{padding:18px;display:grid;gap:16px}
-    .grid{display:grid;gap:16px}
-    @media(min-width:1100px){ .grid.two{grid-template-columns:2fr 1fr} }
-    @media(min-width:900px){ .grid.three{grid-template-columns:repeat(3,1fr)} }
-    @media(min-width:1100px){ .grid.four{grid-template-columns:repeat(4,1fr)} }
-    @media(min-width:1100px){ .grid.2-1{grid-template-columns:2fr 1fr} }
-    @media(min-width:1100px){ .grid.1-2{grid-template-columns:1fr 2fr} }
+.camp .col-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 14px;
+  border-bottom:1px solid rgba(231,229,228,.8);
+  background:rgba(255,248,239,.70);
+  border-top-left-radius:14px;
+  border-top-right-radius:14px;
+}
+body.mzj.dark .camp .col-head{
+  background: rgba(255,255,255,.06);
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+.camp .col-title{ color:var(--brown); font-weight:800; }
+.camp .col-actions{ display:flex; gap:6px; }
+.camp .col-actions .icon{
+  cursor:pointer;
+  font-size:13px;
+  padding:6px 8px;
+  border:1px solid #e9d8cc;
+  border-radius:10px;
+  background:#fff;
+}
+body.mzj.dark .camp .col-actions .icon{
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.10);
+  color: var(--text);
+}
+.camp .col-body{ padding:10px; display:grid; gap:10px; }
+.camp .dropzone{
+  min-height:140px;
+  border:2px dashed transparent;
+  border-radius:12px;
+  transition:.15s;
+}
+.camp .dropzone.drag{
+  border-color:#e5d2c6;
+  background:#fffaf5;
+}
+body.mzj.dark .camp .dropzone.drag{
+  background: rgba(255,255,255,.06);
+  border-color: rgba(188,143,116,.5);
+}
 
-    /* Panels */
-    .panel{background:#fff;border-radius:var(--radius);box-shadow:0 12px 30px rgba(62,36,32,.12);overflow:hidden}
-    .panel .head{padding:12px 14px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
-    .panel .body{padding:12px 14px}
-    .muted{color:var(--muted)}
-    .btn{
-      padding:10px 12px;border:0;border-radius:12px;background:var(--brown);color:#fff;font-weight:800;cursor:pointer;
-      transition:.15s; box-shadow:0 8px 20px rgba(62,36,32,.22)
-    }
-    .btn:hover{filter:brightness(1.05); transform:translateY(-1px)}
+/* Task Cards */
+.camp .task-card{
+  background:var(--card);
+  border:1px solid rgba(231,229,228,.8);
+  border-radius:12px;
+  padding:8px 9px 10px;
+  box-shadow:0 8px 20px rgba(62,36,32,.06);
+  cursor:pointer;
+  transition:.12s transform, .12s box-shadow;
+  min-height:80px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  font-size:13px;
+}
+body.mzj.dark .camp .task-card{ border-color: rgba(255,255,255,.10); box-shadow:none; }
+.camp .task-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 24px rgba(62,36,32,.12);
+}
+.camp .card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:6px; }
+.camp .task-card h4{
+  margin:0;
+  color:var(--brown);
+  font-size:14px;
+  line-height:1.4;
+  font-weight:800;
+}
+body.mzj.dark .camp .task-card h4{ color: #fff; }
+.camp .card-actions{ display:flex; flex-direction:column; gap:2px; margin-inline-start:4px; }
+.camp .card-move{
+  border:1px solid #e5e7eb;
+  border-radius:6px;
+  background:#fff;
+  font-size:10px;
+  padding:2px 4px;
+  cursor:pointer;
+  line-height:1;
+}
+.camp .card-move:hover{ background:#fff8ef; border-color:#e5d2c6; }
+body.mzj.dark .camp .card-move{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.10); color:#fff; }
+.camp .card-hint{ margin:2px 0 0; font-size:11px; color:var(--muted); }
 
-    .chip{
-      display:inline-flex;align-items:center;gap:6px;
-      padding:4px 8px;border-radius:999px;font-size:12px;
-      background:#f3e5dc;color:var(--brown)
-    }
-    .chip.warn{background:#fef3c7;color:#b45309}
-    .chip.danger{background:#fee2e2;color:#b91c1c}
+.camp .links-row{ display:flex; flex-wrap:wrap; gap:4px; margin-top:2px; }
+.camp .task-link{
+  font-size:11px;
+  padding:3px 6px;
+  border-radius:999px;
+  border:1px dashed #e5d2c6;
+  background:#fffaf5;
+  color:var(--brown);
+  text-decoration:none;
+}
+.camp .task-link:hover{ background:#f7e9e0; }
+body.mzj.dark .camp .task-link{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); color:#fff; }
 
-    /* KPI tiles */
-    .kpis{display:grid;gap:12px}
-    @media(min-width:900px){ .kpis{grid-template-columns:repeat(5,1fr)} }
-    .kpi{background:#fff;border:1px solid #eee;border-radius:14px;padding:14px;display:grid;gap:6px;position:relative;overflow:hidden}
-    .kpi:hover{box-shadow:0 12px 30px rgba(62,36,32,.18)}
-    .kpi .lbl{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
-    .kpi .val{font-size:26px;font-weight:800;color:var(--brown)}
-    .kpi .hint{font-size:12px;color:var(--muted)}
-    .kpi .ico{inline-size:26px;block-size:26px;display:inline-grid;place-items:center;border-radius:8px;background:#fff8ef;border:1px solid #edd7ca}
+.camp .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px; }
+.camp .badge{
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:12px;
+  background:#f7e9e0;
+  color:var(--brown);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+body.mzj.dark .camp .badge{ background: rgba(255,255,255,.08); color:#fff; }
+.camp .badge .dot{ inline-size:8px; block-size:8px; border-radius:999px; background:var(--beige); }
+.camp .small{ font-size:12px; color:var(--muted); }
 
-    /* Column counters */
-    .cols{display:grid;gap:10px}
-    @media(min-width:800px){ .cols{grid-template-columns:repeat(4,1fr)} }
-    .colbox{background:#fff8ef;border:1px solid #edd7ca;border-radius:14px;padding:12px;transition:.15s;display:grid;gap:6px}
-    .colbox:hover{transform:translateY(-1px); box-shadow:0 10px 20px rgba(62,36,32,.15)}
-    .colbox .title{color:var(--brown);font-weight:800;display:flex;align-items:center;gap:8px}
-    .colbox .num{font-size:22px;font-weight:800}
+/* Modals */
+.camp .modal-campaign, .camp .modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  place-items:center;
+  padding:18px;
+  z-index:999;
+}
+.camp .modal.show, .camp .modal-campaign.show{ display:grid; }
+.camp .campaign-sheet, .camp .sheet{
+  background:var(--card);
+  border-radius:16px;
+  width:min(820px, 100%);
+  max-height:90vh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 30px 80px rgba(62,36,32,.25);
+  border:1px solid rgba(231,229,228,.8);
+}
+body.mzj.dark .camp .campaign-sheet, body.mzj.dark .camp .sheet{
+  border-color: rgba(255,255,255,.10);
+  box-shadow:none;
+}
+.camp .campaign-sheet .head, .camp .sheet .head{
+  padding:12px 16px;
+  border-bottom:1px solid rgba(231,229,228,.8);
+  background:rgba(255,248,239,.70);
+  font-weight:800;
+  font-size:18px;
+  color:var(--brown);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+body.mzj.dark .camp .campaign-sheet .head, body.mzj.dark .camp .sheet .head{
+  background: rgba(255,255,255,.06);
+  border-bottom:1px solid rgba(255,255,255,.10);
+  color:#fff;
+}
+.camp .campaign-sheet .body, .camp .sheet .body{
+  padding:16px;
+  overflow-y:auto;
+  display:grid;
+  gap:14px;
+}
+.camp .campaign-sheet .footer, .camp .sheet .footer{
+  padding:12px 16px;
+  border-top:1px solid rgba(231,229,228,.8);
+  background:rgba(255,248,239,.70);
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+body.mzj.dark .camp .campaign-sheet .footer, body.mzj.dark .camp .sheet .footer{
+  background: rgba(255,255,255,.06);
+  border-top:1px solid rgba(255,255,255,.10);
+}
 
-    /* Tables */
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:1px solid #f0f0f0;text-align:right}
-    th{color:var(--brown);font-weight:800;background:#fffaf5}
-    tr:hover td{background:#fffdf9}
-    .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);display:inline-flex;align-items:center;gap:6px}
-    .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
-    .empty{padding:14px;border:1px dashed #ead8cb;border-radius:12px;color:#8f7f76;background:#fffbf6}
+/* Form */
+.camp .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+@media(max-width:900px){ .camp .grid2{ grid-template-columns:1fr; } }
+.camp label{ display:block; margin:4px 0 4px; font-weight:700; color:var(--brown); font-size:13px; }
+body.mzj.dark .camp label{ color:#fff; }
+.camp input, .camp select, .camp textarea{
+  width:100%;
+  padding:10px;
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+  background:#fff;
+  font-family:inherit;
+  font-size:14px;
+}
+body.mzj.dark .camp input, body.mzj.dark .camp select, body.mzj.dark .camp textarea{
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.10);
+  color:#fff;
+}
+.camp textarea{ min-height:90px; resize:vertical; }
+.camp input:focus, .camp select:focus, .camp textarea:focus{
+  outline:3px solid rgba(188,143,116,.25);
+  border-color:var(--beige);
+}
 
-    /* Charts layout */
-    .charts{display:grid;gap:16px}
-    @media(min-width:1100px){ .charts{grid-template-columns:2fr 1fr} }
+/* Date inputs helpers */
+.camp .date-input-wrap{
+  display:flex;
+  align-items:center;
+  border-radius:12px;
+  border:1px solid #e5e7eb;
+  background:#fff;
+  padding-inline:6px;
+  transition:.15s border-color, .15s box-shadow, .15s background;
+}
+.camp .date-input-wrap:focus-within{
+  border-color:var(--beige);
+  box-shadow:0 0 0 3px rgba(188,143,116,.15);
+  background:#fffbf7;
+}
+body.mzj.dark .camp .date-input-wrap{
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.10);
+}
+.camp .date-input-wrap input{ border:0; background:transparent; padding:8px 6px; }
+.camp .date-input-wrap input:focus{ outline:none; box-shadow:none; }
+.camp .date-icon{ font-size:15px; color:var(--muted); padding-inline:4px; }
+.camp .date-helper{ font-size:11px; color:var(--muted); }
 
-    /* Heatmap */
-    .heatmap{display:grid;gap:6px}
-    .heatmap .legend{display:flex;gap:8px;align-items:center}
-    .hm-grid{display:grid;gap:4px}
-    @media(min-width:900px){ .hm-grid{grid-template-columns: 140px repeat(14, 1fr)} }
-    .hm-cell{padding:8px;border-radius:8px;text-align:center;font-size:12px;border:1px solid #f1e6de;background:#fff}
-    .hm-head{background:#fffaf5;color:var(--brown);font-weight:700}
-    .hm-name{background:#fff; text-align:right; font-weight:700}
+/* Quill boxes */
+.camp #campaignDescEditor, .camp #editCampDescEditor{
+  height:230px;
+  border:1px solid #ddd;
+  border-radius:12px;
+  background:#fff;
+}
+body.mzj.dark .camp #campaignDescEditor, body.mzj.dark .camp #editCampDescEditor{
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.10);
+}
+.camp .dropdown-menu{
+  position:fixed;
+  background:#fff;
+  border:1px solid #eee;
+  border-radius:12px;
+  box-shadow:0 10px 30px rgba(62,36,32,.12);
+  display:none;
+  min-width:260px;
+  max-height:260px;
+  overflow:auto;
+  z-index:1000;
+}
+body.mzj.dark .camp .dropdown-menu{
+  background: rgba(17,17,19,.92);
+  border-color: rgba(255,255,255,.10);
+  color:#fff;
+  box-shadow:none;
+}
+.camp .dd-item{
+  padding:8px 10px;
+  border-bottom:1px solid #f3f3f3;
+  cursor:pointer;
+  font-size:13px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+}
+.camp .dd-item:hover{ background:#fff8ef; }
+body.mzj.dark .camp .dd-item{ border-bottom-color: rgba(255,255,255,.08); }
+body.mzj.dark .camp .dd-item:hover{ background: rgba(255,255,255,.06); }
 
-    footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);margin-top:8px}
+/* Links form */
+.camp .links-form{ display:flex; flex-direction:column; gap:6px; margin-bottom:6px; }
+.camp .link-row{ display:flex; gap:6px; align-items:center; }
+.camp .link-row input{ flex:1; }
+.camp .link-row .link-title{ max-width:190px; }
+.camp .link-remove{
+  border:1px solid #e5e7eb;
+  background:#fff;
+  border-radius:8px;
+  padding:6px 8px;
+  cursor:pointer;
+  font-size:12px;
+}
+.camp .link-remove:hover{ background:#fff8ef; border-color:#e5d2c6; }
+body.mzj.dark .camp .link-remove{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.10); color:#fff; }
 
-    @media print {
-      html, body { background: #fff8ef; }
-      #reportRoot { width: 100%; }
-    }
-  </style>
-<link href="mzj-ui.css" rel="stylesheet"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/></head>
-<body class="mzj">
-<div class="mzj-shell" id="mzjShell">
-<aside class="mzj-sidebar" id="mzjSidebar">
+.camp .btn-link-add{ margin-top:4px; padding:6px 10px; font-size:12px; }
+</style>
+</link><title>لوحة التحكم | MZJ Workspace</title></head><body class="mzj"><header class="mzj-topbar">
+<div class="topbar-left">
+<button aria-label="القائمة" class="icon-btn" id="mzjSidebarBtn"><i class="fa-solid fa-bars"></i></button>
+<div class="brand">
+<div class="brand-mark">MZJ</div>
+<div class="brand-text">
+<div class="brand-title">محمد بن ذعار العجمي للسيارات</div>
+<div class="brand-sub">Workspace</div>
+</div>
+</div>
+</div>
+<div class="topbar-center">
+<div class="mzj-breadcrumb">
+<span class="crumb">الرئيسية</span>
+<i class="fa-solid fa-chevron-left"></i>
+<span class="crumb current">لوحة التحكم</span>
+</div>
+</div>
+<div class="topbar-right">
+<div class="mzj-chip"><i class="fa-regular fa-clock"></i><span id="mzjNow">—</span></div>
+<button class="mzj-btn mzj-btn-ghost" id="btnSignOut" style="display:none" type="button">
+<i class="fa-solid fa-right-from-bracket"></i>
+<span>تسجيل الخروج</span>
+</button> <div class="mzj-user">
+<div class="avatar">DB</div>
+<div class="user-text">
+<div class="user-name">لوحة التحكم</div>
+<div class="user-role">Dashboard</div>
+</div>
+</div>
+</div>
+</header><div class="mzj-shell" id="mzjShell">
+<aside class="mzj-sidebar" data-mzj-sidebar="workspace" id="mzjSidebar">
 <div class="side-section">
 <div class="side-title">Workspace</div>
-<nav class="side-nav">
-<a class="side-link" href="dashboard.html"><i class="fa-solid fa-gauge"></i><span>لوحة التحكم</span></a>
-<a class="side-link" href="projects.html"><i class="fa-solid fa-diagram-project"></i><span>المشاريع</span></a>
-<a class="side-link" href="members.html"><i class="fa-solid fa-users"></i><span>الأعضاء</span></a>
-<a class="side-link" href="admin.html"><i class="fa-solid fa-bullhorn"></i><span>الحملات</span></a>
-<a class="side-link" href="cars.html"><i class="fa-solid fa-car"></i><span>متابعة السيارات</span></a>
-<a class="side-link" href="Whiteboard.html"><i class="fa-solid fa-chalkboard"></i><span>وايت بورد</span></a>
+<nav class="side-nav" id="mzjSideNav">
+<!-- يُبنى تلقائيًا من mzj-ui.js -->
 </nav>
 </div>
 </aside>
+<div class="mzj-backdrop" id="mzjBackdrop"></div>
 <main class="mzj-content">
-<div class="mzj-pagehead" style="margin:14px 0 10px;">
-<div class="mzj-pagehead-row" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-<div style="font-weight:900;color:var(--brown);">لوحة التحكم</div>
-<div id="mzjNow" style="font-weight:800;color:var(--muted);"></div>
+<section class="mzj-pagehead">
+<div class="pagehead-left">
+<h1 class="page-title">لوحة التحكم</h1>
+<p class="page-desc">ملخص الأداء — KPI / تقارير / متابعة</p>
 </div>
-<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-<select class="mzj-topselect" id="spaceSelect" style="min-width:180px;"></select>
-<button class="btn btn-primary" id="btnExportPdf" type="button">حفظ PDF</button>
-<button class="btn btn-ghost" id="btnLogout" type="button"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</button>
+<div class="pagehead-right" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+<select class="mzj-topselect" id="spaceSelect" style="min-width:200px;"></select>
+<button class="mzj-btn mzj-btn-primary" id="btnExportPdf" type="button"><i class="fa-regular fa-file-pdf"></i> حفظ PDF</button>
+<button class="mzj-btn mzj-btn-ghost" id="btnLogout" type="button"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</button>
 </div>
-</div>
-</div>
+</section>
 <main class="page" id="reportRoot">
 <!-- KPIs -->
 <section class="panel">
@@ -282,31 +537,8 @@
 <div class="head"><strong>نشاط حديث</strong><span class="muted">آخر 15 تحديث</span></div>
 <div class="body" id="activityWrap"></div>
 </section>
-</main>
-</main>
-</div>
-<div class="mzj-backdrop" id="mzjBackdrop"></div>
-<script src="mzj-ui.js"></script>
-<script>
-(function(){
-  try{
-    var p=(location.pathname||'').split('/').pop()||'dashboard.html';
-    document.querySelectorAll('#mzjSidebar a.side-link').forEach(function(a){
-      var h=(a.getAttribute('href')||'').split('/').pop();
-      if(h===p) a.classList.add('active');
-    });
-    var el=document.getElementById('mzjNow');
-    if(el){
-      var tick=function(){
-        var d=new Date();
-        el.textContent=d.toLocaleString('ar-SA');
-      };
-      tick(); setInterval(tick, 30000);
-    }
-  }catch(e){}
-})();
-</script>
-<script type="module">
+</main></main>
+</div><script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
     import {
@@ -1058,5 +1290,16 @@
         return d;
       }
     }
-  </script></body>
-</html>
+  </script><script src="./mzj-ui.js"></script>
+<script>
+(function(){
+  try{
+    var p=(location.pathname||'').split('/').pop()||'dashboard.html';
+    document.querySelectorAll('#mzjSideNav a').forEach(function(a){
+      var h=(a.getAttribute('href')||'').split('/').pop();
+      if(h===p) a.classList.add('active');
+    });
+  }catch(e){}
+})();
+</script>
+</body></html>

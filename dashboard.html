@@ -107,48 +107,36 @@
       #reportRoot { width: 100%; }
     }
   </style>
-<link href="mzj-ui.css" rel="stylesheet"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/><style>
-/* Dashboard topnav inside MZJ topbar (keeps existing IDs & JS) */
-.mzj-topnav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
-.mzj-toplink{padding:8px 10px;border-radius:10px;border:1px solid rgba(231,229,228,.9);background:rgba(255,255,255,.65);color:var(--brown);font-weight:800;text-decoration:none;font-size:13px}
-.mzj-toplink:hover{filter:brightness(1.02)}
-.mzj-topselect{border-radius:10px;border:1px solid rgba(231,229,228,.9);padding:8px 10px;font-weight:800;background:rgba(255,255,255,.8)}
-.mzj-now{font-weight:800;color:var(--brown);padding:8px 10px;border-radius:10px;border:1px solid rgba(231,229,228,.9);background:rgba(255,255,255,.65)}
-</style></head>
+<link href="mzj-ui.css" rel="stylesheet"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/></head>
 <body class="mzj">
-<header class="mzj-topbar">
-<div class="mzj-topbar-left">
-<button aria-label="القائمة" class="btn btn-ghost" id="mzjSidebarBtn" type="button"><i class="fa-solid fa-bars"></i></button>
-<div class="mzj-brand">
-<div class="mzj-badge">MZJ</div>
-<div class="mzj-brand-text">
-<div class="mzj-brand-title">MZJ Workspace</div>
-<div class="mzj-brand-sub">لوحة التحكم</div>
-</div>
-</div>
-</div>
-<div class="mzj-topbar-center">
-<div class="mzj-topnav">
-<a class="mzj-toplink" href="dashboard.html" id="navDashboard">لوحة التحكم</a>
-<a class="mzj-toplink" href="projects.html" id="navProjects">المشاريع</a>
-<a class="mzj-toplink" href="members.html" id="navMembers">الأعضاء</a>
-<a class="mzj-toplink" href="admin.html" id="navAdmin">الحملات</a>
-<a class="mzj-toplink" href="cars.html">متابعة السيارات</a>
-<a class="mzj-toplink" href="Whiteboard.html">وايت بورد</a>
-<select class="mzj-topselect" id="spaceSelect"></select>
-<button class="btn btn-primary" id="btnExportPdf" type="button">حفظ PDF</button>
-<button class="btn btn-ghost" id="btnLogout" type="button">تسجيل الخروج</button>
-</div>
-</div>
-<div class="mzj-topbar-right">
-<div class="mzj-now" id="mzjNow">—</div>
-<button aria-label="الثيم" class="btn btn-ghost" id="mzjThemeBtn" type="button"><i class="fa-solid fa-moon"></i></button>
-</div>
-</header>
-
 <div class="mzj-shell" id="mzjShell">
-<aside class="mzj-sidebar" data-mzj-sidebar="workspace" id="mzjSidebar"></aside>
+<aside class="mzj-sidebar" id="mzjSidebar">
+<div class="side-section">
+<div class="side-title">Workspace</div>
+<nav class="side-nav">
+<a class="side-link" href="dashboard.html"><i class="fa-solid fa-gauge"></i><span>لوحة التحكم</span></a>
+<a class="side-link" href="projects.html"><i class="fa-solid fa-diagram-project"></i><span>المشاريع</span></a>
+<a class="side-link" href="members.html"><i class="fa-solid fa-users"></i><span>الأعضاء</span></a>
+<a class="side-link" href="admin.html"><i class="fa-solid fa-bullhorn"></i><span>الحملات</span></a>
+<a class="side-link" href="cars.html"><i class="fa-solid fa-car"></i><span>متابعة السيارات</span></a>
+<a class="side-link" href="Whiteboard.html"><i class="fa-solid fa-chalkboard"></i><span>وايت بورد</span></a>
+</nav>
+</div>
+</aside>
 <main class="mzj-content">
+<div class="mzj-pagehead" style="margin:14px 0 10px;">
+<div class="mzj-pagehead-row" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+<div style="font-weight:900;color:var(--brown);">لوحة التحكم</div>
+<div id="mzjNow" style="font-weight:800;color:var(--muted);"></div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+<select class="mzj-topselect" id="spaceSelect" style="min-width:180px;"></select>
+<button class="btn btn-primary" id="btnExportPdf" type="button">حفظ PDF</button>
+<button class="btn btn-ghost" id="btnLogout" type="button"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</button>
+</div>
+</div>
+</div>
 <main class="page" id="reportRoot">
 <!-- KPIs -->
 <section class="panel">
@@ -299,6 +287,25 @@
 </div>
 <div class="mzj-backdrop" id="mzjBackdrop"></div>
 <script src="mzj-ui.js"></script>
+<script>
+(function(){
+  try{
+    var p=(location.pathname||'').split('/').pop()||'dashboard.html';
+    document.querySelectorAll('#mzjSidebar a.side-link').forEach(function(a){
+      var h=(a.getAttribute('href')||'').split('/').pop();
+      if(h===p) a.classList.add('active');
+    });
+    var el=document.getElementById('mzjNow');
+    if(el){
+      var tick=function(){
+        var d=new Date();
+        el.textContent=d.toLocaleString('ar-SA');
+      };
+      tick(); setInterval(tick, 30000);
+    }
+  }catch(e){}
+})();
+</script>
 <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";

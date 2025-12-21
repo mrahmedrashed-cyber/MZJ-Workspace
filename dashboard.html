@@ -1,16 +1,16 @@
+
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+
+<html dir="rtl" lang="ar">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>لوحة التحكم — MZJ Workspace</title>
-
-  <!-- Fonts + Charts + PDF -->
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>لوحة التحكم — MZJ Workspace</title>
+<!-- Fonts + Charts + PDF -->
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
     :root{
       --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px;
       --ok:#16a34a; --warn:#f59e0b; --danger:#dc2626; --info:#1e90ff;
@@ -107,187 +107,199 @@
       #reportRoot { width: 100%; }
     }
   </style>
-</head>
-<body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-badge"></span>
-      <strong>MZJ Workspace — لوحة التحكم</strong>
-    </div>
-    <nav class="nav">
-      <a id="navDashboard" href="dashboard.html">لوحة التحكم</a>
-      <a id="navProjects"  href="projects.html">المشاريع</a>
-      <a id="navMembers"   href="members.html">الأعضاء</a>
-      <a id="navAdmin"     href="admin.html">الحملات</a>
-      <select id="spaceSelect" class="select"></select>
-      <a href="javascript:void(0)" id="btnExportPdf" class="btn">حفظ PDF</a>
-      <a href="javascript:void(0)" id="btnLogout">تسجيل الخروج</a>
-      <a href="cars.html">متابعة السيارات</a>
-      <a href="Whiteboard.html">وايت بورد</a>
-    </nav>
-  </header>
+<link href="mzj-ui.css" rel="stylesheet"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/><style>
+/* Dashboard topnav inside MZJ topbar (keeps existing IDs & JS) */
+.mzj-topnav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
+.mzj-toplink{padding:8px 10px;border-radius:10px;border:1px solid rgba(231,229,228,.9);background:rgba(255,255,255,.65);color:var(--brown);font-weight:800;text-decoration:none;font-size:13px}
+.mzj-toplink:hover{filter:brightness(1.02)}
+.mzj-topselect{border-radius:10px;border:1px solid rgba(231,229,228,.9);padding:8px 10px;font-weight:800;background:rgba(255,255,255,.8)}
+.mzj-now{font-weight:800;color:var(--brown);padding:8px 10px;border-radius:10px;border:1px solid rgba(231,229,228,.9);background:rgba(255,255,255,.65)}
+</style></head>
+<body class="mzj">
+<header class="mzj-topbar">
+<div class="mzj-topbar-left">
+<button aria-label="القائمة" class="btn btn-ghost" id="mzjSidebarBtn" type="button"><i class="fa-solid fa-bars"></i></button>
+<div class="mzj-brand">
+<div class="mzj-badge">MZJ</div>
+<div class="mzj-brand-text">
+<div class="mzj-brand-title">MZJ Workspace</div>
+<div class="mzj-brand-sub">لوحة التحكم</div>
+</div>
+</div>
+</div>
+<div class="mzj-topbar-center">
+<div class="mzj-topnav">
+<a class="mzj-toplink" href="dashboard.html" id="navDashboard">لوحة التحكم</a>
+<a class="mzj-toplink" href="projects.html" id="navProjects">المشاريع</a>
+<a class="mzj-toplink" href="members.html" id="navMembers">الأعضاء</a>
+<a class="mzj-toplink" href="admin.html" id="navAdmin">الحملات</a>
+<a class="mzj-toplink" href="cars.html">متابعة السيارات</a>
+<a class="mzj-toplink" href="Whiteboard.html">وايت بورد</a>
+<select class="mzj-topselect" id="spaceSelect"></select>
+<button class="btn btn-primary" id="btnExportPdf" type="button">حفظ PDF</button>
+<button class="btn btn-ghost" id="btnLogout" type="button">تسجيل الخروج</button>
+</div>
+</div>
+<div class="mzj-topbar-right">
+<div class="mzj-now" id="mzjNow">—</div>
+<button aria-label="الثيم" class="btn btn-ghost" id="mzjThemeBtn" type="button"><i class="fa-solid fa-moon"></i></button>
+</div>
+</header>
 
-  <main class="page" id="reportRoot">
-    <!-- KPIs -->
-    <section class="panel">
-      <div class="head">
-        <div style="display:flex;align-items:center;gap:10px">
-          <strong>ملخص الـ Space الحالي</strong>
-          <span class="chip" id="who">—</span>
-        </div>
-        <div class="muted" id="todayChip"></div>
-      </div>
-      <div class="body">
-        <div class="kpis" id="kpis">
-          <div class="kpi">
-            <div class="lbl"><span class="ico">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" stroke="#bc8f74" stroke-width="1.5"/></svg>
-            </span>إجمالي المهام</div>
-            <div class="val" id="k_total">—</div>
-            <div class="hint">كل الأعمدة</div>
-          </div>
-          <div class="kpi">
-            <div class="lbl"><span class="ico">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="#bc8f74" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#bc8f74" stroke-width="1.5"/></svg>
-            </span>متأخرة</div>
-            <div class="val" id="k_overdue">—</div>
-            <div class="hint">تاريخ قبل اليوم</div>
-          </div>
-          <div class="kpi">
-            <div class="lbl"><span class="ico">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="#bc8f74" stroke-width="1.5"/><path d="M3 10h18" stroke="#bc8f74" stroke-width="1.5"/><path d="M8 3v4M16 3v4" stroke="#bc8f74" stroke-width="1.5" stroke-linecap="round"/></svg>
-            </span>تسليم اليوم</div>
-            <div class="val" id="k_today">—</div>
-            <div class="hint">Due Today</div>
-          </div>
-          <div class="kpi">
-            <div class="lbl"><span class="ico">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-5 5V6a2 2 0 0 1 2-2z" stroke="#bc8f74" stroke-width="1.5"/></svg>
-            </span>تحت المراجعة</div>
-            <div class="val" id="k_review">—</div>
-            <div class="hint">عمود “تحت المراجعة”</div>
-          </div>
-          <div class="kpi">
-            <div class="lbl"><span class="ico">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12a5 5 0 1 0-5-5" stroke="#bc8f74" stroke-width="1.5"/><path d="M20 21a8 8 0 0 0-16 0" stroke="#bc8f74" stroke-width="1.5"/><path d="M4 4l16 16" stroke="#bc8f74" stroke-width="1.5"/></svg>
-            </span>غير معيّنة</div>
-            <div class="val" id="k_unassigned">—</div>
-            <div class="hint">بدون مسؤول</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Daily Task Monthly + Weekly Summary -->
-    <section class="panel">
-      <div class="head">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <strong>🗓 Daily Task — المهام اليومية</strong>
-          <span class="muted" id="dailySpaceLabel">قائمة الشهور الفعّالة فقط</span>
-        </div>
-        <select id="dailyMonthSelect" class="select" style="padding:6px 10px;font-size:13px;min-width:170px;"></select>
-      </div>
-      <div class="body" id="dailyMonthlyWrap">
-        <div class="empty">جارِ تحميل بيانات Daily Task ...</div>
-      </div>
-    </section>
-
-    <!-- Columns counters -->
-    <section class="panel">
-      <div class="head">
-        <div style="display:flex;align-items:center;gap:10px">
-          <strong>عداد الأعمدة</strong>
-          <span class="chip">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M3 6h18M3 12h18M3 18h18" stroke="#3e2420" stroke-width="2" stroke-linecap="round"/>
-            </svg>
+<div class="mzj-shell" id="mzjShell">
+<aside class="mzj-sidebar" data-mzj-sidebar="workspace" id="mzjSidebar"></aside>
+<main class="mzj-content">
+<main class="page" id="reportRoot">
+<!-- KPIs -->
+<section class="panel">
+<div class="head">
+<div style="display:flex;align-items:center;gap:10px">
+<strong>ملخص الـ Space الحالي</strong>
+<span class="chip" id="who">—</span>
+</div>
+<div class="muted" id="todayChip"></div>
+</div>
+<div class="body">
+<div class="kpis" id="kpis">
+<div class="kpi">
+<div class="lbl"><span class="ico">
+<svg fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" stroke="#bc8f74" stroke-width="1.5"></path></svg>
+</span>إجمالي المهام</div>
+<div class="val" id="k_total">—</div>
+<div class="hint">كل الأعمدة</div>
+</div>
+<div class="kpi">
+<div class="lbl"><span class="ico">
+<svg fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M12 7v5l3 3" stroke="#bc8f74" stroke-linecap="round" stroke-width="1.5"></path><circle cx="12" cy="12" r="9" stroke="#bc8f74" stroke-width="1.5"></circle></svg>
+</span>متأخرة</div>
+<div class="val" id="k_overdue">—</div>
+<div class="hint">تاريخ قبل اليوم</div>
+</div>
+<div class="kpi">
+<div class="lbl"><span class="ico">
+<svg fill="none" height="18" viewbox="0 0 24 24" width="18"><rect height="16" rx="2" stroke="#bc8f74" stroke-width="1.5" width="18" x="3" y="5"></rect><path d="M3 10h18" stroke="#bc8f74" stroke-width="1.5"></path><path d="M8 3v4M16 3v4" stroke="#bc8f74" stroke-linecap="round" stroke-width="1.5"></path></svg>
+</span>تسليم اليوم</div>
+<div class="val" id="k_today">—</div>
+<div class="hint">Due Today</div>
+</div>
+<div class="kpi">
+<div class="lbl"><span class="ico">
+<svg fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-5 5V6a2 2 0 0 1 2-2z" stroke="#bc8f74" stroke-width="1.5"></path></svg>
+</span>تحت المراجعة</div>
+<div class="val" id="k_review">—</div>
+<div class="hint">عمود “تحت المراجعة”</div>
+</div>
+<div class="kpi">
+<div class="lbl"><span class="ico">
+<svg fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M12 12a5 5 0 1 0-5-5" stroke="#bc8f74" stroke-width="1.5"></path><path d="M20 21a8 8 0 0 0-16 0" stroke="#bc8f74" stroke-width="1.5"></path><path d="M4 4l16 16" stroke="#bc8f74" stroke-width="1.5"></path></svg>
+</span>غير معيّنة</div>
+<div class="val" id="k_unassigned">—</div>
+<div class="hint">بدون مسؤول</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Daily Task Monthly + Weekly Summary -->
+<section class="panel">
+<div class="head">
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+<strong>🗓 Daily Task — المهام اليومية</strong>
+<span class="muted" id="dailySpaceLabel">قائمة الشهور الفعّالة فقط</span>
+</div>
+<select class="select" id="dailyMonthSelect" style="padding:6px 10px;font-size:13px;min-width:170px;"></select>
+</div>
+<div class="body" id="dailyMonthlyWrap">
+<div class="empty">جارِ تحميل بيانات Daily Task ...</div>
+</div>
+</section>
+<!-- Columns counters -->
+<section class="panel">
+<div class="head">
+<div style="display:flex;align-items:center;gap:10px">
+<strong>عداد الأعمدة</strong>
+<span class="chip">
+<svg fill="none" height="14" viewbox="0 0 24 24" width="14">
+<path d="M3 6h18M3 12h18M3 18h18" stroke="#3e2420" stroke-linecap="round" stroke-width="2"></path>
+</svg>
             ريل مواصفات / ريل قصير / تصميم صور / يوتيوب ...
           </span>
-        </div>
-      </div>
-      <div class="body"><div class="cols" id="cols"></div></div>
-    </section>
-
-    <!-- Soon + Assignees -->
-    <div class="grid two">
-      <section class="panel">
-        <div class="head"><strong>أقرب تسليم (Top 10)</strong><span class="chip" id="todayInfo"></span></div>
-        <div class="body"><div id="soonWrap"></div></div>
-      </section>
-
-      <section class="panel">
-        <div class="head"><strong>توزيع المهام على الأعضاء</strong></div>
-        <div class="body"><div id="assigneesWrap"></div></div>
-      </section>
-    </div>
-
-    <!-- Per-member details -->
-    <section class="panel">
-      <div class="head"><strong>تقرير الأعضاء — حالة المهام + زمن التنفيذ</strong></div>
-      <div class="body"><div id="membersTableWrap"></div></div>
-    </section>
-
-    <!-- Charts base -->
-    <section class="panel">
-      <div class="head"><strong>رسوم بيانية أساسية</strong><span class="muted">Per Member + Status Mix</span></div>
-      <div class="body">
-        <div class="charts">
-          <div><canvas id="barPerUser" height="180"></canvas></div>
-          <div><canvas id="pieStatuses" height="180"></canvas></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Lead/Cycle + Throughput -->
-    <div class="grid 2-1">
-      <section class="panel">
-        <div class="head"><strong>Lead Time & Cycle Time (Days)</strong><span class="muted">Median per Week</span></div>
-        <div class="body"><canvas id="lineLeadCycle" height="200"></canvas></div>
-      </section>
-      <section class="panel">
-        <div class="head"><strong>Throughput Weekly</strong><span class="muted">Completed Tasks / Week</span></div>
-        <div class="body"><canvas id="barThroughput" height="200"></canvas></div>
-      </section>
-    </div>
-
-    <!-- SLA Breach + Completion by Column -->
-    <div class="grid 1-2">
-      <section class="panel">
-        <div class="head"><strong>SLA Breach</strong><span class="muted">Completed after Due Date</span></div>
-        <div class="body"><canvas id="gaugeSLA" height="220"></canvas></div>
-      </section>
-      <section class="panel">
-        <div class="head"><strong>Completion Rate by Column</strong><span class="muted">Done vs Remaining</span></div>
-        <div class="body"><canvas id="barByColumn" height="220"></canvas></div>
-      </section>
-    </div>
-
-    <!-- Workload Heatmap -->
-    <section class="panel">
-      <div class="head"><strong>Member Workload Heatmap</strong><span class="muted">Next 14 days by Due Date</span></div>
-      <div class="body">
-        <div class="heatmap">
-          <div class="legend">
-            <span class="chip">Intensity: 0</span>
-            <span class="chip warn">Medium</span>
-            <span class="chip danger">High</span>
-          </div>
-          <div id="hmWrap" class="hm-grid"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Activity -->
-    <section class="panel">
-      <div class="head"><strong>نشاط حديث</strong><span class="muted">آخر 15 تحديث</span></div>
-      <div class="body" id="activityWrap"></div>
-    </section>
-  </main>
-
-  <footer>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</footer>
-
-  <!-- Firebase + Logic -->
-  <script type="module">
+</div>
+</div>
+<div class="body"><div class="cols" id="cols"></div></div>
+</section>
+<!-- Soon + Assignees -->
+<div class="grid two">
+<section class="panel">
+<div class="head"><strong>أقرب تسليم (Top 10)</strong><span class="chip" id="todayInfo"></span></div>
+<div class="body"><div id="soonWrap"></div></div>
+</section>
+<section class="panel">
+<div class="head"><strong>توزيع المهام على الأعضاء</strong></div>
+<div class="body"><div id="assigneesWrap"></div></div>
+</section>
+</div>
+<!-- Per-member details -->
+<section class="panel">
+<div class="head"><strong>تقرير الأعضاء — حالة المهام + زمن التنفيذ</strong></div>
+<div class="body"><div id="membersTableWrap"></div></div>
+</section>
+<!-- Charts base -->
+<section class="panel">
+<div class="head"><strong>رسوم بيانية أساسية</strong><span class="muted">Per Member + Status Mix</span></div>
+<div class="body">
+<div class="charts">
+<div><canvas height="180" id="barPerUser"></canvas></div>
+<div><canvas height="180" id="pieStatuses"></canvas></div>
+</div>
+</div>
+</section>
+<!-- Lead/Cycle + Throughput -->
+<div class="grid 2-1">
+<section class="panel">
+<div class="head"><strong>Lead Time &amp; Cycle Time (Days)</strong><span class="muted">Median per Week</span></div>
+<div class="body"><canvas height="200" id="lineLeadCycle"></canvas></div>
+</section>
+<section class="panel">
+<div class="head"><strong>Throughput Weekly</strong><span class="muted">Completed Tasks / Week</span></div>
+<div class="body"><canvas height="200" id="barThroughput"></canvas></div>
+</section>
+</div>
+<!-- SLA Breach + Completion by Column -->
+<div class="grid 1-2">
+<section class="panel">
+<div class="head"><strong>SLA Breach</strong><span class="muted">Completed after Due Date</span></div>
+<div class="body"><canvas height="220" id="gaugeSLA"></canvas></div>
+</section>
+<section class="panel">
+<div class="head"><strong>Completion Rate by Column</strong><span class="muted">Done vs Remaining</span></div>
+<div class="body"><canvas height="220" id="barByColumn"></canvas></div>
+</section>
+</div>
+<!-- Workload Heatmap -->
+<section class="panel">
+<div class="head"><strong>Member Workload Heatmap</strong><span class="muted">Next 14 days by Due Date</span></div>
+<div class="body">
+<div class="heatmap">
+<div class="legend">
+<span class="chip">Intensity: 0</span>
+<span class="chip warn">Medium</span>
+<span class="chip danger">High</span>
+</div>
+<div class="hm-grid" id="hmWrap"></div>
+</div>
+</div>
+</section>
+<!-- Activity -->
+<section class="panel">
+<div class="head"><strong>نشاط حديث</strong><span class="muted">آخر 15 تحديث</span></div>
+<div class="body" id="activityWrap"></div>
+</section>
+</main>
+</main>
+</div>
+<div class="mzj-backdrop" id="mzjBackdrop"></div>
+<script src="mzj-ui.js"></script>
+<script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
     import {
@@ -1039,6 +1051,5 @@
         return d;
       }
     }
-  </script>
-</body>
+  </script></body>
 </html>

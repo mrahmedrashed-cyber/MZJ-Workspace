@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -387,19 +388,14 @@ body.mzj.dark .camp .link-remove{ background: rgba(255,255,255,.06); border-colo
   </header>
 
   <div class="mzj-shell" id="mzjShell">
-    <aside class="mzj-sidebar" id="mzjSidebar">
-<div class="side-section">
-  <div class="side-title">Workspace</div>
-  <nav class="side-nav">
-    <a class="side-link tab" href="./dashboard.html"><i class="fa-solid fa-gauge"></i><span>لوحة التحكم</span></a>
-    <a class="side-link tab" href="./projects.html"><i class="fa-solid fa-diagram-project"></i><span>المشاريع</span></a>
-    <a class="side-link tab" href="./members.html"><i class="fa-solid fa-users"></i><span>الأعضاء</span></a>
-    <a class="side-link tab active" href="./admin.html"><i class="fa-solid fa-bullhorn"></i><span>الحملات</span></a>
-    <a class="side-link tab" href="./cars.html"><i class="fa-solid fa-car"></i><span>متابعة السيارات</span></a>
-    <a class="side-link tab" href="./Whiteboard.html"><i class="fa-solid fa-chalkboard"></i><span>وايت بورد</span></a>
-  </nav>
-</div>
-    </aside>
+    <aside class="mzj-sidebar" id="mzjSidebar" data-mzj-sidebar="workspace">
+  <div class="side-section">
+    <div class="side-title">Workspace</div>
+    <nav class="side-nav" id="mzjSideNav">
+      <!-- يُبنى تلقائيًا من mzj-ui.js -->
+    </nav>
+  </div>
+</aside>
     <div class="mzj-backdrop" id="mzjBackdrop"></div>
 
     <main class="mzj-content">

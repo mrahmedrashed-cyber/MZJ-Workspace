@@ -437,3 +437,37 @@ body.mzj.dark .mzj-table th{
     overflow:hidden !important; transform: translateX(100%);
   }
 }
+
+
+
+/* =========================
+   RTL GRID FIX + LAYOUT POLISH
+   ========================= */
+html[dir="rtl"] .mzj-shell{
+  grid-template-columns: 1fr var(--side-w);
+}
+html[dir="rtl"] .mzj-sidebar{
+  border-left: 0 !important;
+  border-right: 1px solid var(--line);
+}
+.mzj-content{
+  width: 100%;
+  max-width: none;
+}
+.mzj-pagehead{
+  padding: 14px 0 12px;
+}
+.mzj-pagehead .pagehead-right{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-start;
+}
+html[dir="rtl"] .mzj-pagehead .pagehead-right{
+  justify-content:flex-end;
+}
+.mzj-select, .mzj-topselect, select.mzj-select{
+  min-height: 44px;
+  border-radius: 12px;
+}

@@ -1,12 +1,16 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>MZJ — Production Tracker (Firestore)</title>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<link href="./mzj-ui.css" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
+
   :root{
     --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --danger:#ef4444; --shadow:0 6px 20px rgba(0,0,0,.06);
     /* قيَم التضييق */
@@ -103,168 +107,219 @@
   @keyframes slideIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)}}
   .row-flash{animation: flashRow 1.6s ease-out 1;}
   @keyframes flashRow{0%{ background:#fffde7 }30%{ background:#fff2b3 }60%{ background:#fffde7 }100%{ background:#fff }}
+
+
+/* ==== MZJ UI integration overrides ==== */
+.container{max-width:1280px;margin:0 auto;padding:0 16px}
+.topbar,.nav{display:none !important}
+/* Toolbar inside page */
+.cars-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.cars-toolbar .btn{border-radius:12px;padding:10px 14px;font-weight:800}
+/* prevent mzj-ui global button styles from shrinking our legacy buttons */
+.cars-page button.btn, .cars-page .btn{font-family:"Tajawal",system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+
 </style>
 </head>
-<body>
-  <div class="container">
-    <div class="topbar">
-      <div style="display:flex;gap:12px;align-items:center">
+<body class="mzj">
+<header class="mzj-topbar">
+    <div class="topbar-left">
+      <button class="mzj-btn mzj-btn-ghost" id="mzjSidebarBtn" type="button" aria-label="القائمة">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="brand">
         <div class="logo">MZJ</div>
-        <div>
-          <h1>لوحة متابعة إنتاج المحتوى — Firestore</h1>
-          <div class="muted" id="who">—</div>
+        <div class="brand-text">
+          <div class="brand-title">MZJ Workspace</div>
+          <div class="brand-sub">Workflow</div>
         </div>
       </div>
-      <div class="actions">
-        <button id="btnWipeFS" class="btn btn-danger">تفريغ Firestore</button>
-        <button id="btnExportXLSX" class="btn btn-secondary">تصدير XLSX</button>
-        <label class="btn btn-secondary" for="xlsxImport" style="cursor:pointer">استيراد XLSX (إضافة)</label>
-        <input id="xlsxImport" type="file" accept=".xlsx" style="display:none"/>
-        <button id="btnTemplate" class="btn btn-ghost">تحميل Template XLSX</button>
-      </div>
     </div>
-
-    <!-- Navbar -->
-    <nav class="nav">
-      <a href="dashboard.html">لوحة التحكم</a>
-      <a href="projects.html">المشاريع</a>
-      <a href="members.html">الأعضاء</a>
-      <a href="admin.html">الحملات</a>
-      <a href="Whiteboard.html">وايت بورد</a>
-      <a href="javascript:void(0)" id="btnLogout" class="logout">تسجيل الخروج</a>
-    </nav>
-
-    <!-- KPIs -->
-    <div class="grid grid-4 panel" style="margin-top:14px">
-      <div class="card metric"><h3>إجمالي السيارات</h3><strong id="kTotal">0</strong></div>
-      <div class="card metric"><h3>تم التصوير</h3><strong id="kShot">0</strong></div>
-      <div class="card metric"><h3>تحت المونتاج</h3><strong id="kEditing">0</strong></div>
-      <div class="card metric"><h3>داخل الأجندة</h3><strong id="kAgenda">0</strong></div>
+    <div class="topbar-right">
+      <div class="mzj-chip"><i class="fa-regular fa-clock"></i><span id="mzjNow">—</span></div>
+      <button class="mzj-btn mzj-btn-ghost" id="mzjThemeBtn" type="button" aria-label="الوضع الليلي">
+        <i class="fa-regular fa-moon"></i>
+      </button>
+      <button class="mzj-btn mzj-btn-ghost" id="btnLogout" type="button">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>تسجيل الخروج</span>
+      </button>
     </div>
+  </header>
 
-    <!-- إضافة سيارة سريعة -->
-    <div class="panel" id="addPanel">
-      <h2 style="margin:0 0 10px 0;color:var(--brown);font-size:18px">إضافة سيارة سريعة</h2>
-      <div class="row">
-        <div><label>العلامة</label><select id="iBrand"></select></div>
-        <div><label>الموديل</label><select id="iModel" disabled></select></div>
-        <div><label>السنة</label><input id="iYear" type="number" min="2015" max="2035" value="2026"></div>
-        <div><label>الفئة</label><input id="iTrimText" placeholder="اكتب الفئة يدويًا (مثال: سمارت بلس)"></div>
-        <div><label>سعة المحرك</label><input id="iEngine" placeholder="مثال: 2000 سي سي / 2.0L"></div>
-        <div><label>اللون الخارجي</label><input id="iColor" placeholder="مثال: أبيض لؤلؤي"></div>
+  <div class="mzj-shell" id="mzjShell">
+    <aside class="mzj-sidebar" id="mzjSidebar">
+      <div class="side-section">
+        <div class="side-title">العمليات</div>
+        <nav class="side-nav">
+          <a class="side-link" href="./admin.html"><i class="fa-solid fa-bullhorn"></i><span>الحملات</span></a>
+          <a class="side-link" href="./dashboard.html"><i class="fa-solid fa-bullhorn"></i><span>الداش بورد</span></a>
+          <a class="side-link" href="./projects.html"><i class="fa-solid fa-bullhorn"></i><span>المشاريع</span></a>
+          <a class="side-link" href="./members.html"><i class="fa-solid fa-bullhorn"></i><span>الاعضاء</span></a>
+          <a class="side-link active" href="./cars.html"><i class="fa-solid fa-bullhorn"></i><span>متابعة السيارات</span></a>
+          <a class="side-link" href="./Whiteboard.html"><i class="fa-solid fa-bullhorn"></i><span>وايت بورد</span></a>
+        </nav>
       </div>
-      <div class="row" style="margin-top:10px">
-        <div><label>اللون الداخلي</label><input id="iIntColor" placeholder="مثال: جلد بيج"></div>
-        <div><label>Status – تصوير</label><select id="iShoot"></select></div>
-        <div><label>Status – مونتاج</label><select id="iEdit"></select></div>
-        <div><label>تاريخ التصوير</label><input id="iShootDate" type="date"></div>
-        <div><label>داخل الأجندة؟</label><select id="iInAgenda"></select></div>
-        <div><label>&nbsp;</label></div>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <div id="agendaFields" class="hidden">
-          <label>تاريخ الأجندة</label>
-          <div style="display:flex;gap:8px">
-            <select id="iAgendaMonth"></select>
-            <input id="iAgendaYear" type="number" min="2020" max="2035" value="">
-          </div>
+      <div class="side-footer">
+        <div class="mzj-note">
+          <div class="note-title">نجم الطريق</div>
+          <div class="note-row"><span class="swatch sw-brown"></span><span>Dark Brown</span></div>
+          <div class="note-row"><span class="swatch sw-beige"></span><span>Beige Accent</span></div>
         </div>
-        <div id="editExtras" class="hidden" style="grid-column: span 3">
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
-            <div>
-              <label>صور + ريل مواصفات</label>
-              <select id="iPhotosSpecs"></select>
-            </div>
-            <div>
-              <label>ريل قصير</label>
-              <select id="iShortReel"></select>
-            </div>
-          </div>
+      </div>
+    </aside>
+
+    <div class="mzj-backdrop" id="mzjBackdrop"></div>
+
+    <main class="mzj-content">
+
+    
+      <section class="mzj-pagehead">
+        <div class="ph-left">
+          <h1>لوحة متابعة إنتاج المحتوى</h1>
+          <p>Firestore — <span id="who">—</span></p>
         </div>
-        <div><label>&nbsp;</label><button id="btnAdd" class="btn btn-primary" style="width:100%">إضافة</button></div>
-      </div>
+        <div class="ph-actions">
+          <a class="mzj-btn mzj-btn-ghost" href="./dashboard.html"><i class="fa-solid fa-gauge"></i> الداش بورد</a>
+        </div>
+      </section>
+
+    <div class="container cars-page">
+      
+<div class="panel" style="margin-top:0">
+  <div class="cars-toolbar">
+    <button id="btnWipeFS" class="btn btn-danger">تفريغ Firestore</button>
+    <button id="btnExportXLSX" class="btn btn-secondary">تصدير XLSX</button>
+    <label class="btn btn-secondary" for="xlsxImport" style="cursor:pointer">استيراد XLSX (إضافة)</label>
+    <input id="xlsxImport" type="file" accept=".xlsx" style="display:none"/>
+    <button id="btnTemplate" class="btn btn-ghost">تحميل Template XLSX</button>
+  </div>
+</div>
+
+      <div class="grid grid-4 panel" style="margin-top:14px">
+<div class="card metric"><h3>إجمالي السيارات</h3><strong id="kTotal">0</strong></div>
+<div class="card metric"><h3>تم التصوير</h3><strong id="kShot">0</strong></div>
+<div class="card metric"><h3>تحت المونتاج</h3><strong id="kEditing">0</strong></div>
+<div class="card metric"><h3>داخل الأجندة</h3><strong id="kAgenda">0</strong></div>
+</div>
+      <div class="panel" id="addPanel">
+<h2 style="margin:0 0 10px 0;color:var(--brown);font-size:18px">إضافة سيارة سريعة</h2>
+<div class="row">
+<div><label>العلامة</label><select id="iBrand"></select></div>
+<div><label>الموديل</label><select disabled="" id="iModel"></select></div>
+<div><label>السنة</label><input id="iYear" max="2035" min="2015" type="number" value="2026"/></div>
+<div><label>الفئة</label><input id="iTrimText" placeholder="اكتب الفئة يدويًا (مثال: سمارت بلس)"/></div>
+<div><label>سعة المحرك</label><input id="iEngine" placeholder="مثال: 2000 سي سي / 2.0L"/></div>
+<div><label>اللون الخارجي</label><input id="iColor" placeholder="مثال: أبيض لؤلؤي"/></div>
+</div>
+<div class="row" style="margin-top:10px">
+<div><label>اللون الداخلي</label><input id="iIntColor" placeholder="مثال: جلد بيج"/></div>
+<div><label>Status – تصوير</label><select id="iShoot"></select></div>
+<div><label>Status – مونتاج</label><select id="iEdit"></select></div>
+<div><label>تاريخ التصوير</label><input id="iShootDate" type="date"/></div>
+<div><label>داخل الأجندة؟</label><select id="iInAgenda"></select></div>
+<div><label> </label></div>
+</div>
+<div class="row" style="margin-top:10px">
+<div class="hidden" id="agendaFields">
+<label>تاريخ الأجندة</label>
+<div style="display:flex;gap:8px">
+<select id="iAgendaMonth"></select>
+<input id="iAgendaYear" max="2035" min="2020" type="number" value=""/>
+</div>
+</div>
+<div class="hidden" id="editExtras" style="grid-column: span 3">
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+<div>
+<label>صور + ريل مواصفات</label>
+<select id="iPhotosSpecs"></select>
+</div>
+<div>
+<label>ريل قصير</label>
+<select id="iShortReel"></select>
+</div>
+</div>
+</div>
+<div><label> </label><button class="btn btn-primary" id="btnAdd" style="width:100%">إضافة</button></div>
+</div>
+</div>
+      <div class="panel" id="filterPanel">
+<h2 style="margin:0 0 10px 0;color:var(--brown);font-size:18px">الفلاتر</h2>
+<div class="row">
+<div><label>العلامة</label><select id="dBrand"><option value="">الكل</option></select></div>
+<div><label>الموديل</label><select id="dModel"><option value="">الكل</option></select></div>
+<div><label>الفئة</label><select id="dTrim"><option value="">الكل</option></select></div>
+<div><label>تصوير</label><select id="dShoot"><option value="">الكل</option></select></div>
+<div><label>مونتاج</label><select id="dEdit"><option value="">الكل</option></select></div>
+<div><label>اللون الخارجي</label><input id="dColor" placeholder="مثال: أبيض"/></div>
+</div>
+<div class="row" style="margin-top:10px">
+<div><label>اللون الداخلي</label><input id="dIntColor" placeholder="مثال: بيج"/></div>
+<div><label>داخل الأجندة؟</label><select id="dAgenda"><option value="">الكل</option></select></div>
+<div style="grid-column: span 4"><label>بحث نصّي</label><input id="dSearch" placeholder="ابحث في الموديل/الملاحظات/الألوان/المحرك"/></div>
+</div>
+</div>
+      <div class="panel table-soft" id="filteredPanel" style="padding:0;margin-top:8px">
+<table id="filteredTable">
+<colgroup>
+<col style="width:var(--w-brand)"/><col style="width:var(--w-model)"/><col class="narrow-90"/>
+<col style="width:var(--w-trim)"/><col style="width:var(--w-engine)"/>
+<col class="narrow-110"/><col class="narrow-110"/>
+<col class="narrow-90"/><col class="narrow-90"/><col class="narrow-100"/><col class="narrow-100"/>
+<col class="narrow-110"/><col class="narrow-90"/><col class="narrow-120"/><col class="narrow-120"/>
+</colgroup>
+<thead>
+<tr>
+<th class="sticky-brand">العلامة</th>
+<th class="sticky-model">الموديل</th>
+<th>السنة</th>
+<th class="sticky-trim">الفئة</th>
+<th>سعة المحرك</th>
+<th>اللون الخارجي</th><th>اللون الداخلي</th>
+<th>تصوير</th><th>مونتاج</th><th>صور + ريل مواصفات</th><th>ريل قصير</th>
+<th>تاريخ التصوير</th><th>داخل الأجندة؟</th><th>مرفوع؟</th>
+<th>رابط الصفحة</th><th>ملاحظات</th>
+</tr>
+</thead>
+<tbody id="filteredTBody"></tbody>
+</table>
+<div class="muted" id="flatMeta" style="padding:10px"></div>
+</div>
+      <div class="panel table-soft" id="editorPanel" style="padding:0;margin-top:8px">
+<table id="carsTable">
+<colgroup>
+<col style="width:var(--w-brand)"/><col style="width:var(--w-model)"/><col class="narrow-90"/>
+<col style="width:var(--w-trim)"/><col style="width:var(--w-engine)"/>
+<col class="narrow-110"/><col class="narrow-110"/>
+<col class="narrow-90"/><col class="narrow-90"/><col class="narrow-100"/><col class="narrow-100"/>
+<col class="narrow-110"/><col class="narrow-90"/><col class="narrow-120"/><col class="narrow-120"/>
+<col style="width:var(--w-actions)"/>
+</colgroup>
+<thead>
+<tr>
+<th class="sticky-brand">العلامة</th>
+<th class="sticky-model">الموديل</th>
+<th>السنة</th>
+<th class="sticky-trim">الفئة</th>
+<th>سعة المحرك</th>
+<th>اللون الخارجي</th><th>اللون الداخلي</th>
+<th>تصوير</th><th>مونتاج</th><th>صور + ريل مواصفات</th><th>ريل قصير</th><th>نوع المحتوى</th>
+<th>تاريخ التصوير</th><th>داخل الأجندة؟</th>
+<th>مرفوع على الموقع؟</th><th>رابط الصفحة</th><th>ملاحظات</th>
+<th class="sticky-actions">إجراءات</th>
+</tr>
+</thead>
+<tbody id="tbody"><tr><td colspan="17" style="padding:14px">جار التحميل…</td></tr></tbody>
+</table>
+</div>
     </div>
 
-    <!-- الفلاتر -->
-    <div class="panel" id="filterPanel">
-      <h2 style="margin:0 0 10px 0;color:var(--brown);font-size:18px">الفلاتر</h2>
-      <div class="row">
-        <div><label>العلامة</label><select id="dBrand"><option value="">الكل</option></select></div>
-        <div><label>الموديل</label><select id="dModel"><option value="">الكل</option></select></div>
-        <div><label>الفئة</label><select id="dTrim"><option value="">الكل</option></select></div>
-        <div><label>تصوير</label><select id="dShoot"><option value="">الكل</option></select></div>
-        <div><label>مونتاج</label><select id="dEdit"><option value="">الكل</option></select></div>
-        <div><label>اللون الخارجي</label><input id="dColor" placeholder="مثال: أبيض"></div>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <div><label>اللون الداخلي</label><input id="dIntColor" placeholder="مثال: بيج"></div>
-        <div><label>داخل الأجندة؟</label><select id="dAgenda"><option value="">الكل</option></select></div>
-        <div style="grid-column: span 4"><label>بحث نصّي</label><input id="dSearch" placeholder="ابحث في الموديل/الملاحظات/الألوان/المحرك"></div>
-      </div>
-    </div>
+    <div class="toasts" id="toasts"></div>
 
-    <!-- نتيجة الفلتر (عرض فقط) -->
-    <div class="panel table-soft" id="filteredPanel" style="padding:0;margin-top:8px">
-      <table id="filteredTable">
-        <colgroup>
-          <col style="width:var(--w-brand)"><col style="width:var(--w-model)"><col class="narrow-90">
-          <col style="width:var(--w-trim)"><col style="width:var(--w-engine)">
-          <col class="narrow-110"><col class="narrow-110">
-          <col class="narrow-90"><col class="narrow-90"><col class="narrow-100"><col class="narrow-100">
-          <col class="narrow-110"><col class="narrow-90"><col class="narrow-120"><col class="narrow-120">
-        </colgroup>
-        <thead>
-          <tr>
-            <th class="sticky-brand">العلامة</th>
-            <th class="sticky-model">الموديل</th>
-            <th>السنة</th>
-            <th class="sticky-trim">الفئة</th>
-            <th>سعة المحرك</th>
-            <th>اللون الخارجي</th><th>اللون الداخلي</th>
-            <th>تصوير</th><th>مونتاج</th><th>صور + ريل مواصفات</th><th>ريل قصير</th>
-            <th>تاريخ التصوير</th><th>داخل الأجندة؟</th><th>مرفوع؟</th>
-            <th>رابط الصفحة</th><th>ملاحظات</th>
-          </tr>
-        </thead>
-        <tbody id="filteredTBody"></tbody>
-      </table>
-      <div class="muted" id="flatMeta" style="padding:10px"></div>
-    </div>
 
-    <!-- جدول السيارات (تحرير) -->
-    <div class="panel table-soft" id="editorPanel" style="padding:0;margin-top:8px">
-      <table id="carsTable">
-        <colgroup>
-          <col style="width:var(--w-brand)"><col style="width:var(--w-model)"><col class="narrow-90">
-          <col style="width:var(--w-trim)"><col style="width:var(--w-engine)">
-          <col class="narrow-110"><col class="narrow-110">
-          <col class="narrow-90"><col class="narrow-90"><col class="narrow-100"><col class="narrow-100">
-          <col class="narrow-110"><col class="narrow-90"><col class="narrow-120"><col class="narrow-120">
-          <col style="width:var(--w-actions)">
-        </colgroup>
-        <thead>
-          <tr>
-            <th class="sticky-brand">العلامة</th>
-            <th class="sticky-model">الموديل</th>
-            <th>السنة</th>
-            <th class="sticky-trim">الفئة</th>
-            <th>سعة المحرك</th>
-            <th>اللون الخارجي</th><th>اللون الداخلي</th>
-            <th>تصوير</th><th>مونتاج</th><th>صور + ريل مواصفات</th><th>ريل قصير</th><th>نوع المحتوى</th>
-            <th>تاريخ التصوير</th><th>داخل الأجندة؟</th>
-            <th>مرفوع على الموقع؟</th><th>رابط الصفحة</th><th>ملاحظات</th>
-            <th class="sticky-actions">إجراءات</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"><tr><td colspan="17" style="padding:14px">جار التحميل…</td></tr></tbody>
-      </table>
-    </div>
+    </main>
   </div>
 
-  <!-- Toasts -->
-  <div class="toasts" id="toasts"></div>
-
-<!-- ===== Firebase (Module) + App Logic ===== -->
+  <script src="./mzj-ui.js"></script>
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";

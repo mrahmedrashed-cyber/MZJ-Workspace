@@ -287,22 +287,4 @@
     wrapCompat,
     _debugState: state
   };
-
-  // Auto-highlight active sidebar link based on current page (works across all pages)
-  (function highlightActiveNav(){
-    try{
-      const path = (location.pathname || '').split('/').pop() || '';
-      const current = path.toLowerCase();
-      const links = document.querySelectorAll('#mzjSidebar a.side-link');
-      links.forEach(a=>{
-        a.classList.remove('active');
-        const href = (a.getAttribute('href') || '').split('/').pop().toLowerCase();
-        if (!href) return;
-        if (href === current){
-          a.classList.add('active');
-        }
-      });
-    }catch(e){}
-  })();
-
 })();

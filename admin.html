@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -7,9 +6,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>الحملات | MZJ Workspace</title>
-
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="./mzj-ui.css">
 
   <!-- Tajawal Font -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -28,7 +24,7 @@
     }
 
     *{box-sizing:border-box}
-body.legacy{
+    body{
       margin:0;
       background:var(--cream);
       color:var(--text);
@@ -527,85 +523,31 @@ body.legacy{
   </style>
 </head>
 
-<body class="mzj">
-  <header class="mzj-topbar">
-    <div class="topbar-left">
-      <button class="icon-btn" id="mzjSidebarBtn" aria-label="القائمة"><i class="fa-solid fa-bars"></i></button>
-      <div class="brand">
-        <div class="brand-mark">MZJ</div>
-        <div class="brand-text">
-          <div class="brand-title">محمد بن ذعار العجمي للسيارات</div>
-          <div class="brand-sub">Workspace</div>
-        </div>
-      </div>
+<body>
+  <!-- Top Navigation -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-badge"></span>
+      <strong>MZJ Workspace — الحملات</strong>
     </div>
-    <div class="topbar-center">
-      <div class="mzj-breadcrumb">
-        <span class="crumb">الرئيسية</span>
-        <i class="fa-solid fa-chevron-left"></i>
-        <span class="crumb current">الحملات</span>
-      </div>
-    </div>
-    <div class="topbar-right">
-      <div class="mzj-chip"><i class="fa-regular fa-clock"></i><span id="mzjNow">—</span></div>
-<button class="mzj-btn mzj-btn-ghost" id="btnLogout"  type="button">
-      <i class="fa-solid fa-right-from-bracket"></i>
-      <span>تسجيل الخروج</span>
-    </button>      <div class="mzj-user">
-        <div class="avatar">DB</div>
-        <div class="user-text">
-          <div class="user-name">الحملات</div>
-          <div class="user-role">Campaigns</div>
-        </div>
-      </div>
-    </div>
+
+    <nav class="nav">
+      <a href="dashboard.html">لوحة التحكم</a>
+      <a href="projects.html">المشاريع</a>
+      <a href="members.html">الأعضاء</a>
+      <a href="admin.html" style="background:rgba(255,255,255,.18)">الحملات</a>
+      <a href="cars.html">متابعة السيارات</a>
+      <a href="Whiteboard.html">وايت بورد</a>
+      <a href="javascript:void(0)" id="btnLogout">تسجيل الخروج</a>
+    </nav>
   </header>
 
-  <!-- Top Navigation -->
-  
-
   <!-- Main Content -->
-  
-<div class="mzj-shell" id="mzjShell">
-  
-<aside class="mzj-sidebar" id="mzjSidebar">
-  <div class="side-section">
-    <div class="side-title">التنقّل</div>
-    <div class="side-nav">
-      <a class="side-link" href="dashboard.html"><i class="fa-solid fa-gauge"></i><span>لوحة التحكم</span></a>
-      <a class="side-link" href="projects.html"><i class="fa-solid fa-folder-open"></i><span>المشاريع</span></a>
-      <a class="side-link" href="members.html"><i class="fa-solid fa-users"></i><span>الأعضاء</span></a>
-      <a class="side-link active" href="admin.html"><i class="fa-solid fa-bullhorn"></i><span>الحملات</span></a>
-      <a class="side-link" href="cars.html"><i class="fa-solid fa-car"></i><span>متابعة السيارات</span></a>
-      <a class="side-link" href="Whiteboard.html"><i class="fa-solid fa-pen-ruler"></i><span>وايت بورد</span></a>
-    </div>
-  </div>
+  <main class="page">
 
-  <div class="side-footer">
-    <div class="mzj-note">
-      <div class="note-title">ملاحظة</div>
-      <div class="note-row"><span class="swatch sw-brown"></span><span>مصداقية — إتقان — سرعة</span></div>
-      <div class="note-row"><span class="swatch sw-beige"></span><span>قالب موحّد لكل الصفحات</span></div>
-      <div class="note-row"><span class="swatch sw-cream"></span><span>Workspace</span></div>
-    </div>
-  </div>
-</aside>
-
-  <div class="mzj-backdrop" id="mzjBackdrop"></div>
-  <main class="mzj-content">
-    
-<div class="mzj-pagehead">
-  <div>
-    <h1 class="page-title">الحملات</h1>
-    <p class="page-desc">إدارة حملات التسويق وتوزيع المهام على الأعمدة — بنفس قالب MZJ UI.</p>
-  </div>
-  <div class="pagehead-right"></div>
-</div>
-
-<div class="mzj-grid">
-  <section class="mzj-card" style="grid-column: span 12;">
-    <div class="card-head">
-      <div style="display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap">
+    <!-- Campaign Panel -->
+    <section class="panel">
+      <div class="head">
         <div class="controls">
           <select id="campaignSelect" class="select"></select>
 
@@ -621,9 +563,10 @@ body.legacy{
 
         <div class="muted" id="who"></div>
       </div>
-    </div>
-    <div class="card-body">
-      <!-- وصف الحملة -->
+
+      <div class="body">
+
+        <!-- وصف الحملة -->
         <div id="campaignDescriptionBox"
           style="background:#fff; padding:18px; border-radius:14px;
                  margin-bottom:16px; box-shadow:0 6px 20px rgba(62,36,32,.06)">
@@ -658,19 +601,10 @@ body.legacy{
 
         <!-- Board Columns -->
         <div class="board" id="board"></div>
-    </div>
-  </section>
-</div>
 
-<div class="mzj-footer">
-  <span>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</span>
-  <span class="sep">•</span>
-  <span class="muted">MZJ Workspace</span>
-</div>
-
+      </div>
+    </section>
   </main>
-</div>
-
 
   <!-- ========= مودال إنشاء حملة جديدة ========= -->
   <div class="modal-campaign" id="newCampaignModal">
@@ -1807,8 +1741,9 @@ body.legacy{
 
   </script>
 
-  
+  <footer class="footer-bar">
+    <small>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</small>
+  </footer>
 
-  <script src="./mzj-ui.js"></script>
 </body>
 </html>

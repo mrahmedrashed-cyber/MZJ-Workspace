@@ -107,8 +107,51 @@
   .row-flash{animation: flashRow 1.6s ease-out 1;}
   @keyframes flashRow{0%{ background:#fffde7 }30%{ background:#fff2b3 }60%{ background:#fffde7 }100%{ background:#fff }}
 </style>
+<link rel="stylesheet" href="mzj-ui.css">
+<style id="mzj-compat">
+  /* Compat layer: keep old markup + JS, update look only */
+  body{font-family:var(--font);background:linear-gradient(180deg,var(--cream),#ffffff 34%);color:var(--text);}
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    min-height:var(--topbar-h);
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    padding:10px 14px;
+    background:rgba(255,255,255,.78);
+    border-bottom:1px solid rgba(231,229,228,.8);
+    backdrop-filter:blur(10px);
+    box-shadow:none;
+  }
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand-badge{
+    inline-size:44px;block-size:44px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--brown);color:#fff;font-weight:800;
+    box-shadow:var(--shadow-soft);
+  }
+  .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .nav a{
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:14px;
+    transition:background .15s ease, transform .15s ease;
+  }
+  .nav a:hover{background:rgba(62,36,32,.06)}
+  .page{padding:16px;display:grid;gap:14px}
+  .panel{
+    background:var(--card,#fff);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-soft);
+    border:1px solid rgba(231,229,228,.9);
+    overflow:hidden;
+  }
+  .panel .head{padding:12px 14px;border-bottom:1px solid rgba(231,229,228,.9);display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+  .panel .body{padding:12px 14px}
+  .btn{border-radius:14px}
+  .btn.secondary{background:#fff;border:1px solid rgba(231,229,228,.9)}
+  footer.footer, footer{border-top:1px solid rgba(231,229,228,.9)}
+</style>
 </head>
-<body>
+<body class="mzj">
   <div class="container">
     <div class="topbar">
       <div style="display:flex;gap:12px;align-items:center">

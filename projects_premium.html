@@ -489,6 +489,7 @@ button{border-radius:14px!important;}
       </div>
 
       <nav class="nav">
+      
         <a href="javascript:void(0)" onclick="mzjLogout()">تسجيل الخروج</a>
       </nav>
     </div>
@@ -1305,7 +1306,28 @@ button{border-radius:14px!important;}
         });
 
         const wb = XLSX.utils.book_new();
-        const wsTasks = XLSX.utils.json_to_sheet(data);
+        const headers = [
+          "Space",
+          "العمود/الحالة",
+          "العمود/الجروب الأصلي",
+          "اسم التاسك",
+          "تاريخ التسليم",
+          "الوصف",
+          "أسماء الأعضاء",
+          "ألوان الأعضاء",
+          "UID الأعضاء",
+          "ماركة",
+          "الموديل",
+          "الفئة",
+          "المحرك",
+          "روابط",
+          "أنشئ بواسطة",
+          "تاريخ الإنشاء",
+          "نشط",
+          "Doc ID"
+        ];
+
+        const wsTasks = XLSX.utils.json_to_sheet(data, { header: headers, skipHeader: false });
         const wsCols  = XLSX.utils.json_to_sheet(counts);
 
         XLSX.utils.book_append_sheet(wb, wsTasks, 'Tasks');

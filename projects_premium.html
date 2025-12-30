@@ -270,6 +270,32 @@
     outline:none;
     box-shadow:none;
   }
+
+  /* Done grouping (keeps original column for export) */
+  .done-group{
+    margin:10px 0;
+    padding:10px;
+    border-radius:14px;
+    border:1px dashed rgba(62,36,32,.25);
+    background: rgba(255,248,239,.65);
+    backdrop-filter: blur(8px);
+  }
+  .done-group-title{
+    font-size:12px;
+    font-weight:900;
+    color:#3e2420;
+    margin-bottom:8px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .done-group-title:before{
+    content:"";
+    width:8px;height:8px;border-radius:999px;
+    background: rgb(188,143,116);
+    box-shadow:0 0 0 3px rgba(188,143,116,.18);
+  }
+  .done-group-zone{ display:flex; flex-direction:column; gap:10px; }
 </style>
 
   <!-- SheetJS (للتصدير إلى Excel) -->
@@ -844,7 +870,9 @@ button{border-radius:14px!important;}
 
           const from = data.senderName || 'نظام المشاريع';
           let timeStr='';
-          try{
+          if(newStatus==='تم الانتهاء' && fromStatus){ patch.doneFrom = fromStatus; }
+      if(newStatus!=='تم الانتهاء' && fromStatus=== 'تم الانتهاء'){ patch.doneFrom = null; }
+      try{
             if(data.createdAt && data.createdAt.toDate){
               const d = data.createdAt.toDate();
               timeStr = d.toLocaleString('ar-SA',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
@@ -1258,6 +1286,7 @@ button{border-radius:14px!important;}
           return {
             "Space": SPACES_CACHE.get(t.spaceId)||t.spaceId,
             "العمود/الحالة": t.status||'',
+            "العمود/الجروب الأصلي": (t.status===DONE_STATUS_SPACES ? (t.doneFrom||"") : (t.status||"")) ,
             "اسم التاسك": t.name||'',
             "تاريخ التسليم": t.due||'',
             "الوصف": t.description||'',
@@ -1751,7 +1780,7 @@ function closeCreate(){ taskModal.classList.remove('show'); resetCreateForm(); }
 
         try{
           const newOrder = computeOrderAtEnd("تم الانتهاء");
-          await updateTaskStatusAndOrder(id, "تم الانتهاء", newOrder);
+          await updateTaskStatusAndOrder(id, "تم الانتهاء", newOrder, task.status||"");
         }catch(err){
           console.error(err);
           alert('⚠️ تعذر تحديث حالة التاسك: '+(err?.message||err));
@@ -1826,7 +1855,7 @@ function closeCreate(){ taskModal.classList.remove('show'); resetCreateForm(); }
           const cardId = e.dataTransfer.getData(MIME_TASK);
           const newStatus = zone.dataset.zone;
           const newOrder = computeOrderAtEnd(newStatus);
-          await updateTaskStatusAndOrder(cardId, newStatus, newOrder);
+          await updateTaskStatusAndOrder(cardId, newStatus, newOrder, (TASKS_CAMPAIGNS.find(t=>t.id===cardId)?.status)||"");
         });
       });
     }
@@ -1855,7 +1884,7 @@ function closeCreate(){ taskModal.classList.remove('show'); resetCreateForm(); }
       return 0;
     }
 
-    async function updateTaskStatusAndOrder(taskId, newStatus, newOrder){
+    async function updateTaskStatusAndOrder(taskId, newStatus, newOrder, fromStatus){
       const patch = { status:newStatus };
       if(typeof newOrder === 'number' && !Number.isNaN(newOrder)){
         patch.order = newOrder;
@@ -1992,7 +2021,7 @@ function closeCreate(){ taskModal.classList.remove('show'); resetCreateForm(); }
             const mid = rect.top + rect.height/2;
             const position = e.clientY < mid ? 'before' : 'after';
             const newOrder = computeOrderForDrop(status, t.id, position);
-            await updateTaskStatusAndOrder(draggedId, status, newOrder);
+            await updateTaskStatusAndOrder(draggedId, status, newOrder, (TASKS_CAMPAIGNS.find(t=>t.id===draggedId)?.status)||"");
           });
 
           card.addEventListener('click', (e)=>{
@@ -2267,7 +2296,16 @@ function closeCreate(){ taskModal.classList.remove('show'); resetCreateForm(); }
           e.preventDefault(); zone.classList.remove('drag');
           const cardId = e.dataTransfer.getData(MIME_TASK);
           const newStatus = zone.dataset.zone;
-          try{ await updateDoc(doc(db,'tasks', cardId), { status:newStatus }); }
+          try{
+            const prev = (TASKS_SPACES.find(t=> t.id===cardId)?.status)||'';
+            const patch = { status:newStatus };
+            if(newStatus===DONE_STATUS_SPACES && prev && prev!==DONE_STATUS_SPACES){
+              patch.doneFrom = prev;
+            }else if(newStatus!==DONE_STATUS_SPACES && prev===DONE_STATUS_SPACES){
+              patch.doneFrom = null;
+            }
+            await updateDoc(doc(db,'tasks', cardId), patch);
+          }
           catch(err){ alert('⚠️ تحديث الحالة يحتاج صلاحية كافية.'); }
         });
       });
@@ -2283,7 +2321,7 @@ function closeCreate(){ taskModal.classList.remove('show'); resetCreateForm(); }
       const task = TASKS_SPACES.find(t=> t.id === id);
       if(!task) return;
       try{
-        await updateDoc(doc(db,'tasks', id), { status: DONE_STATUS_SPACES });
+        await updateDoc(doc(db,'tasks', id), { status: DONE_STATUS_SPACES, doneFrom: (task.status||'') });
       }catch(err){
         console.error(err);
         alert('⚠️ تعذر تحديث حالة التاسك: '+(err?.message||err));
@@ -2306,6 +2344,23 @@ function renderTasksSpaces(){
       ([...(SPACE_COLUMNS||[]), DONE_STATUS_SPACES]).forEach(status=>{
         const zone = board.querySelector(`.dropzone[data-zone="${CSS.escape(status)}"]`);
         const list = byStatus[status]||[];
+        const _doneGroups = (status===DONE_STATUS_SPACES) ? new Map() : null;
+        const getTargetZone = (t)=>{
+          if(status!==DONE_STATUS_SPACES) return zone;
+          const key = (t.doneFrom||'غير محدد');
+          let inner = _doneGroups.get(key);
+          if(!inner){
+            const wrap = document.createElement('div');
+            wrap.className = 'done-group';
+            wrap.innerHTML = `<div class="done-group-title">${key}</div>`;
+            inner = document.createElement('div');
+            inner.className = 'done-group-zone';
+            wrap.appendChild(inner);
+            zone?.appendChild(wrap);
+            _doneGroups.set(key, inner);
+          }
+          return inner;
+        };
         list.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
         list.forEach(t=>{
           const card=document.createElement('article');
@@ -2333,7 +2388,7 @@ card.setAttribute('draggable','true');
             e.dataTransfer.setData('text/plain', t.id);
           });
           card.addEventListener('click', ()=> openDetail(t));
-          zone?.appendChild(card);
+          getTargetZone(t)?.appendChild(card);
         });
       });
     }

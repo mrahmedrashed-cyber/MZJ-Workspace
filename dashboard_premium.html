@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <link rel="icon" type="image/x-icon" href="assets/favicon.png">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>لوحة التحكم — MZJ Workspace</title>
+
+  <!-- Fonts + Charts + PDF -->
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    :root{
+      --brown:#3e2420; --beige:#bc8f74; --cream:#fff8ef; --text:#1f2937; --muted:#6b7280; --radius:14px;
+      --ok:#16a34a; --warn:#f59e0b; --danger:#dc2626; --info:#1e90ff;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--cream);color:var(--text);font-family:"Tajawal",system-ui,Arial}
+    a{color:inherit;text-decoration:none}
+
+    /* Topbar */
+    .topbar{
+      display:flex;justify-content:space-between;align-items:center;padding:14px 18px;
+      background:linear-gradient(180deg,var(--brown),#2f1c19);color:#fff;position:sticky;top:0;z-index:10;
+      box-shadow:0 6px 20px rgba(62,36,32,.25)
+    }
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand-badge{inline-size:28px;block-size:28px;border-radius:8px;background:linear-gradient(135deg,var(--beige),#d9b39a)}
+    .nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .nav a{padding:8px 12px;border-radius:10px;color:#fff}
+    .nav a:hover{background:rgba(255,255,255,.14)}
+    .select{border-radius:10px;border:0;padding:8px 10px}
+
+    /* Layout */
+    .page{padding:18px;display:grid;gap:16px}
+    .grid{display:grid;gap:16px}
+    @media(min-width:1100px){ .grid.two{grid-template-columns:2fr 1fr} }
+    @media(min-width:900px){ .grid.three{grid-template-columns:repeat(3,1fr)} }
+    @media(min-width:1100px){ .grid.four{grid-template-columns:repeat(4,1fr)} }
+    @media(min-width:1100px){ .grid.2-1{grid-template-columns:2fr 1fr} }
+    @media(min-width:1100px){ .grid.1-2{grid-template-columns:1fr 2fr} }
+
+    /* Panels */
+    .panel{background:#fff;border-radius:var(--radius);box-shadow:0 12px 30px rgba(62,36,32,.12);overflow:hidden}
+    .panel .head{padding:12px 14px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+    .panel .body{padding:12px 14px}
+    .muted{color:var(--muted)}
+    .btn{
+      padding:10px 12px;border:0;border-radius:12px;background:var(--brown);color:#fff;font-weight:800;cursor:pointer;
+      transition:.15s; box-shadow:0 8px 20px rgba(62,36,32,.22)
+    }
+    .btn:hover{filter:brightness(1.05); transform:translateY(-1px)}
+
+    .chip{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:4px 8px;border-radius:999px;font-size:12px;
+      background:#f3e5dc;color:var(--brown)
+    }
+    .chip.warn{background:#fef3c7;color:#b45309}
+    .chip.danger{background:#fee2e2;color:#b91c1c}
+
+    /* KPI tiles */
+    .kpis{display:grid;gap:12px}
+    @media(min-width:900px){ .kpis{grid-template-columns:repeat(5,1fr)} }
+    .kpi{background:#fff;border:1px solid #eee;border-radius:14px;padding:14px;display:grid;gap:6px;position:relative;overflow:hidden}
+    .kpi:hover{box-shadow:0 12px 30px rgba(62,36,32,.18)}
+    .kpi .lbl{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
+    .kpi .val{font-size:26px;font-weight:800;color:var(--brown)}
+    .kpi .hint{font-size:12px;color:var(--muted)}
+    .kpi .ico{inline-size:26px;block-size:26px;display:inline-grid;place-items:center;border-radius:8px;background:#fff8ef;border:1px solid #edd7ca}
+
+    /* Column counters */
+    .cols{display:grid;gap:10px}
+    @media(min-width:800px){ .cols{grid-template-columns:repeat(4,1fr)} }
+    .colbox{background:#fff8ef;border:1px solid #edd7ca;border-radius:14px;padding:12px;transition:.15s;display:grid;gap:6px}
+    .colbox:hover{transform:translateY(-1px); box-shadow:0 10px 20px rgba(62,36,32,.15)}
+    .colbox .title{color:var(--brown);font-weight:800;display:flex;align-items:center;gap:8px}
+    .colbox .num{font-size:22px;font-weight:800}
+
+    /* Tables */
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #f0f0f0;text-align:right}
+    th{color:var(--brown);font-weight:800;background:#fffaf5}
+    tr:hover td{background:#fffdf9}
+    .badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#f7e9e0;color:var(--brown);display:inline-flex;align-items:center;gap:6px}
+    .badge .dot{inline-size:8px;block-size:8px;border-radius:999px;background:#bc8f74}
+    .empty{padding:14px;border:1px dashed #ead8cb;border-radius:12px;color:#8f7f76;background:#fffbf6}
+
+    /* Charts layout */
+    .charts{display:grid;gap:16px}
+    @media(min-width:1100px){ .charts{grid-template-columns:2fr 1fr} }
+
+    /* Heatmap */
+    .heatmap{display:grid;gap:6px}
+    .heatmap .legend{display:flex;gap:8px;align-items:center}
+    .hm-grid{display:grid;gap:4px}
+    @media(min-width:900px){ .hm-grid{grid-template-columns: 140px repeat(14, 1fr)} }
+    .hm-cell{padding:8px;border-radius:8px;text-align:center;font-size:12px;border:1px solid #f1e6de;background:#fff}
+    .hm-head{background:#fffaf5;color:var(--brown);font-weight:700}
+    .hm-name{background:#fff; text-align:right; font-weight:700}
+
+    footer{padding:16px 18px;color:#fff;background:linear-gradient(180deg,var(--brown),#2f1c19);margin-top:8px}
+
+    @media print {
+      html, body { background: #fff8ef; }
+      #reportRoot { width: 100%; }
+    }
+  </style>
+<style>
+/* ===== Premium 3: Apple-like Glass (Brand Edition) ===== */
+:root{
+  --brown:rgb(62,36,32);
+  --beige:rgb(188,143,116);
+  --cream:#fff8ef;
+
+  --bg:#eef0f3;
+  --text:#0f172a;
+  --muted:#64748b;
+
+  --glass:rgba(255,248,239,.58);
+  --glass-strong:rgba(255,248,239,.72);
+  --stroke:rgba(62,36,32,.14);
+  --shadow:rgba(15,23,42,.14);
+  --radius:16px;
+}
+
+html,body{
+  background:
+    radial-gradient(1200px 800px at 20% 10%, rgba(188,143,116,.32), transparent 55%),
+    radial-gradient(1200px 800px at 80% 0%, rgba(62,36,32,.18), transparent 55%),
+    var(--bg)!important;
+  color:var(--text)!important;
+  font-family:'Tajawal',system-ui,sans-serif;
+}
+
+header,.topbar{
+  background:rgba(255,248,239,.55)!important;
+  border-bottom:1px solid rgba(62,36,32,.10)!important;
+  backdrop-filter:blur(18px);
+  box-shadow:0 14px 34px rgba(15,23,42,.10)!important;
+}
+
+.mzj-wrap{max-width:1500px;margin:0 auto;padding:18px;}
+
+/* Toggle */
+.mzj-toggle{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:46px;height:46px;border-radius:18px;
+  color:var(--brown);font-weight:900;cursor:pointer;
+  background:rgba(255,248,239,.62);
+  backdrop-filter:blur(18px);
+  border:1px solid rgba(62,36,32,.12);
+  box-shadow:0 10px 26px rgba(15,23,42,.10);
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.mzj-toggle:hover{
+  transform:translateY(-1px);
+  border-color:rgba(188,143,116,.45);
+  box-shadow:0 18px 38px rgba(15,23,42,.14);
+}
+
+/* Overlay */
+.mzj-overlay{
+  position:fixed;inset:0;background:rgba(15,23,42,.40);
+  display:none;opacity:0;transition:opacity .18s ease;z-index:999;
+}
+.mzj-overlay.open{opacity:1;}
+
+/* Sidebar */
+.mzj-sidebar{
+  position:fixed;top:0;right:0;height:100%;width:318px;
+  background:rgba(255,248,239,.68);
+  backdrop-filter:blur(20px);
+  border-left:1px solid rgba(62,36,32,.12);
+  transform:translateX(104%);
+  transition:transform .22s cubic-bezier(.2,.8,.2,1);
+  z-index:1000;padding:16px 14px;
+  box-shadow:-28px 0 70px rgba(15,23,42,.14);
+}
+.mzj-sidebar.open{transform:translateX(0);}
+
+.mzj-sb-head{
+  display:flex;gap:10px;align-items:center;
+  padding:10px 10px 14px;
+  border-bottom:1px solid rgba(62,36,32,.08);
+  margin-bottom:12px;
+}
+.mzj-sb-logo{
+  width:44px;height:44px;border-radius:18px;
+  background:linear-gradient(135deg, rgba(188,143,116,.55), rgba(255,248,239,.65));
+  border:1px solid rgba(62,36,32,.10);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--brown);font-weight:900;
+  box-shadow:0 14px 34px rgba(15,23,42,.10);
+}
+.mzj-sb-title{font-weight:900;color:var(--brown);line-height:1}
+.mzj-sb-sub{font-size:12px;color:rgba(62,36,32,.65);margin-top:2px;font-weight:700}
+
+/* Nav items */
+.mzj-sb-nav{padding:4px 8px}
+.mzj-nav-item{
+  display:flex;gap:10px;align-items:center;
+  padding:12px 12px;border-radius:18px;
+  color:var(--brown);
+  text-decoration:none;
+  background:rgba(255,248,239,.45);
+  border:1px solid rgba(62,36,32,.08);
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+}
+.mzj-nav-item:hover{
+  transform:translateY(-1px);
+  border-color:rgba(188,143,116,.45);
+  background:rgba(255,248,239,.62);
+  box-shadow:0 18px 40px rgba(15,23,42,.12);
+}
+.mzj-nav-item.active{
+  background:linear-gradient(135deg, rgba(188,143,116,.28), rgba(255,248,239,.65));
+  border-color:rgba(188,143,116,.55);
+  box-shadow:0 18px 44px rgba(15,23,42,.14);
+}
+.mzj-nav-item svg{
+  width:20px;height:20px;
+  stroke:var(--beige);
+  stroke-width:2;
+  fill:none;
+  flex:0 0 auto;
+}
+.mzj-nav-item.active svg{stroke:var(--brown);}
+
+/* Footer */
+.mzj-sb-foot{margin-top:14px;padding:12px 10px 0;border-top:1px solid rgba(62,36,32,.08);}
+.mzj-sb-btn{
+  width:100%;padding:12px;border-radius:18px;
+  border:1px solid rgba(62,36,32,.14);
+  background:rgba(255,248,239,.60);
+  color:var(--brown);font-weight:900;cursor:pointer;
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.mzj-sb-btn:hover{
+  transform:translateY(-1px);
+  border-color:rgba(188,143,116,.55);
+  box-shadow:0 16px 34px rgba(15,23,42,.12);
+}
+
+/* Press micro-interaction */
+.pressed{transform:scale(.985)!important;}
+
+/* Content cards */
+.panel,.card,.board-column,.task,.item, .container, .box{
+  background:rgba(255,248,239,.62)!important;
+  backdrop-filter:blur(18px)!important;
+  border:1px solid rgba(62,36,32,.10)!important;
+  border-radius:var(--radius)!important;
+  box-shadow:0 18px 46px rgba(15,23,42,.10)!important;
+}
+.panel:hover,.card:hover,.board-column:hover,.task:hover,.item:hover{
+  transform:translateY(-2px);
+  transition:transform .18s ease, box-shadow .18s ease;
+  box-shadow:0 26px 70px rgba(15,23,42,.14)!important;
+}
+
+/* Inputs */
+input,select,textarea{
+  border-radius:14px!important;
+  border:1px solid rgba(62,36,32,.14)!important;
+  background:rgba(255,248,239,.72)!important;
+}
+button{border-radius:14px!important;}
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="mzj-toggle" id="mzjToggle" aria-label="القائمة" title="القائمة">☰</span>
+      <span class="brand-badge"></span>
+      <strong>MZJ Workspace — لوحة التحكم</strong>
+    </div>
+    <nav class="nav">
+      <select id="spaceSelect" class="select"></select>
+      <a href="javascript:void(0)" id="btnExportPdf" class="btn">حفظ PDF</a>
+      <a href="cars.html active" style="background:rgba(255,255,255,.18)">الداش بورد</a>
+      <a href="members.html">الأعضاء</a>
+      <a href="admin.html">الحملات</a>
+      <a href="cars.html">متابعة السيارات</a>
+      <a href="Whiteboard.html">وايت بورد</a>
+      <a href="javascript:void(0)" id="btnLogout">تسجيل الخروج</a>
+    </nav>
+  </header>
+<div class='mzj-wrap' data-template='glass-brand'>
+
+  <main class="page" id="reportRoot">
+    <!-- KPIs -->
+    <section class="panel">
+      <div class="head">
+        <div style="display:flex;align-items:center;gap:10px">
+          <strong>ملخص الـ Space الحالي</strong>
+          <span class="chip" id="who">—</span>
+        </div>
+        <div class="muted" id="todayChip"></div>
+      </div>
+      <div class="body">
+        <div class="kpis" id="kpis">
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" stroke="#bc8f74" stroke-width="1.5"/></svg>
+            </span>إجمالي المهام</div>
+            <div class="val" id="k_total">—</div>
+            <div class="hint">كل الأعمدة</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="#bc8f74" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#bc8f74" stroke-width="1.5"/></svg>
+            </span>متأخرة</div>
+            <div class="val" id="k_overdue">—</div>
+            <div class="hint">تاريخ قبل اليوم</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="#bc8f74" stroke-width="1.5"/><path d="M3 10h18" stroke="#bc8f74" stroke-width="1.5"/><path d="M8 3v4M16 3v4" stroke="#bc8f74" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </span>تسليم اليوم</div>
+            <div class="val" id="k_today">—</div>
+            <div class="hint">Due Today</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-5 5V6a2 2 0 0 1 2-2z" stroke="#bc8f74" stroke-width="1.5"/></svg>
+            </span>تحت المراجعة</div>
+            <div class="val" id="k_review">—</div>
+            <div class="hint">عمود “تحت المراجعة”</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl"><span class="ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12a5 5 0 1 0-5-5" stroke="#bc8f74" stroke-width="1.5"/><path d="M20 21a8 8 0 0 0-16 0" stroke="#bc8f74" stroke-width="1.5"/><path d="M4 4l16 16" stroke="#bc8f74" stroke-width="1.5"/></svg>
+            </span>غير معيّنة</div>
+            <div class="val" id="k_unassigned">—</div>
+            <div class="hint">بدون مسؤول</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Daily Task Monthly + Weekly Summary -->
+    <section class="panel">
+      <div class="head">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <strong>🗓 Daily Task — المهام اليومية</strong>
+          <span class="muted" id="dailySpaceLabel">قائمة الشهور الفعّالة فقط</span>
+        </div>
+        <select id="dailyMonthSelect" class="select" style="padding:6px 10px;font-size:13px;min-width:170px;"></select>
+      </div>
+      <div class="body" id="dailyMonthlyWrap">
+        <div class="empty">جارِ تحميل بيانات Daily Task ...</div>
+      </div>
+    </section>
+
+    <!-- Columns counters -->
+    <section class="panel">
+      <div class="head">
+        <div style="display:flex;align-items:center;gap:10px">
+          <strong>عداد الأعمدة</strong>
+          <span class="chip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M3 6h18M3 12h18M3 18h18" stroke="#3e2420" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            ريل مواصفات / ريل قصير / تصميم صور / يوتيوب ...
+          </span>
+        </div>
+      </div>
+      <div class="body"><div class="cols" id="cols"></div></div>
+    </section>
+
+    <!-- Soon + Assignees -->
+    <div class="grid two">
+      <section class="panel">
+        <div class="head"><strong>أقرب تسليم (Top 10)</strong><span class="chip" id="todayInfo"></span></div>
+        <div class="body"><div id="soonWrap"></div></div>
+      </section>
+
+      <section class="panel">
+        <div class="head"><strong>توزيع المهام على الأعضاء</strong></div>
+        <div class="body"><div id="assigneesWrap"></div></div>
+      </section>
+    </div>
+
+    <!-- Per-member details -->
+    <section class="panel">
+      <div class="head"><strong>تقرير الأعضاء — حالة المهام + زمن التنفيذ</strong></div>
+      <div class="body"><div id="membersTableWrap"></div></div>
+    </section>
+
+    <!-- Charts base -->
+    <section class="panel">
+      <div class="head"><strong>رسوم بيانية أساسية</strong><span class="muted">Per Member + Status Mix</span></div>
+      <div class="body">
+        <div class="charts">
+          <div><canvas id="barPerUser" height="180"></canvas></div>
+          <div><canvas id="pieStatuses" height="180"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lead/Cycle + Throughput -->
+    <div class="grid 2-1">
+      <section class="panel">
+        <div class="head"><strong>Lead Time & Cycle Time (Days)</strong><span class="muted">Median per Week</span></div>
+        <div class="body"><canvas id="lineLeadCycle" height="200"></canvas></div>
+      </section>
+      <section class="panel">
+        <div class="head"><strong>Throughput Weekly</strong><span class="muted">Completed Tasks / Week</span></div>
+        <div class="body"><canvas id="barThroughput" height="200"></canvas></div>
+      </section>
+    </div>
+
+    <!-- SLA Breach + Completion by Column -->
+    <div class="grid 1-2">
+      <section class="panel">
+        <div class="head"><strong>SLA Breach</strong><span class="muted">Completed after Due Date</span></div>
+        <div class="body"><canvas id="gaugeSLA" height="220"></canvas></div>
+      </section>
+      <section class="panel">
+        <div class="head"><strong>Completion Rate by Column</strong><span class="muted">Done vs Remaining</span></div>
+        <div class="body"><canvas id="barByColumn" height="220"></canvas></div>
+      </section>
+    </div>
+
+    <!-- Workload Heatmap -->
+    <section class="panel">
+      <div class="head"><strong>Member Workload Heatmap</strong><span class="muted">Next 14 days by Due Date</span></div>
+      <div class="body">
+        <div class="heatmap">
+          <div class="legend">
+            <span class="chip">Intensity: 0</span>
+            <span class="chip warn">Medium</span>
+            <span class="chip danger">High</span>
+          </div>
+          <div id="hmWrap" class="hm-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Activity -->
+    <section class="panel">
+      <div class="head"><strong>نشاط حديث</strong><span class="muted">آخر 15 تحديث</span></div>
+      <div class="body" id="activityWrap"></div>
+    </section>
+  </main>
+
+  <footer>© مجموعة محمد بن ذعار العجمي للسيارات — نجم الطريق</footer>
+
+  <!-- Firebase + Logic -->
+  <script type="module">
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import {
+      getFirestore, collection, doc, getDoc, onSnapshot,
+      query, where, getDocs
+    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+    /* Firebase Config */
+    const firebaseConfig = {
+      apiKey: "AIzaSyBVNNtGz9zGefzmNIosRrwgJGROsu5SNIw",
+      authDomain: "mzj-workspace.firebaseapp.com",
+      projectId: "mzj-workspace",
+      storageBucket: "mzj-workspace.firebasestorage.app",
+      appId: "1:1043260904465:web:8742de3a3ac727ae1e8db0"
+    };
+    if(!getApps().length) initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db   = getFirestore();
+
+    /* UI refs */
+    const spaceSelect      = document.getElementById('spaceSelect');
+    const whoEl            = document.getElementById('who');
+    const btnLogout        = document.getElementById('btnLogout');
+    const btnExport        = document.getElementById('btnExportPdf');
+    const todayChip        = document.getElementById('todayChip');
+    const todayInfo        = document.getElementById('todayInfo');
+    const dailyMonthlyWrap = document.getElementById('dailyMonthlyWrap');
+    const dailySpaceLabel  = document.getElementById('dailySpaceLabel');
+    const dailyMonthSelect = document.getElementById('dailyMonthSelect');
+
+    // KPI refs
+    const kTotal=document.getElementById('k_total');
+    const kOver=document.getElementById('k_overdue');
+    const kToday=document.getElementById('k_today');
+    const kRev  =document.getElementById('k_review');
+    const kUnas =document.getElementById('k_unassigned');
+    const colsBox = document.getElementById('cols');
+    const soonWrap = document.getElementById('soonWrap');
+    const assigneesWrap = document.getElementById('assigneesWrap');
+    const activityWrap  = document.getElementById('activityWrap');
+    const membersTableWrap = document.getElementById('membersTableWrap');
+
+    // Charts refs
+    const barUser = document.getElementById('barPerUser');
+    const pieStatus = document.getElementById('pieStatuses');
+    const lineLeadCycle = document.getElementById('lineLeadCycle');
+    const barThroughput = document.getElementById('barThroughput');
+    const gaugeSLA = document.getElementById('gaugeSLA');
+    const barByColumn = document.getElementById('barByColumn');
+
+    let cBarUser, cPieStatus, cLineLC, cBarTP, cGaugeSLA, cBarCol;
+
+    /* State */
+    let CURRENT_USER=null, IS_ADMIN=false;
+    let CURRENT_SPACE=null, SPACE_COLUMNS=["ريل مواصفات","ريل قصير","تصميم صور","يوتيوب","تحت المراجعة"];
+    let unsubTasks=null;
+    let TASKS=[];
+
+    // Daily Task (من Collection: dailyTasks مثل صفحة المشاريع)
+    let DAILY_TASKS_ALL = [];
+    let DAILY_MONTHS_MAP = {};
+    let DAILY_SELECTED_KEY = null;
+
+    const MONTHS_NAMES=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+    /* Utils */
+    const fmtDate = (ymd)=> {
+      if(!ymd) return '';
+      const [y,m,d] = ymd.split('-').map(Number);
+      const js = new Date(y, m-1, d);
+      return js.toLocaleDateString('en-GB');
+    };
+    const todayYMD = ()=>{
+      const d=new Date();
+      const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${da}`;
+    };
+    const toMillis = (v)=>{
+      if(!v) return null;
+      if(typeof v === 'string') return new Date(v).getTime();
+      if(v.seconds) return v.seconds*1000;
+      if(v.toDate) try{ return v.toDate().getTime(); }catch{}
+      if(v instanceof Date) return v.getTime();
+      return null;
+    };
+    const isDone = (t)=>{
+      const s=(t.status||'').trim().toLowerCase();
+      return s==="تم الانتهاء" || s==="done" || s==="completed";
+    };
+    const isReview = (t)=> (t.status==="تحت المراجعة");
+
+    function countUp(el, to){
+      const target = Number(to)||0;
+      const dur = 600; const start=performance.now();
+      const from = Number(el.dataset.from||0);
+      function step(ts){
+        const p = Math.min(1,(ts-start)/dur);
+        el.textContent = Math.round(from + (target-from)*p);
+        if(p<1) requestAnimationFrame(step); else el.dataset.from = target;
+      }
+      requestAnimationFrame(step);
+    }
+
+    // Export PDF
+    btnLogout.onclick = async()=>{ await signOut(auth); location.href="login.html"; };
+    btnExport.onclick = ()=> {
+      const node = document.getElementById('reportRoot');
+      const opt = {
+        margin: [6,6,6,6],
+        filename: `dashboard_${new Date().toISOString().slice(0,10)}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          backgroundColor: '#fff8ef',
+          windowWidth: document.body.scrollWidth
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      };
+      // @ts-ignore
+      html2pdf().from(node).set(opt).save();
+    };
+
+    // Auth
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.href="login.html"; return; }
+      CURRENT_USER=user;
+      const u = await getDoc(doc(db,'users', user.uid));
+      const name = u.exists()? (u.data().name||user.email) : (user.email||'User');
+      const role = u.exists()? (u.data().role||'member') : 'member';
+      IS_ADMIN = role === 'admin';
+      whoEl.textContent = `${name} — ${IS_ADMIN?'مدير':'عضو'}`;
+
+      todayChip.innerHTML = `<span class="chip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="#1e90ff" stroke-width="1.5"/><path d="M3 10h18" stroke="#1e90ff" stroke-width="1.5"/><path d="M8 3v4M16 3v4" stroke="#1e90ff" stroke-width="1.5" stroke-linecap="round"/></svg>
+        ${new Date().toLocaleDateString('en-GB')}
+      </span>`;
+
+      if(!IS_ADMIN){
+        document.getElementById('navMembers').style.display='none';
+        document.getElementById('navAdmin').style.display='none';
+        location.href="projects.html";
+        return;
+      }
+      bootSpaces();
+      bootDailyTasksDashboard();   // <-- من dailyTasks
+    });
+
+    // Spaces dropdown
+    async function bootSpaces(){
+      onSnapshot(collection(db,'spaces'), (snap)=>{
+        const items=[];
+        snap.forEach(d=>{
+          const data=d.data()||{};
+          if(data.active!==false) items.push({ id:d.id, ...data });
+        });
+        items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+
+        spaceSelect.innerHTML='';
+        items.forEach(s=>{
+          const opt=document.createElement('option');
+          opt.value=s.id; opt.textContent=s.name;
+          spaceSelect.appendChild(opt);
+        });
+
+        if(!CURRENT_SPACE && items.length){
+          CURRENT_SPACE = items[0].id;
+          SPACE_COLUMNS = (items[0].columns && items[0].columns.length)? items[0].columns.slice() : SPACE_COLUMNS;
+          if(!SPACE_COLUMNS.includes('تحت المراجعة')) SPACE_COLUMNS.push('تحت المراجعة');
+          spaceSelect.value = CURRENT_SPACE;
+          listenTasks();
+        }
+      });
+
+      spaceSelect.addEventListener('change', async (e)=>{
+        CURRENT_SPACE = e.target.value;
+        const d=await getDoc(doc(db,'spaces', CURRENT_SPACE));
+        if(d.exists()){
+          const cols = d.data().columns || [];
+          SPACE_COLUMNS = cols.length? cols.slice() : ["ريل مواصفات","ريل قصير","تصميم صور","يوتيوب"];
+          if(!SPACE_COLUMNS.includes('تحت المراجعة')) SPACE_COLUMNS.push('تحت المراجعة');
+        }
+        listenTasks(true);
+      });
+    }
+
+    // Main space tasks
+    function listenTasks(){
+      if(unsubTasks){ unsubTasks(); unsubTasks=null; }
+      if(!CURRENT_SPACE) return;
+      const qy = query(collection(db,'tasks'), where('spaceId','==', CURRENT_SPACE));
+      unsubTasks = onSnapshot(qy, (snap)=>{
+        TASKS=[]; snap.forEach(d=> TASKS.push({ id:d.id, ...(d.data()||{}) }));
+        renderAll();
+      }, (err)=>{ console.error(err); });
+    }
+
+    /* ===========================
+       Daily Task Dashboard (dailyTasks)
+       =========================== */
+
+    function bootDailyTasksDashboard(){
+      // نسمع على Collection: dailyTasks (نفس شغل صفحة المشاريع/التاب)
+      const qDaily = collection(db,'dailyTasks');
+      onSnapshot(qDaily, (snap)=>{
+        DAILY_TASKS_ALL = [];
+        snap.forEach(d=> DAILY_TASKS_ALL.push({ id:d.id, ...(d.data()||{}) }));
+        rebuildDailyMonthsFromTasks();
+      }, (err)=>{
+        console.error(err);
+        dailyMonthlyWrap.innerHTML = `<div class="empty">حدث خطأ أثناء تحميل بيانات Daily Task.</div>`;
+      });
+
+      dailyMonthSelect.addEventListener('change', ()=>{
+        DAILY_SELECTED_KEY = dailyMonthSelect.value || null;
+        renderDailyMonthlyForSelected();
+      });
+    }
+
+    function rebuildDailyMonthsFromTasks(){
+      DAILY_MONTHS_MAP = {};
+
+      if(!DAILY_TASKS_ALL.length){
+        dailyMonthSelect.innerHTML = '';
+        dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد مهام يومية (Daily Task) حتى الآن.</div>`;
+        return;
+      }
+
+      DAILY_TASKS_ALL.forEach(t=>{
+        const mk = (t.monthKey || '').toString(); // مثال: "2025-11"
+        if(!mk || mk.length<7) return;
+        const parts = mk.split('-').map(Number);
+        if(parts.length<2 || !parts[0] || !parts[1]) return;
+        const y = parts[0];
+        const m = parts[1];
+
+        if(!DAILY_MONTHS_MAP[mk]) DAILY_MONTHS_MAP[mk] = {
+          year:y, month:m,
+          total:0, done:0, remaining:0,
+          weeks:{}
+        };
+        const bucket = DAILY_MONTHS_MAP[mk];
+
+        const completed = !!t.completed;
+        bucket.total++;
+        if(completed) bucket.done++; else bucket.remaining++;
+
+        let w = Number(t.week||0);
+        if(w>=1 && w<=4){
+          if(!bucket.weeks[w]) bucket.weeks[w]={ total:0, done:0, remaining:0 };
+          const wb = bucket.weeks[w];
+          wb.total++;
+          if(completed) wb.done++; else wb.remaining++;
+        }
+      });
+
+      const keys = Object.keys(DAILY_MONTHS_MAP).sort(); // YYYY-MM تصاعدي
+      if(!keys.length){
+        dailyMonthSelect.innerHTML = '';
+        dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد شهور فعّالة للـ Daily Task.</div>`;
+        return;
+      }
+
+      const prev = DAILY_SELECTED_KEY;
+      dailyMonthSelect.innerHTML = '';
+      keys.forEach(key=>{
+        const mData = DAILY_MONTHS_MAP[key];
+        const label = `أجندة ${MONTHS_NAMES[mData.month-1]} ${mData.year}`;
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = label;
+        dailyMonthSelect.appendChild(opt);
+      });
+
+      let selected = prev && keys.includes(prev) ? prev : keys[keys.length-1];
+      DAILY_SELECTED_KEY = selected;
+      dailyMonthSelect.value = selected;
+
+      renderDailyMonthlyForSelected();
+    }
+
+    function renderDailyMonthlyForSelected(){
+      if(!DAILY_SELECTED_KEY || !DAILY_MONTHS_MAP[DAILY_SELECTED_KEY]){
+        dailyMonthlyWrap.innerHTML = `<div class="empty">لا توجد بيانات لهذا الشهر.</div>`;
+        return;
+      }
+      const mData = DAILY_MONTHS_MAP[DAILY_SELECTED_KEY];
+      const monthLabel = `أجندة ${MONTHS_NAMES[mData.month-1]} ${mData.year}`;
+      const monthPct = mData.total ? Math.round(mData.done/mData.total*100) : 0;
+
+      const headerLine = `
+        <div style="margin-bottom:10px;font-weight:700;color:var(--brown);font-size:15px;">
+          ${monthLabel}
+          <span style="margin-inline-start:12px;font-weight:500;color:var(--muted);">
+            مهام قيد العمل: ${mData.remaining} | تم التنفيذ: ${mData.done}
+          </span>
+          <span style="margin-inline-start:12px;font-weight:500;color:var(--muted);">
+            نسبة الإنهاء: ${monthPct}% 
+          </span>
+        </div>
+      `;
+
+      let rows = `
+        <tr style="background:#fffaf5">
+          <td><strong>${monthLabel}</strong> (إجمالي الشهر)</td>
+          <td>${mData.total}</td>
+          <td style="color:var(--ok);font-weight:700">${mData.done}</td>
+          <td style="color:var(--danger);font-weight:700">${mData.remaining}</td>
+          <td>${monthPct}%</td>
+        </tr>
+      `;
+
+      [1,2,3,4].forEach(wk=>{
+        const w = mData.weeks[wk];
+        if(!w) return;
+        const wPct = w.total ? Math.round(w.done/w.total*100) : 0;
+        rows += `
+          <tr>
+            <td style="padding-right:24px;">الأسبوع ${wk} (سبت–خميس)</td>
+            <td>${w.total}</td>
+            <td style="color:var(--ok);font-weight:700">${w.done}</td>
+            <td style="color:var(--danger);font-weight:700">${w.remaining}</td>
+            <td>${wPct}%</td>
+          </tr>
+        `;
+      });
+
+      dailyMonthlyWrap.innerHTML = `
+        ${headerLine}
+        <table>
+          <thead>
+            <tr>
+              <th>الشهر / الأسبوع</th>
+              <th>إجمالي المهام</th>
+              <th>تم التنفيذ</th>
+              <th>متبقّي</th>
+              <th>نسبة الإنهاء</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
+    }
+
+    /* ============ باقي الداشبورد ============ */
+
+    function renderAll(){
+      const today = todayYMD();
+      const total = TASKS.length;
+      const overdue = TASKS.filter(t=> t.due && t.due < today).length;
+      const dueToday= TASKS.filter(t=> t.due && t.due === today).length;
+      const review  = TASKS.filter(isReview).length;
+      const unas    = TASKS.filter(t=> !t.assignee || !t.assignee.uid).length;
+
+      countUp(kTotal, total);
+      countUp(kOver, overdue);
+      countUp(kToday, dueToday);
+      countUp(kRev, review);
+      countUp(kUnas, unas);
+
+      todayInfo.textContent = `Today: ${new Date().toLocaleDateString('en-GB')}`;
+
+      // Column counters
+      colsBox.innerHTML='';
+      SPACE_COLUMNS.forEach(c=>{
+        const n = TASKS.filter(t=> t.status===c).length;
+        const box=document.createElement('div');
+        box.className='colbox';
+        box.innerHTML=`
+          <div class="title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 5h16M4 12h16M4 19h16" stroke="#3e2420" stroke-width="2" stroke-linecap="round"/></svg>
+            ${c}
+          </div>
+          <div class="num">${n}</div>`;
+        colsBox.appendChild(box);
+      });
+
+      // Soon due (top 10)
+      const soon = TASKS.filter(t=> t.due).slice().sort((a,b)=> (a.due>b.due?1:-1)).slice(0,10);
+      soonWrap.innerHTML = soon.length? `
+        <table>
+          <thead><tr><th>المهمة</th><th>المسؤول</th><th>Due</th><th>الحالة</th></tr></thead>
+          <tbody>
+            ${soon.map(t=>`
+              <tr>
+                <td>${t.name||'-'}</td>
+                <td>${t.assignee?`<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>`:'—'}</td>
+                <td>${fmtDate(t.due)||'—'}</td>
+                <td>${t.status||'—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : `<div class="empty">لا توجد تواريخ قريبة حاليًا.</div>`;
+
+      // Assignees distribution
+      const mapAss={};
+      TASKS.forEach(t=>{
+        const key = t.assignee?.name || 'غير معيّن';
+        mapAss[key] = (mapAss[key]||0)+1;
+      });
+      const rowsAss = Object.entries(mapAss).sort((a,b)=> b[1]-a[1]).slice(0,10);
+      assigneesWrap.innerHTML = rowsAss.length? `
+        <table>
+          <thead><tr><th>العضو</th><th>عدد المهام</th></tr></thead>
+          <tbody>
+            ${rowsAss.map(([n,c])=> `<tr><td>${n}</td><td>${c}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      ` : `<div class="empty">لا مهام مسندة بعد.</div>`;
+
+      // Per-member details + pie
+      const perMember = new Map();
+      const perStatus = { todo:0, review:0, done:0 };
+
+      TASKS.forEach(t=>{
+        const name = t.assignee?.name || 'غير معيّن';
+        if(!perMember.has(name)) perMember.set(name,{
+          total:0,
+          done:0,
+          review:0,
+          remaining:0,
+          durations:[],
+          reviewRounds:[]
+        });
+        const m = perMember.get(name);
+        m.total++;
+        if(isDone(t)){ m.done++; perStatus.done++; }
+        else if(isReview(t)){ m.review++; perStatus.review++; }
+        else { m.remaining++; perStatus.todo++; }
+
+        // زمن التنفيذ من استلام المهمة حتى جاهزية النشر/الإنهاء
+        if(isDone(t)){
+          const startMs =
+            toMillis(t.assignedAt) ||
+            toMillis(t.createdAt) ||
+            toMillis(t.startedAt);
+          const endMs =
+            toMillis(t.readyToPublishAt) ||
+            toMillis(t.approvedAt) ||
+            toMillis(t.completedAt);
+          if(startMs && endMs && endMs >= startMs){
+            const days = (endMs - startMs) / 86400000;
+            m.durations.push(days);
+          }
+          // عدد دورات المراجعة لو موجودة
+          if(Array.isArray(t.reviewCycles) && t.reviewCycles.length){
+            m.reviewRounds.push(t.reviewCycles.length);
+          }
+        }
+      });
+
+      const ordered = Array.from(perMember.entries()).sort((a,b)=> b[1].total - a[1].total);
+      membersTableWrap.innerHTML = ordered.length ? `
+        <table>
+          <thead>
+            <tr>
+              <th>العضو</th>
+              <th>إجمالي المهام</th>
+              <th>تم التنفيذ</th>
+              <th>تحت المراجعة</th>
+              <th>متبقّي</th>
+              <th>متوسط زمن التنفيذ (يوم)</th>
+              <th>أسرع مهمة</th>
+              <th>أبطأ مهمة</th>
+              <th>متوسط مرات المراجعة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ordered.map(([n,v])=>{
+              const pct = v.total? Math.round(v.done/v.total*100):0;
+              let avgDur='—', minDur='—', maxDur='—', avgRev='—';
+              if(v.durations && v.durations.length){
+                let sum=0, min=v.durations[0], max=v.durations[0];
+                v.durations.forEach(d=>{
+                  sum += d;
+                  if(d<min) min=d;
+                  if(d>max) max=d;
+                });
+                avgDur = (sum / v.durations.length).toFixed(1);
+                minDur = min.toFixed(1);
+                maxDur = max.toFixed(1);
+              }
+              if(v.reviewRounds && v.reviewRounds.length){
+                let sumR = 0;
+                v.reviewRounds.forEach(r=> sumR += r);
+                avgRev = (sumR / v.reviewRounds.length).toFixed(1);
+              }
+              return `
+                <tr>
+                  <td>
+                    <strong>${n}</strong>
+                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">نسبة الإنهاء: ${pct}%</div>
+                  </td>
+                  <td>${v.total}</td>
+                  <td style="color:var(--ok);font-weight:700">${v.done}</td>
+                  <td style="color:var(--warn);font-weight:700">${v.review}</td>
+                  <td style="color:var(--danger);font-weight:700">${v.remaining}</td>
+                  <td>${avgDur}</td>
+                  <td>${minDur}</td>
+                  <td>${maxDur}</td>
+                  <td>${avgRev}</td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : `<div class="empty">لا توجد بيانات أعضاء لعرضها.</div>`;
+
+      const labelsUser = ordered.map(([n])=>n);
+      const doneArr = ordered.map(([,v])=>v.done);
+      const remArr  = ordered.map(([,v])=>v.remaining);
+
+      if(cBarUser) cBarUser.destroy();
+      cBarUser = new Chart(barUser, {
+        type:'bar',
+        data:{
+          labels: labelsUser,
+          datasets:[
+            { label:'تم الانتهاء', data:doneArr, backgroundColor:'#16a34a' },
+            { label:'متبقّي',      data:remArr,  backgroundColor:'#dc2626' }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          scales:{ x:{stacked:true}, y:{stacked:true,ticks:{precision:0}} },
+          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true} },
+          animation:{ duration:500 }
+        }
+      });
+
+      if(cPieStatus) cPieStatus.destroy();
+      cPieStatus = new Chart(pieStatus, {
+        type:'doughnut',
+        data:{
+          labels:['غير منجز','تحت المراجعة','تم الانتهاء'],
+          datasets:[{ data:[perStatus.todo, perStatus.review, perStatus.done], backgroundColor:['#64748b','#f59e0b','#16a34a'] }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false, cutout:'58%',
+          plugins:{ legend:{ position:'bottom', labels:{ font:{family:'Tajawal'} } }, tooltip:{ rtl:true } },
+          animation:{ duration:500 }
+        }
+      });
+
+      // Lead/Cycle
+      const weeks = {};
+      TASKS.forEach(t=>{
+        if(!isDone(t)) return;
+        const cAt = toMillis(t.createdAt);
+        const sAt = toMillis(t.startedAt) || cAt;
+        const dAt = toMillis(t.completedAt);
+        if(!dAt || !cAt) return;
+        const leadDays = (dAt - cAt) / 86400000;
+        const cycDays  = (dAt - sAt) / 86400000;
+        const d = new Date(dAt);
+        const key = weekKey(d);
+        if(!weeks[key]) weeks[key]={lead:[],cycle:[]};
+        weeks[key].lead.push(leadDays);
+        weeks[key].cycle.push(cycDays);
+      });
+      const weekLabels = Object.keys(weeks).sort();
+      const medLead = weekLabels.map(k=> median(weeks[k].lead));
+      const medCycle= weekLabels.map(k=> median(weeks[k].cycle));
+
+      if(cLineLC) cLineLC.destroy();
+      cLineLC = new Chart(lineLeadCycle, {
+        type:'line',
+        data:{
+          labels: weekLabels,
+          datasets:[
+            { label:'Lead (days)', data: medLead, borderColor:'#1e90ff', tension:.2 },
+            { label:'Cycle (days)', data: medCycle, borderColor:'#bc8f74', tension:.2 }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true } },
+          scales:{ y:{ ticks:{ precision:0 } } }
+        }
+      });
+
+      // Throughput
+      const throughput = {};
+      TASKS.forEach(t=>{
+        if(!isDone(t)) return;
+        const dAt = toMillis(t.completedAt);
+        if(!dAt) return;
+        const key = weekKey(new Date(dAt));
+        throughput[key] = (throughput[key]||0) + 1;
+      });
+      const tpLabels = Object.keys(throughput).sort();
+      const tpVals   = tpLabels.map(k=> throughput[k]);
+
+      if(cBarTP) cBarTP.destroy();
+      cBarTP = new Chart(barThroughput, {
+        type:'bar',
+        data:{ labels: tpLabels, datasets:[{ label:'Completed / Week', data: tpVals, backgroundColor:'#16a34a' }] },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true } },
+          scales:{ y:{ ticks:{ precision:0 } } }
+        }
+      });
+
+      // SLA
+      let totalCompleted=0, breaches=0;
+      TASKS.forEach(t=>{
+        if(!isDone(t)) return;
+        const dAt = toMillis(t.completedAt);
+        if(!dAt) return;
+        totalCompleted++;
+        const dueYMD = t.due;
+        if(dueYMD){
+          const [y,m,da]= dueYMD.split('-').map(Number);
+          const dueMs = new Date(y, m-1, da, 23,59,59).getTime();
+          if(dAt > dueMs) breaches++;
+        }
+      });
+      const breachPct = totalCompleted? Math.round(breaches/totalCompleted*100) : 0;
+      if(cGaugeSLA) cGaugeSLA.destroy();
+      cGaugeSLA = new Chart(gaugeSLA, {
+        type:'doughnut',
+        data:{
+          labels:['Breach','On time'],
+          datasets:[{ data:[breachPct, 100-breachPct], backgroundColor:['#dc2626','#16a34a'] }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false, circumference:180, rotation:270, cutout:'65%',
+          plugins:{ legend:{ display:false }, tooltip:{ rtl:true } }
+        }
+      });
+
+      // Completion by column
+      const colDone=[], colRem=[], colLabels=[];
+      SPACE_COLUMNS.forEach(c=>{
+        colLabels.push(c);
+        let d=0, r=0;
+        TASKS.forEach(t=>{
+          if(t.status!==c) return;
+          if(isDone(t)) d++; else if(!isReview(t)) r++;
+        });
+        colDone.push(d); colRem.push(r);
+      });
+      if(cBarCol) cBarCol.destroy();
+      cBarCol = new Chart(barByColumn, {
+        type:'bar',
+        data:{
+          labels: colLabels,
+          datasets:[
+            { label:'تم الانتهاء', data: colDone, backgroundColor:'#16a34a' },
+            { label:'غير منجز',    data: colRem,  backgroundColor:'#64748b' }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          scales:{ x:{ stacked:true }, y:{ stacked:true, ticks:{precision:0} } },
+          plugins:{ legend:{labels:{font:{family:'Tajawal'}}}, tooltip:{rtl:true } }
+        }
+      });
+
+      // Heatmap
+      renderHeatmap();
+
+      // Activity
+      const sorted = TASKS.slice().sort((a,b)=> (toMillis(b.createdAt)||0)-(toMillis(a.createdAt)||0)).slice(0,15);
+      activityWrap.innerHTML = sorted.length? `
+        <table>
+          <thead><tr><th>المهمة</th><th>المسؤول</th><th>الحالة</th><th>Created</th><th>روابط</th></tr></thead>
+          <tbody>
+            ${sorted.map(t=>{
+              const linksCount = Array.isArray(t.links)? t.links.length : 0;
+              const created = toMillis(t.createdAt)? new Date(toMillis(t.createdAt)).toLocaleDateString('en-GB') : '—';
+              return `
+                <tr>
+                  <td>${t.name||'-'}</td>
+                  <td>${t.assignee?`<span class="badge"><span class="dot" style="background:${t.assignee.color||'#bc8f74'}"></span>${t.assignee.name||''}</span>`:'—'}</td>
+                  <td>${t.status||'—'}</td>
+                  <td>${created}</td>
+                  <td>${linksCount}</td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : `<div class="empty">لا نشاط حديث.</div>`;
+    }
+
+    function weekKey(d){
+      const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const dayNum = date.getUTCDay() || 7;
+      date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+      const weekNo = Math.ceil((((date - yearStart)/86400000)+1)/7);
+      return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
+    }
+    function median(arr){
+      const a = arr.slice().filter(x=>isFinite(x)).sort((x,y)=>x-y);
+      const n=a.length; if(!n) return 0;
+      const mid = Math.floor(n/2);
+      return n%2? a[mid] : (a[mid-1]+a[mid])/2;
+    }
+
+    function renderHeatmap(){
+      const hm = document.getElementById('hmWrap');
+      hm.innerHTML='';
+      const horizonDays = 14;
+      const today = new Date(); today.setHours(0,0,0,0);
+      const days = [];
+      for(let i=0;i<horizonDays;i++){
+        const d = new Date(today.getTime()+i*86400000);
+        days.push(d);
+      }
+      const memberMap = new Map();
+      TASKS.forEach(t=>{
+        const name = t.assignee?.name || 'غير معيّن';
+        const due = t.due;
+        if(!due) return;
+        const [y,m,da]= due.split('-').map(Number);
+        const dueDate = new Date(y, m-1, da); dueDate.setHours(0,0,0,0);
+        const idx = Math.round((dueDate - today)/86400000);
+        if(idx<0 || idx>=horizonDays) return;
+        if(!memberMap.has(name)) memberMap.set(name, Array(horizonDays).fill(0));
+        memberMap.get(name)[idx] += 1;
+      });
+      const ranked = Array.from(memberMap.entries())
+        .map(([n,arr])=> [n, arr, arr.reduce((a,b)=>a+b,0)])
+        .sort((a,b)=> b[2]-a[2])
+        .slice(0,8);
+
+      hm.appendChild(cell('Member / Date','hm-head'));
+      days.forEach(d=> hm.appendChild(cell(d.toLocaleDateString('en-GB'), 'hm-head')));
+
+      ranked.forEach(([name,arr])=>{
+        hm.appendChild(cell(name,'hm-name'));
+        arr.forEach(v=>{
+          const c = document.createElement('div');
+          c.className = 'hm-cell';
+          if(v>=3){ c.style.background='#fef2f2'; c.style.borderColor='#fee2e2'; }
+          else if(v>=1){ c.style.background='#fff7ed'; c.style.borderColor='#ffedd5'; }
+          c.textContent = v? v : '';
+          hm.appendChild(c);
+        });
+      });
+
+      function cell(text, cls){
+        const d=document.createElement('div');
+        d.className = 'hm-cell ' + (cls||'');
+        d.textContent = text;
+        return d;
+      }
+    }
+  </script>
+</div>
+</body>
+</html>

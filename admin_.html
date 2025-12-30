@@ -59,7 +59,7 @@
       border-radius:10px;
       color:#fff
     }
-    .nav a:hover{background:rgba(62,36,32,.08)}
+    .nav a:hover{background:rgba(255,255,255,.14)}
 
     .page{padding:18px;display:grid;gap:16px}
 
@@ -523,68 +523,64 @@
   </style>
 
 <style>
-/* ===== MZJ Unified UI (Toggle Sidebar) ===== */
+/* ===== Template A: Notion / Linear ===== */
 :root{
-  --brown:#3e2420;--beige:#bc8f74;--cream:#fff8ef;
-  --bg:#f4f2f0;--card:#fff;--border:#e6dfd9;
-  --text:#1f2937;--muted:#6b7280;--radius:14px;
+  --bg:#f7f7f8;
+  --card:#ffffff;
+  --border:#e5e7eb;
+  --text:#111827;
+  --muted:#6b7280;
+  --accent:#3e2420;
+  --radius:12px;
 }
-html,body{background:var(--bg)!important;font-family:'Tajawal',system-ui,sans-serif}
 
-/* Clean Top Bar (existing) */
-.topbar, header{
-  background:var(--cream)!important;
-  color:var(--brown)!important;
+html,body{
+  background:var(--bg)!important;
+  font-family:'Tajawal',system-ui,sans-serif;
+}
+
+/* Clean top bar */
+header,.topbar{
+  background:#fff!important;
   border-bottom:1px solid var(--border);
+  box-shadow:none!important;
 }
-.topbar{padding:10px 14px!important}
 
-/* Toggle button */
+/* Toggle */
 .mzj-toggle{
-  font-size:20px;cursor:pointer;
-  padding:6px 10px;border-radius:10px;
+  font-size:20px;
+  cursor:pointer;
+  margin-inline-end:10px;
 }
-.mzj-toggle:hover{background:rgba(0,0,0,.06)}
 
-/* Sidebar overlay */
-.mzj-overlay{
-  position:fixed;inset:0;display:none;z-index:9998;
-  background:rgba(0,0,0,.45);
-}
+/* Sidebar */
+.mzj-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);display:none;z-index:999}
 .mzj-sidebar{
-  position:fixed;top:0;right:0;height:100%;
-  width:280px;background:var(--cream); color:var(--brown);color:#fff;
-  padding:16px;z-index:9999;
-  transform:translateX(100%);transition:.25s ease;
+  position:fixed;top:0;right:0;width:260px;height:100%;
+  background:#fff;border-left:1px solid var(--border);
+  transform:translateX(100%);transition:.25s ease;z-index:1000;
+  padding:16px;
 }
 .mzj-sidebar.open{transform:translateX(0)}
-.mzj-sidebar .brand{font-weight:800;margin-bottom:10px}
 .mzj-sidebar a{
-  display:block;color:var(--brown);text-decoration:none;
-  padding:10px 12px;border-radius:10px;margin-bottom:4px;
+  display:block;padding:10px;border-radius:8px;
+  color:var(--text);text-decoration:none;margin-bottom:4px;
 }
-.mzj-sidebar a:hover,
-.mzj-sidebar a.active{background:rgba(62,36,32,.08)}
+.mzj-sidebar a:hover,.mzj-sidebar a.active{background:#f3f4f6}
 
 /* Workspace */
-.mzj-wrap{max-width:1400px;margin:0 auto;padding:18px}
+.mzj-wrap{max-width:1400px;margin:0 auto;padding:20px}
 
-/* Cards / panels */
+/* Cards */
 .panel,.card,.board-column,.task,.item{
-  background:var(--cream)!important;
-  border-radius:var(--radius)!important;
+  background:var(--card)!important;
   border:1px solid var(--border);
-  box-shadow:0 10px 25px rgba(62,36,32,.08)!important;
-}
-
-/* Inputs / buttons */
-button,.btn{border-radius:10px!important;font-weight:700}
-input,select,textarea{
-  border-radius:10px!important;border:1px solid var(--border)!important
+  border-radius:var(--radius)!important;
+  box-shadow:none!important;
 }
 
 /* Typography */
-h1,h2,h3,h4{color:var(--brown)}
+h1,h2,h3{color:var(--text);font-weight:700}
 </style>
 
 </head>
@@ -592,7 +588,7 @@ h1,h2,h3,h4{color:var(--brown)}
 <body>
   <!-- Top Navigation -->
   <header class="topbar">
-    <div class="brand"><span class="mzj-toggle" id="mzjToggle">☰</span> 
+    <div class="brand"><span class="mzj-toggle" id="mzjToggle">☰</span>
       <span class="brand-badge"></span>
       <strong>MZJ Workspace — الحملات</strong>
     </div>
@@ -607,7 +603,7 @@ h1,h2,h3,h4{color:var(--brown)}
       <a href="javascript:void(0)" id="btnLogout">تسجيل الخروج</a>
     </nav>
   </header>
-<div class="mzj-wrap">
+<div class='mzj-wrap'>
 
   <!-- Main Content -->
   <main class="page">
@@ -1814,31 +1810,22 @@ h1,h2,h3,h4{color:var(--brown)}
 
 </div>
 
-<!-- Toggle Sidebar -->
 <div class="mzj-overlay" id="mzjOverlay"></div>
 <aside class="mzj-sidebar" id="mzjSidebar">
-  <div class="brand">MZJ Workspace</div>
-  <a href="dashboard.html">لوحة التحكم</a>
-  <a href="projects.html">المشاريع</a>
-  <a href="admin.html" class="active">الحملات</a>
-  <a href="cars.html">السيارات</a>
-  <a href="members.html">الأعضاء</a>
-  <a href="Whiteboard.html">Whiteboard</a>
-  <a href="javascript:void(0)" id="mzjLogout">تسجيل الخروج</a>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="projects.html">Projects</a>
+  <a href="admin.html" class="active">Admin</a>
+  <a href="cars.html">Cars</a>
+  <a href="members.html">Members</a>
 </aside>
-
 <script>
 (function(){
-  const t=document.getElementById('mzjToggle');
-  const o=document.getElementById('mzjOverlay');
-  const s=document.getElementById('mzjSidebar');
-  if(!t||!o||!s) return;
-  t.onclick=()=>{o.style.display='block';s.classList.add('open')};
-  o.onclick=()=>{s.classList.remove('open');setTimeout(()=>o.style.display='none',200)};
-  const l=document.getElementById('mzjLogout');
-  if(l && document.getElementById('logoutBtn')){
-    l.onclick=()=>document.getElementById('logoutBtn').click();
-  }
+ const t=document.getElementById('mzjToggle'),
+ o=document.getElementById('mzjOverlay'),
+ s=document.getElementById('mzjSidebar');
+ if(!t) return;
+ t.onclick=()=>{o.style.display='block';s.classList.add('open')};
+ o.onclick=()=>{s.classList.remove('open');setTimeout(()=>o.style.display='none',200)};
 })();
 </script>
 
